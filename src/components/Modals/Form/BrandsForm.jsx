@@ -1,4 +1,19 @@
-// components/Modals/Form/BrandsForm.jsx
+/**
+ * @file BrandsForm.jsx
+ * @description Komponen form modal untuk manajemen data brand dan client.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat brand/client baru
+ * - **Edit**: Mengedit brand/client yang sudah ada
+ * 
+ * Menyediakan fitur lengkap:
+ * - Input nama brand/client (wajib)
+ * - Upload logo dengan preview dan validasi
+ * - Toggle tipe (Product/Client)
+ * - Toggle status aktif/non-aktif
+ * - Pengaturan urutan tampilan (sort order)
+ * - Penanganan logo existing vs baru
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { brandService } from "../../../services/brandService";
@@ -8,17 +23,48 @@ import AlertModal from "../../Alerts/AlertModal";
 import PulseDots from "../../Loaders/PulseDots";
 import "../../../sass/components/Modals/BrandsForm/BrandsForm.scss";
 
+/**
+ * Props untuk komponen BrandsForm.
+ * @typedef {Object} BrandsFormProps
+ * @property {Object|null} [item=null] - Data brand/client awal untuk mode edit
+ * @property {function(): void} onClose - Callback saat form ditutup
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ */
+
+/**
+ * Komponen form modal untuk manajemen data brand dan client.
+ * Digunakan dalam konteks modal untuk operasi CRUD brand/client.
+ *
+ * @component
+ * @param {BrandsFormProps} props - Props komponen
+ */
 const BrandsForm = ({ item = null, onClose, onSuccess }) => {
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
 
-  // ✅ useRef untuk cleanup blob URL
+  // useRef untuk cleanup blob URL
+  /** @type {React.MutableRefObject<string|null>} Ref untuk URL preview logo */
   const logoPreviewUrlRef = useRef(null);
 
   // Original data dari backend
+  /** @type {string|null} Path logo asli dari backend */
   const originalLogoPath = item?.logo || null;
+
+  /** @type {string|null} URL logo asli dari backend */
   const originalLogoUrl = item?.logoUrl || null;
 
+  /**
+   * State form data brand/client.
+   * @type {{
+   *   name: string,
+   *   logo: File|null,
+   *   type: 'PRODUCT'|'CLIENT',
+   *   isActive: boolean,
+   *   sortOrder: number
+   * }}
+   */
   const [formData, setFormData] = useState({
     name: "",
     logo: null, // File object baru atau null
@@ -27,11 +73,31 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     sortOrder: 0,
   });
 
+  /**
+   * URL preview logo untuk ditampilkan di UI.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [logoPreview, setLogoPreview] = useState(null);
+
+  /**
+   * Status apakah logo telah dihapus (hanya berlaku di mode edit).
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isLogoRemoved, setIsLogoRemoved] = useState(false);
+
+  /**
+   * Pesan error validasi untuk upload logo.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [logoError, setLogoError] = useState("");
+
+  /**
+   * Status loading saat proses submit berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
 
+  // Inisialisasi form data berdasarkan mode
   useEffect(() => {
     if (isEditing && item) {
       setFormData({
@@ -64,7 +130,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     setLogoError("");
   }, [item, isEditing, originalLogoUrl]);
 
-  // ✅ Cleanup blob URL on unmount
+  // Cleanup blob URL on unmount
   useEffect(() => {
     return () => {
       if (
@@ -76,6 +142,10 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     };
   }, []);
 
+  /**
+   * Handler perubahan input form.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -84,6 +154,11 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler perubahan file logo.
+   * Melakukan validasi file sebelum memproses preview.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
+   */
   const handleLogoChange = (e) => {
     const file = e.target.files[0];
     if (!file) {
@@ -105,7 +180,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     setIsLogoRemoved(false);
     setFormData((prev) => ({ ...prev, logo: file }));
 
-    // ✅ Cleanup old blob URL
+    // Cleanup old blob URL
     if (
       logoPreviewUrlRef.current &&
       logoPreviewUrlRef.current.startsWith("blob:")
@@ -119,13 +194,17 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     setLogoPreview(previewUrl);
   };
 
+  /**
+   * Handler penghapusan logo dari form.
+   * Membersihkan state dan URL object.
+   */
   const handleRemoveLogo = () => {
     setIsLogoRemoved(true);
     setFormData((prev) => ({ ...prev, logo: null }));
     setLogoPreview(null);
     setLogoError("");
 
-    // ✅ Cleanup blob URL
+    // Cleanup blob URL
     if (
       logoPreviewUrlRef.current &&
       logoPreviewUrlRef.current.startsWith("blob:")
@@ -134,11 +213,15 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
       logoPreviewUrlRef.current = null;
     }
 
-    // ✅ Reset file input
+    // Reset file input
     const fileInput = document.getElementById("brand-logo-upload");
     if (fileInput) fileInput.value = "";
   };
 
+  /**
+   * Handler perubahan tipe brand/client.
+   * @param {'PRODUCT'|'CLIENT'} type - Tipe yang dipilih
+   */
   const handleTypeChange = (type) => {
     setFormData((prev) => ({
       ...prev,
@@ -146,6 +229,10 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler perubahan status aktif/non-aktif.
+   * @param {boolean} status - Status baru
+   */
   const handleStatusChange = (status) => {
     setFormData((prev) => ({
       ...prev,
@@ -153,21 +240,26 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update brand/client dengan penanganan logo yang tepat.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setLogoError("");
 
     try {
-      // ✅ Prepare payload dengan validasi tipe data
+      // Prepare payload dengan validasi tipe data
       const payload = {
         name: formData.name.trim(),
-        type: formData.type, // "PRODUCT" atau "CLIENT"
-        isActive: formData.isActive === true, // ✅ PASTIKAN BOOLEAN
-        sortOrder: Number(formData.sortOrder) || 0, // ✅ PASTIKAN NUMBER
+        type: formData.type,
+        isActive: formData.isActive === true,
+        sortOrder: Number(formData.sortOrder) || 0,
       };
 
-      // ✅ Handle logo
+      // Handle logo
       if (formData.logo instanceof File) {
         // New file upload
         payload.logo = formData.logo;
@@ -179,7 +271,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
         payload.logo = null;
       }
 
-      // ✅ Call service (signature yang benar: 1-2 params only)
+      
       let result;
       if (isEditing) {
         result = await brandService.update(item.id, payload);
@@ -272,6 +364,8 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
             required
             placeholder="Enter brand or client name"
             className="form-input"
+            aria-label="Brand or client name"
+            aria-required="true"
           />
         </div>
 
@@ -285,6 +379,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
               onChange={handleLogoChange}
               id="brand-logo-upload"
               className="image-input"
+              aria-label="Upload brand or client logo"
             />
             <label htmlFor="brand-logo-upload" className="image-label">
               {logoPreview ? "Change Logo" : "Choose Logo"}
@@ -293,7 +388,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
             {/* Logo Preview */}
             {logoPreview && (
               <div className="image-preview">
-                <img src={logoPreview} alt="Logo preview" />
+                <img src={logoPreview} alt="Logo preview" aria-label="Logo preview" />
                 <button
                   type="button"
                   className="remove-image-btn"
@@ -325,6 +420,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.type === "PRODUCT" ? "active" : ""}
               onClick={() => handleTypeChange("PRODUCT")}
+              aria-label="Set type to Product"
             >
               Product
             </button>
@@ -332,6 +428,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.type === "CLIENT" ? "active" : ""}
               onClick={() => handleTypeChange("CLIENT")}
+              aria-label="Set type to Client"
             >
               Client
             </button>
@@ -346,6 +443,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.isActive === true ? "active" : ""}
               onClick={() => handleStatusChange(true)}
+              aria-label="Set status to active"
             >
               Active
             </button>
@@ -353,6 +451,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.isActive === false ? "active" : ""}
               onClick={() => handleStatusChange(false)}
+              aria-label="Set status to inactive"
             >
               Inactive
             </button>
@@ -370,6 +469,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
             min="0"
             placeholder="0"
             className="form-input"
+            aria-label="Sort order for display"
           />
         </div>
 
@@ -380,6 +480,7 @@ const BrandsForm = ({ item = null, onClose, onSuccess }) => {
             className="btn-secondary"
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel form"
           >
             Cancel
           </button>

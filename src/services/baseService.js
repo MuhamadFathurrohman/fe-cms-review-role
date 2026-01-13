@@ -1,5 +1,32 @@
+/**
+ * @file baseService.js
+ * @description Kumpulan utilitas dasar yang digunakan di seluruh aplikasi.
+ * Menyediakan fungsi helper untuk:
+ * - Format tanggal & waktu
+ * - Format angka & persentase
+ * - Penentuan warna status
+ * - Validasi data
+ * - Manipulasi array
+ *
+ * Semua fungsi bersifat stateless dan reusable.
+ */
+
+/**
+ * Layanan utilitas dasar untuk operasi umum di frontend.
+ * @namespace baseService
+ */
 export const baseService = {
-  // Date formatting utilities
+  /**
+   * Memformat string tanggal ISO ke format DD/MM/YYYY.
+   * Digunakan untuk tampilan tanggal sederhana (tanpa waktu).
+   *
+   * @param {string | Date | null | undefined} dateStr - Input tanggal dalam bentuk string ISO, objek Date, atau nilai null/undefined
+   * @returns {string} Tanggal terformat sebagai "DD/MM/YYYY", atau string kosong jika input tidak valid
+   *
+   * @example
+   * baseService.formatDate("2025-01-13T10:00:00Z"); // "13/01/2025"
+   * baseService.formatDate(null); // ""
+   */
   formatDate: (dateStr) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -9,7 +36,16 @@ export const baseService = {
     return `${dd}/${mm}/${yyyy}`;
   },
 
-  // src/services/baseService.js
+  /**
+   * Memformat string tanggal ISO ke format lengkap: DD/MM/YYYY, HH:mm.
+   * Digunakan saat informasi waktu diperlukan.
+   *
+   * @param {string | Date | null | undefined} dateString - Input tanggal
+   * @returns {string} Tanggal dan waktu terformat, atau "N/A" jika input tidak valid
+   *
+   * @example
+   * baseService.formatDateTime("2025-01-13T14:30:00Z"); // "13/01/2025, 21:30" (sesuai zona lokal)
+   */
   formatDateTime: (dateString) => {
     if (!dateString) return "N/A";
 
@@ -23,6 +59,23 @@ export const baseService = {
     return `${day}/${month}/${year}, ${hours}:${minutes}`;
   },
 
+  /**
+   * Mengonversi timestamp menjadi representasi "time ago" dalam Bahasa Inggris,
+   * dengan fallback ke format absolut jika sudah lewat ≥7 jam.
+   *
+   * Aturan:
+   * - <2 menit → "Just now"
+   * - <60 menit → "X minutes ago"
+   * - <7 jam → "X hours ago"
+   * - ≥7 jam → format absolut (`formatDateTime`)
+   *
+   * @param {string | Date | null | undefined} date - Timestamp input
+   * @returns {string} Representasi waktu relatif atau absolut
+   *
+   * @example
+   * baseService.timeAgo("2026-01-13T10:00:00Z"); // "Just now" (jika sekarang 10:01)
+   * baseService.timeAgo("2026-01-13T03:00:00Z"); // "13/01/2026, 10:00" (jika sekarang 10:00 dan >7 jam)
+   */
   timeAgo: (date) => {
     if (!date) return "N/A";
     const now = new Date();
@@ -51,6 +104,18 @@ export const baseService = {
     return baseService.formatDateTime(date);
   },
 
+  /**
+   * Memformat angka menggunakan locale Indonesia (pemisah ribuan: titik).
+   * Mendukung opsi Intl.NumberFormat tambahan.
+   *
+   * @param {number | null | undefined} number - Angka yang akan diformat
+   * @param {Intl.NumberFormatOptions} [options={}] - Opsi tambahan untuk Intl.NumberFormat
+   * @returns {string} Angka terformat, atau "0" jika input null/undefined
+   *
+   * @example
+   * baseService.formatNumber(1500000); // "1.500.000"
+   * baseService.formatNumber(1234.56, { minimumFractionDigits: 2 }); // "1.234,56"
+   */
   formatNumber: (number, options = {}) => {
     if (number === null || number === undefined) return "0";
     return new Intl.NumberFormat("id-ID", {
@@ -59,12 +124,33 @@ export const baseService = {
     }).format(number);
   },
 
+  /**
+   * Menghitung persentase dari nilai terhadap total.
+   *
+   * @param {number} value - Nilai bagian
+   * @param {number} total - Nilai total
+   * @returns {number} Persentase bulat (0–100), atau 0 jika total tidak valid
+   *
+   * @example
+   * baseService.calculatePercentage(25, 100); // 25
+   * baseService.calculatePercentage(10, 0); // 0
+   */
   calculatePercentage: (value, total) => {
     if (!total || total === 0) return 0;
     return Math.round((value / total) * 100);
   },
 
-  // Status utilities
+  /**
+   * Menentukan kelas warna berdasarkan status string.
+   * Digunakan untuk badge/status indicator di UI.
+   *
+   * @param {string} status - Status dalam huruf besar (misal: "ACTIVE", "INACTIVE")
+   * @returns {"success"|"warning"|"error"|"default"} Kelas warna sesuai status
+   *
+   * @example
+   * baseService.getStatusColor("ACTIVE"); // "success"
+   * baseService.getStatusColor("UNKNOWN"); // "default"
+   */
   getStatusColor: (status) => {
     switch (status) {
       case "ACTIVE":
@@ -78,13 +164,34 @@ export const baseService = {
     }
   },
 
-  // Validation utilities
+  /**
+   * Memvalidasi format email menggunakan regex sederhana.
+   *
+   * @param {string} email - String email yang akan divalidasi
+   * @returns {boolean} `true` jika format valid, `false` jika tidak
+   *
+   * @example
+   * baseService.isValidEmail("user@example.com"); // true
+   * baseService.isValidEmail("invalid-email"); // false
+   */
   isValidEmail: (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   },
 
-  // Array utilities
+  /**
+   * Mengelompokkan array objek berdasarkan nilai properti tertentu.
+   *
+   * @template T
+   * @param {T[]} array - Array objek yang akan dikelompokkan
+   * @param {keyof T} key - Nama properti yang digunakan sebagai kunci pengelompokan
+   * @returns {{ [group: string]: T[] }} Objek dengan kunci grup dan nilai array item
+   *
+   * @example
+   * const users = [{ name: "A", role: "admin" }, { name: "B", role: "user" }];
+   * baseService.groupBy(users, "role");
+   * // { admin: [{ name: "A", role: "admin" }], user: [{ name: "B", role: "user" }] }
+   */
   groupBy: (array, key) => {
     if (!Array.isArray(array)) return {};
     return array.reduce((result, item) => {

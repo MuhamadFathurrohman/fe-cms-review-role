@@ -1,11 +1,48 @@
+/**
+ * @file usersService.js
+ * @description Layanan terpusat untuk mengelola operasi data pengguna.
+ * Menyediakan abstraksi di atas `dataService.users` dengan fitur tambahan:
+ * - Transformasi data untuk tampilan UI
+ * - Manajemen URL avatar lengkap
+ * - Validasi input dan penanganan file
+ * - Sinkronisasi data setelah operasi avatar
+ * 
+ * Mendukung dua mode operasi:
+ * - **Mode Admin**: Mengelola pengguna lain
+ * - **Mode Profil**: Mengelola profil sendiri
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 import { uploadService } from "./uploadService";
 
+/**
+ * Layanan pengguna terpusat.
+ * Mengelola semua operasi CRUD dan transformasi data pengguna.
+ * 
+ * @namespace usersService
+ */
 export const usersService = {
   // ===================================================================
   // AVATAR URL HELPER
   // ===================================================================
+  /**
+   * Menghasilkan URL lengkap untuk avatar pengguna.
+   * Mendeteksi apakah path sudah merupakan URL lengkap atau perlu digabungkan dengan base URL.
+   * 
+   * @param {string|null|undefined} avatarPath - Path avatar dari backend
+   * @returns {string|null} URL lengkap avatar atau null jika path tidak valid
+   * 
+   * @example
+   * // Path relatif
+   * usersService.getFullAvatarUrl("avatars/user123.jpg");
+   * // → "https://api.example.com/avatars/user123.jpg"
+   * 
+   * @example
+   * // URL lengkap
+   * usersService.getFullAvatarUrl("https://external.com/avatar.jpg");
+   * // → "https://external.com/avatar.jpg"
+   */
   getFullAvatarUrl: (avatarPath) => {
     if (!avatarPath) return null;
 
@@ -24,6 +61,17 @@ export const usersService = {
   // ===================================================================
   // PROCESS LIST - Transform user list dengan avatar URL
   // ===================================================================
+  /**
+   * Memproses daftar pengguna untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan URL avatar lengkap.
+   * 
+   * @param {Array<Object>} users - Daftar pengguna dari API
+   * @returns {Array<Object>} Daftar pengguna yang telah diproses dengan properti tambahan
+   * 
+   * @example
+   * const processedUsers = usersService.processList(rawUsers);
+   * // Setiap user memiliki: avatar, createdAtFormatted, statusColor, dll.
+   */
   processList: (users) => {
     return users.map((user) => ({
       ...user,
@@ -48,6 +96,17 @@ export const usersService = {
   // ===================================================================
   // PROCESS SINGLE USER - Transform single user dengan avatar URL
   // ===================================================================
+  /**
+   * Memproses data pengguna tunggal untuk ditampilkan di UI.
+   * Mempertahankan path avatar asli dan menambahkan URL lengkap terpisah.
+   * 
+   * @param {Object|null} user - Data pengguna dari API
+   * @returns {Object|null} Data pengguna yang telah diproses atau null jika input tidak valid
+   * 
+   * @example
+   * const processedUser = usersService.processSingleUser(rawUser);
+   * // User memiliki: avatar (path asli), avatarUrl (URL lengkap), roleName, dll.
+   */
   processSingleUser: (user) => {
     if (!user) return null;
 
@@ -74,8 +133,16 @@ export const usersService = {
   },
 
   // ===================================================================
-  // ✅ AVATAR: Upload dan Delete (BARU)
+  // AVATAR: Upload dan Delete
   // ===================================================================
+  /**
+   * Mengupload avatar untuk pengguna yang sedang login.
+   * Melakukan validasi file sebelum mengirim ke server.
+   * 
+   * @async
+   * @param {File} avatarFile - File gambar avatar
+   * @returns {{ success: boolean, message?: string }} Status operasi upload
+   */
   uploadAvatarSelf: async (avatarFile) => {
     try {
       const validation = uploadService.validateFile(avatarFile);
@@ -92,6 +159,12 @@ export const usersService = {
     }
   },
 
+  /**
+   * Menghapus avatar pengguna yang sedang login.
+   * 
+   * @async
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   deleteAvatarSelf: async () => {
     try {
       return await dataService.users.deleteAvatarSelf();
@@ -104,6 +177,15 @@ export const usersService = {
     }
   },
 
+  /**
+   * Mengupload avatar untuk pengguna lain berdasarkan ID.
+   * Melakukan validasi file sebelum mengirim ke server.
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna target
+   * @param {File} avatarFile - File gambar avatar
+   * @returns {{ success: boolean, message?: string }} Status operasi upload
+   */
   uploadAvatarById: async (id, avatarFile) => {
     try {
       const validation = uploadService.validateFile(avatarFile);
@@ -120,6 +202,13 @@ export const usersService = {
     }
   },
 
+  /**
+   * Menghapus avatar pengguna lain berdasarkan ID.
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna target
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   deleteAvatarById: async (id) => {
     try {
       return await dataService.users.deleteAvatarById(id);
@@ -133,8 +222,24 @@ export const usersService = {
   },
 
   // ===================================================================
-  // ✅ CREATE USER (Diperbarui: avatar di-handle terpisah)
+  // CREATE USER
   // ===================================================================
+  /**
+   * Membuat pengguna baru dengan dukungan upload avatar terpisah.
+   * Mengikuti pola:
+   * 1. Buat profil pengguna
+   * 2. Jika ada avatar, upload secara terpisah
+   * 3. Ambil data terbaru untuk memastikan sinkronisasi
+   * 
+   * @async
+   * @param {Object} userData - Data pengguna yang akan dibuat
+   * @param {File} [userData.avatar] - File avatar opsional
+   * @param {string} userData.name - Nama pengguna
+   * @param {string} userData.email - Email pengguna
+   * @param {string} userData.password - Kata sandi
+   * @param {number} userData.roleId - ID peran
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data pengguna yang dibuat
+   */
   create: async (userData) => {
     try {
       const { avatar, ...profileData } = userData;
@@ -183,8 +288,25 @@ export const usersService = {
   },
 
   // ===================================================================
-  // ✅ UPDATE USER (Diperbarui: avatar di-handle terpisah)
+  // UPDATE USER
   // ===================================================================
+  /**
+   * Memperbarui data pengguna dengan dukungan manajemen avatar fleksibel.
+   * Mendukung dua mode:
+   * - **Mode Profil**: Mengelola profil sendiri (menggunakan endpoint self)
+   * - **Mode Admin**: Mengelola pengguna lain (menggunakan endpoint by ID)
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna yang akan diperbarui
+   * @param {Object} userData - Data pembaruan
+   * @param {File} [userData.avatar] - File avatar baru (opsional)
+   * @param {boolean} [userData.isAvatarRemoved] - Flag untuk menghapus avatar
+   * @param {string} [userData.email] - Email baru (divalidasi)
+   * @param {string} [userData.password] - Kata sandi baru (minimal 6 karakter)
+   * @param {string} [userData.status] - Status baru (ACTIVE/INACTIVE/SUSPENDED)
+   * @param {boolean} [isProfileMode=false] - Apakah ini mode profil sendiri
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data pengguna yang diperbarui
+   */
   update: async (id, userData, isProfileMode = false) => {
     try {
       const { avatar, isAvatarRemoved, ...profileData } = userData;
@@ -210,7 +332,7 @@ export const usersService = {
       const result = await dataService.users.update(id, profileData);
       if (!result.success) return result;
 
-      // ✅ Handle avatar berdasarkan mode
+      // Handle avatar berdasarkan mode
       if (isAvatarRemoved) {
         if (isProfileMode) {
           await usersService.deleteAvatarSelf();
@@ -225,7 +347,7 @@ export const usersService = {
         }
       }
 
-      // ✅ Ambil data terbaru untuk memastikan avatar & profil sinkron
+      // Ambil data terbaru untuk memastikan avatar & profil sinkron
       const freshUser = await dataService.users.getById(id);
       if (freshUser.success) {
         result.data = usersService.processSingleUser(freshUser.data);
@@ -242,8 +364,15 @@ export const usersService = {
   },
 
   // ===================================================================
-  // GET CURRENT USER (Tidak berubah)
+  // GET CURRENT USER
   // ===================================================================
+  /**
+   * Mendapatkan data pengguna yang sedang login.
+   * Secara otomatis memproses data untuk tampilan UI.
+   * 
+   * @async
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data pengguna yang diproses
+   */
   getCurrentUser: async () => {
     try {
       const result = await dataService.users.getCurrentUser();
@@ -252,7 +381,7 @@ export const usersService = {
         return result;
       }
       const processedUser = usersService.processSingleUser(result.data);
-      return { success: true, data: processedUser };
+      return { success: true,  processedUser };
     } catch (error) {
       console.error("❌ usersService: Error fetching current user:", error);
       return {
@@ -265,6 +394,22 @@ export const usersService = {
   // ===================================================================
   // GET PAGINATED USERS
   // ===================================================================
+  /**
+   * Mendapatkan daftar pengguna dengan pagination dan pencarian.
+   * Secara otomatis memproses data untuk tampilan UI.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=8] - Jumlah pengguna per halaman
+   * @param {string} [search=""] - String pencarian (nama, email)
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar pengguna yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 8,
@@ -290,7 +435,7 @@ export const usersService = {
 
       return {
         success: true,
-        data: processedUsers,
+        data:processedUsers,
         pagination: result.pagination,
       };
     } catch (error) {
@@ -305,6 +450,13 @@ export const usersService = {
   // ===================================================================
   // SOFT DELETE USER
   // ===================================================================
+  /**
+   * Melakukan soft delete pengguna (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       const result = await dataService.users.softDelete(id);
@@ -321,6 +473,13 @@ export const usersService = {
   // ===================================================================
   // HARD DELETE USER
   // ===================================================================
+  /**
+   * Melakukan hard delete pengguna (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       const result = await dataService.users.hardDelete(id);
@@ -345,6 +504,14 @@ export const usersService = {
   // ===================================================================
   // GET USER BY ID
   // ===================================================================
+  /**
+   * Mendapatkan detail pengguna berdasarkan ID.
+   * Secara otomatis memproses data untuk tampilan UI.
+   * 
+   * @async
+   * @param {string|number} id - ID pengguna yang diminta
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data pengguna yang diproses
+   */
   getById: async (id) => {
     try {
       const result = await dataService.users.getById(id);
@@ -366,6 +533,13 @@ export const usersService = {
   // ===================================================================
   // GET TOTAL COUNT
   // ===================================================================
+  /**
+   * Mendapatkan jumlah total pengguna aktif.
+   * Digunakan untuk statistik dashboard.
+   * 
+   * @async
+   * @returns {{ success: boolean, total: number }} Respons dengan jumlah total pengguna
+   */
   getTotalCount: async () => {
     try {
       const result = await dataService.users.getAll({

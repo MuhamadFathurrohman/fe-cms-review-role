@@ -1,4 +1,22 @@
-// src/pages/Clients/Clients.jsx
+/**
+ * @file Clients.jsx
+ * @description Komponen halaman manajemen klien dari company profile.
+ * Menampilkan daftar inquiry klien yang masuk melalui form company profile,
+ * baik untuk permintaan katalog maupun kontak umum.
+ * 
+ * Menyediakan fitur lengkap:
+ * - Pencarian dan filter data
+ * - Pagination responsif
+ * - Operasi CRUD (Create, Read, Update, Delete)
+ * - Ekspor data berdasarkan periode
+ * - Penandaan status "replied"
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage client": Akses CRUD
+ * - Pengguna dengan izin "export client": Akses ekspor
+ */
+
 import React from "react";
 import {
   Users,
@@ -24,15 +42,21 @@ import ClientForm from "../components/Modals/Form/ClientForm";
 import AlertModal from "../components/Alerts/AlertModal";
 import "../sass/views/Clients/Clients.scss";
 
+/**
+ * Komponen halaman manajemen klien utama.
+ * Menampilkan tabel klien dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Clients = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // === Hook pencarian dengan debouncing dan pagination ===
   const {
     searchTerm,
     setSearchTerm,
-    data: clients,
+    data:clients,
     loading,
     error,
     currentPage,
@@ -41,13 +65,12 @@ const Clients = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       return await clientService.getPaginated(
         page,
         limit,
         search,
         {}, // filters
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
     },
     1,
@@ -56,13 +79,32 @@ const Clients = () => {
   );
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola klien.
+   * @type {boolean}
+   */
   const canManageClients =
     isSuper || canManage(currentUser?.permissions, "client");
+
+  /**
+   * Status apakah pengguna memiliki izin mengekspor data klien.
+   * @type {boolean}
+   */
   const canExportClients =
     isSuper || canExport(currentUser?.permissions, "client");
 
-  // ✅ TAMBAH: refreshWithPageValidation
+  // refreshWithPageValidation
+  /**
+   * Memperbarui data dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await clientService.getPaginated(
@@ -91,9 +133,13 @@ const Clients = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data klien secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Clients.jsx: Auto-refetch failed:", error);
@@ -103,10 +149,17 @@ const Clients = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Handlers ===
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Membuka modal ekspor data klien.
+   */
   const handleExport = () => {
     if (!canExportClients) return;
     openModal(
@@ -127,7 +180,10 @@ const Clients = () => {
     );
   };
 
-  // ✅ UPDATE: handleEdit dengan refreshWithPageValidation
+  /**
+   * Membuka modal edit klien.
+   * @param {string|number} id - ID klien yang akan diedit
+   */
   const handleEdit = (id) => {
     if (!canManageClients) return;
     const client = clients.find((c) => c.id === id);
@@ -153,7 +209,10 @@ const Clients = () => {
     );
   };
 
-  // UPDATE: handleDelete dengan refreshWithPageValidation
+  /**
+   * Membuka modal konfirmasi hapus klien.
+   * @param {Object} client - Data klien yang akan dihapus
+   */
   const handleDelete = (client) => {
     if (!canManageClients) return;
     openModal(
@@ -232,6 +291,9 @@ const Clients = () => {
     );
   };
 
+  /**
+   * Membuka modal tambah klien baru.
+   */
   const handleAddClient = () => {
     if (!canManageClients) return;
     openModal(
@@ -253,6 +315,11 @@ const Clients = () => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data klien.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -283,14 +350,21 @@ const Clients = () => {
     }
   };
 
+  /**
+   * Navigasi ke halaman berikutnya.
+   */
   const goToNextPage = () => {
     if (currentPage < totalPages) goToPage(currentPage + 1);
   };
 
+  /**
+   * Navigasi ke halaman sebelumnya.
+   */
   const goToPrevPage = () => {
     if (currentPage > 1) goToPage(currentPage - 1);
   };
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
   // === Render ===
@@ -323,13 +397,14 @@ const Clients = () => {
 
       <div className="search-container">
         <div className="search-wrapper">
-          <Search size={18} className="search-icon" />
+          <Search size={18} className="search-icon" aria-label="Search icon" />
           <input
             type="text"
             placeholder="Search by company, contact..."
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search clients"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -340,7 +415,7 @@ const Clients = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             <RefreshCw size={14} />
           </button>
         </div>
@@ -405,14 +480,14 @@ const Clients = () => {
                         <button
                           className="btn-edit"
                           onClick={() => handleEdit(client.id)}
-                          aria-label="Edit client"
+                          aria-label={`Edit client ${client.company}`}
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           className="btn-delete"
                           onClick={() => handleDelete(client)}
-                          aria-label="Delete client"
+                          aria-label={`Delete client ${client.company}`}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -440,6 +515,7 @@ const Clients = () => {
             }`}
             onClick={goToPrevPage}
             disabled={currentPage === 1}
+            aria-label="Previous page"
           >
             <ChevronLeft size={16} />
             <span>Prev</span>
@@ -458,6 +534,7 @@ const Clients = () => {
                     currentPage === page ? "active" : ""
                   }`}
                   onClick={() => goToPage(page)}
+                  aria-label={`Go to page ${page}`}
                 >
                   {page}
                 </button>
@@ -471,6 +548,7 @@ const Clients = () => {
             }`}
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
+            aria-label="Next page"
           >
             <span>Next</span>
             <ChevronRight size={16} />

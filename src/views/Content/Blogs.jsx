@@ -1,3 +1,20 @@
+/**
+ * @file Blogs.jsx
+ * @description Komponen halaman manajemen blog dengan dukungan multi-bahasa.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar blog dalam format grid
+ * - Membuat, mengedit, dan menghapus blog
+ * - Memfilter berdasarkan status (Published/Draft/All)
+ * - Pencarian berdasarkan judul, konten, atau excerpt
+ * - Preview blog dalam modal detail
+ * 
+ * Mendukung konten bilingual (English/Indonesian) dengan tampilan default dalam bahasa Inggris.
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage blog": Akses CRUD
+ * - Pengguna tanpa izin: Hanya bisa melihat (jika diizinkan oleh rute)
+ */
+
 import React, { useState, useMemo } from "react";
 import {
   Eye,
@@ -24,12 +41,30 @@ import SkeletonItem from "../../components/Loaders/SkeletonItem";
 import { canManage, isSuperAdmin } from "../../utils/permissions";
 import "../../sass/views/Blogs/Blogs.css";
 
+/**
+ * Komponen halaman manajemen blog utama.
+ * Menampilkan grid blog dengan fitur pencarian, filter, dan aksi CRUD.
+ *
+ * @component
+ */
 const Blogs = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /**
+   * Filter status blog yang aktif.
+   * @type {['all'|'published'|'draft', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [statusFilter, setStatusFilter] = useState("all");
+
+  /** @type {number} Jumlah item blog per halaman */
   const itemsPerPage = 10;
 
+  // fetchData: (page, limit, search, bypassCache)
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data blog.
+   * Mendukung filter status dan pencarian teks bebas.
+   */
   const {
     searchTerm,
     setSearchTerm,
@@ -41,7 +76,6 @@ const Blogs = () => {
     goToPage,
     refresh,
   } = useDebouncedSearch(
-    // ✅ fetchData signature: (page, limit, search, bypassCache)
     async (page, limit, search, bypassCache = false) => {
       const filters = {};
       if (statusFilter === "published") filters.isPublished = true;
@@ -53,7 +87,7 @@ const Blogs = () => {
         search,
         filters,
         "EN",
-        bypassCache // ✅ Parameter ke-6
+        bypassCache
       );
 
       return result;
@@ -61,10 +95,15 @@ const Blogs = () => {
     1,
     itemsPerPage,
     800,
-    [statusFilter] // ✅ Dependency
+    [statusFilter]
   );
 
-  // ✅ refreshWithPageValidation
+  // refreshWithPageValidation
+  /**
+   * Memperbarui data blog dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const filters = {};
@@ -77,7 +116,7 @@ const Blogs = () => {
         searchTerm,
         filters,
         "EN",
-        bypassCache // ✅ Pass bypassCache
+        bypassCache
       );
 
       if (result.success) {
@@ -85,7 +124,7 @@ const Blogs = () => {
         const targetPage = Math.min(currentPage, newTotalPages);
 
         if (targetPage === currentPage) {
-          refresh(bypassCache); // ✅ Pass bypassCache ke refresh
+          refresh(bypassCache);
         } else {
           goToPage(targetPage);
         }
@@ -98,9 +137,13 @@ const Blogs = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data blog secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Blogs.jsx: Auto-refetch failed:", error);
@@ -110,14 +153,27 @@ const Blogs = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola blog.
+   * @type {boolean}
+   */
   const canManageBlogs = isSuper || canManage(currentUser?.permissions, "blog");
 
   // Generate page numbers
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return generatePageNumbers(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
+  /**
+   * Membuka modal tambah blog baru.
+   */
   const handleAddBlog = () => {
     if (!canManageBlogs) return;
     openModal(
@@ -139,6 +195,10 @@ const Blogs = () => {
     );
   };
 
+  /**
+   * Membuka modal edit blog.
+   * @param {Object} item - Data blog yang akan diedit
+   */
   const handleEditBlog = async (item) => {
     if (!canManageBlogs) return;
 
@@ -198,6 +258,10 @@ const Blogs = () => {
     }
   };
 
+  /**
+   * Membuka modal preview blog.
+   * @param {Object} item - Data blog yang akan dilihat
+   */
   const handleViewBlog = async (item) => {
     try {
       const result = await blogService.getById(item.id, "EN");
@@ -240,6 +304,10 @@ const Blogs = () => {
     }
   };
 
+  /**
+   * Membuka modal konfirmasi hapus blog.
+   * @param {Object} item - Data blog yang akan dihapus
+   */
   const handleDeleteBlog = (item) => {
     if (!canManageBlogs) return;
     openModal(
@@ -315,7 +383,11 @@ const Blogs = () => {
     );
   };
 
-  // ✅ FIXED: Handle Status Filter
+  // Handle Status Filter
+  /**
+   * Handler perubahan filter status blog.
+   * @param {'all'|'published'|'draft'} status - Status filter yang dipilih
+   */
   const handleStatusFilter = (status) => {
     setStatusFilter(status);
     // Force refresh after state update
@@ -324,6 +396,11 @@ const Blogs = () => {
     }, 0);
   };
 
+  /**
+   * Merender pesan ketika tidak ada data blog.
+   * Menyesuaikan pesan berdasarkan konteks pencarian dan filter.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     // Jika ada search term
     if (searchTerm.trim()) {
@@ -417,13 +494,14 @@ const Blogs = () => {
 
       <div className="blogs-filters">
         <div className="search-wrapper">
-          <Search size={18} className="search-icon" />
+          <Search size={18} className="search-icon" aria-label="Search icon" />
           <input
             type="text"
             placeholder="Search by title, content, or excerpt..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            aria-label="Search blogs"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -437,18 +515,21 @@ const Blogs = () => {
               <button
                 className={statusFilter === "all" ? "active" : ""}
                 onClick={() => handleStatusFilter("all")}
+                aria-label="Show all blogs"
               >
                 All
               </button>
               <button
                 className={statusFilter === "published" ? "active" : ""}
                 onClick={() => handleStatusFilter("published")}
+                aria-label="Show published blogs only"
               >
                 Published
               </button>
               <button
                 className={statusFilter === "draft" ? "active" : ""}
                 onClick={() => handleStatusFilter("draft")}
+                aria-label="Show draft blogs only"
               >
                 Draft
               </button>
@@ -536,6 +617,7 @@ const Blogs = () => {
                         alt={item.title}
                         className="blog-image"
                         loading="lazy"
+                        aria-label={`Blog image for ${item.title}`}
                       />
                     ) : (
                       <div className="blog-placeholder">
@@ -553,6 +635,7 @@ const Blogs = () => {
                             e.stopPropagation();
                             handleViewBlog(item);
                           }}
+                          aria-label={`View blog ${item.title}`}
                         >
                           <Eye size={16} />
                         </button>
@@ -566,6 +649,7 @@ const Blogs = () => {
                                 e.stopPropagation();
                                 handleEditBlog(item);
                               }}
+                              aria-label={`Edit blog ${item.title}`}
                             >
                               <Edit2 size={16} />
                             </button>
@@ -576,6 +660,7 @@ const Blogs = () => {
                                 e.stopPropagation();
                                 handleDeleteBlog(item);
                               }}
+                              aria-label={`Delete blog ${item.title}`}
                             >
                               <Trash2 size={16} />
                             </button>
@@ -617,6 +702,7 @@ const Blogs = () => {
             }`}
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
+            aria-label="Previous page"
           >
             <ChevronLeft size={16} />
             <span>Prev</span>
@@ -635,6 +721,7 @@ const Blogs = () => {
                     currentPage === page ? "active" : ""
                   }`}
                   onClick={() => goToPage(page)}
+                  aria-label={`Go to page ${page}`}
                 >
                   {page}
                 </button>
@@ -648,6 +735,7 @@ const Blogs = () => {
             }`}
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
+            aria-label="Next page"
           >
             <span>Next</span>
             <ChevronRight size={16} />

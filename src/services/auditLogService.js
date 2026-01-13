@@ -1,8 +1,45 @@
-// services/auditLogService.js
+/**
+ * @file auditLogService.js
+ * @description Layanan terpusat untuk mengelola operasi data audit log.
+ * Menyediakan abstraksi di atas `dataService.auditLogs` dengan fitur tambahan:
+ * - Humanisasi tindakan dan nama tabel menjadi deskripsi yang mudah dibaca
+ * - Pemfilteran field sensitif (password, token, dll.)
+ * - Formatting nilai untuk tampilan UI yang konsisten
+ * - Deteksi khusus untuk entri sistem (website company profile)
+ * - Ringkasan perubahan antara nilai lama dan baru
+ * 
+ * Setiap entri audit log berisi informasi lengkap tentang:
+ * - Siapa yang melakukan tindakan (user atau sistem)
+ * - Apa yang dilakukan (CREATE, UPDATE, DELETE, dll.)
+ * - Pada tabel apa tindakan dilakukan
+ * - Nilai sebelum dan sesudah perubahan
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan audit log terpusat.
+ * Mengelola semua operasi terkait data audit log dan transformasi untuk tampilan UI.
+ * 
+ * @namespace auditLogService
+ */
 export const auditLogService = {
+  /**
+   * Mendapatkan daftar audit log dengan pagination dan pencarian.
+   * Mendukung pencarian teks bebas berdasarkan konten log.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=10] - Jumlah log per halaman
+   * @param {string} [search=""] - String pencarian (konten log)
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar log yang diproses dan metadata pagination
+   */
   getPaginated: async (page = 1, limit = 10, search = "") => {
     try {
       const params = { page, limit };
@@ -30,6 +67,13 @@ export const auditLogService = {
     }
   },
 
+  /**
+   * Memproses data log tunggal untuk ditampilkan di UI.
+   * Melakukan transformasi lengkap termasuk humanisasi dan formatting.
+   * 
+   * @param {Object} log - Data log dari API
+   * @returns {Object} Data log yang telah diproses dengan properti tambahan
+   */
   processSingle: (log) => {
     const oldValues =
       typeof log.oldValues === "string"
@@ -83,6 +127,13 @@ export const auditLogService = {
   },
 
   // BARU: Hapus prefix "is" dari key
+  /**
+   * Menghapus prefix "is" dari nama field boolean untuk humanisasi yang lebih baik.
+   * Contoh: "isActive" → "active", "isPublished" → "published"
+   * 
+   * @param {Object} values - Objek nilai yang akan diproses
+   * @returns {Object} Objek dengan nama field yang telah dibersihkan
+   */
   removeIsPrefix: (values) => {
     if (!values || typeof values !== "object") return values;
 
@@ -102,7 +153,13 @@ export const auditLogService = {
     return cleaned;
   },
 
-  // Filter out fields yang tidak ingin ditampilkan
+  /**
+   * Memfilter field yang tidak ingin ditampilkan di UI untuk alasan keamanan atau relevansi.
+   * Field yang difilter: password, token, secret, slug, SKU, dll.
+   * 
+   * @param {Object} values - Objek nilai yang akan difilter
+   * @returns {Object} Objek dengan field sensitif yang telah dihapus
+   */
   filterValues: (values) => {
     if (!values || typeof values !== "object") return {};
 
@@ -127,6 +184,16 @@ export const auditLogService = {
     return filtered;
   },
 
+  /**
+   * Menghasilkan deskripsi human-readable untuk tindakan audit log.
+   * Menggunakan template yang sesuai dengan jenis tindakan dan konteks.
+   * 
+   * @param {string} action - Jenis tindakan (CREATE, UPDATE, DELETE, dll.)
+   * @param {string} tableName - Nama tabel yang terkena dampak
+   * @param {Object} oldValues - Nilai sebelum perubahan
+   * @param {Object} newValues - Nilai setelah perubahan
+   * @returns {string} Deskripsi human-readable dari tindakan
+   */
   generateDescription: (action, tableName, oldValues, newValues) => {
     if (!action) return "Unknown action";
 
@@ -250,6 +317,14 @@ export const auditLogService = {
     }
   },
 
+  /**
+   * Mengurai tindakan audit log menjadi komponen dasar dan tabel target.
+   * Mendukung format tindakan seperti "CREATE_USER" atau "UPDATE_PRODUCT".
+   * 
+   * @param {string} action - Tindakan audit log mentah
+   * @param {string} fallbackTable - Nama tabel fallback jika tidak ditemukan dalam tindakan
+   * @returns {{ baseAction: string, targetTable: string|null }} Komponen tindakan yang diurai
+   */
   parseAction: (action, fallbackTable) => {
     if (!action) return { baseAction: "UNKNOWN", targetTable: null };
 
@@ -277,6 +352,13 @@ export const auditLogService = {
     };
   },
 
+  /**
+   * Mendapatkan identifier record untuk ditampilkan dalam deskripsi.
+   * Mencari field yang paling representatif seperti name, title, email, dll.
+   * 
+   * @param {Object} values - Nilai record yang akan diidentifikasi
+   * @returns {string|null} Identifier record atau null jika tidak ditemukan
+   */
   getRecordIdentifier: (values) => {
     if (!values || typeof values !== "object") return null;
 
@@ -299,6 +381,13 @@ export const auditLogService = {
     return null;
   },
 
+  /**
+   * Mengubah tindakan teknis menjadi format yang dapat dibaca manusia.
+   * Contoh: "CREATE_USER" → "Create User"
+   * 
+   * @param {string} action - Tindakan teknis mentah
+   * @returns {string} Tindakan yang telah dihumanisasi
+   */
   humanizeAction: (action) => {
     if (!action) return "Action";
 
@@ -310,6 +399,13 @@ export const auditLogService = {
       .join(" ");
   },
 
+  /**
+   * Memformat nilai objek untuk ditampilkan di UI dengan penanganan keamanan.
+   * Field sensitif seperti password akan ditampilkan sebagai "[Hidden]".
+   * 
+   * @param {Object} values - Objek nilai yang akan diformat
+   * @returns {Object} Objek dengan nilai yang telah diformat
+   */
   formatValues: (values) => {
     if (!values || typeof values !== "object") return {};
 
@@ -327,6 +423,13 @@ export const auditLogService = {
     return formatted;
   },
 
+  /**
+   * Memformat nilai tunggal untuk ditampilkan di UI.
+   * Menangani berbagai tipe data termasuk boolean, tanggal, array, dan objek.
+   * 
+   * @param {*} value - Nilai yang akan diformat
+   * @returns {string} Nilai yang telah diformat sebagai string
+   */
   formatValue: (value) => {
     if (value === null) return "(empty)";
     if (value === undefined) return "(none)";
@@ -361,6 +464,14 @@ export const auditLogService = {
     return value;
   },
 
+  /**
+   * Menghasilkan ringkasan perubahan antara nilai lama dan baru.
+   * Mengembalikan array objek yang berisi field yang berubah dan nilainya.
+   * 
+   * @param {Object} oldValues - Nilai sebelum perubahan
+   * @param {Object} newValues - Nilai setelah perubahan
+   * @returns {Array<{field: string, oldValue: string, newValue: string}>} Ringkasan perubahan
+   */
   getChangeSummary: (oldValues, newValues) => {
     if (!oldValues || !newValues) return [];
 
@@ -383,12 +494,26 @@ export const auditLogService = {
     return changes;
   },
 
+  /**
+   * Mengubah nama tabel teknis menjadi format yang dapat dibaca manusia.
+   * Contoh: "user" → "User", "product_catalog" → "Product Catalog"
+   * 
+   * @param {string} tableName - Nama tabel teknis
+   * @returns {string} Nama tabel yang telah dihumanisasi
+   */
   humanizeTableName: (tableName) => {
     if (!tableName) return "Record";
 
     return tableName.charAt(0).toUpperCase() + tableName.slice(1);
   },
 
+  /**
+   * Mengubah nama field teknis menjadi format yang dapat dibaca manusia.
+   * Mendukung mapping khusus dan humanisasi otomatis untuk field umum.
+   * 
+   * @param {string} fieldName - Nama field teknis
+   * @returns {string} Nama field yang telah dihumanisasi
+   */
   humanizeFieldName: (fieldName) => {
     if (!fieldName) return "Unknown";
 

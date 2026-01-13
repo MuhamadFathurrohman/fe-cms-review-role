@@ -1,4 +1,20 @@
-// src/views/AuditLog/AuditLog.jsx
+/**
+ * @file AuditLog.jsx
+ * @description Komponen halaman audit log sistem yang komprehensif.
+ * Menyediakan antarmuka untuk melihat semua aktivitas sistem yang terekam secara otomatis,
+ * termasuk:
+ * - Tindakan CRUD pada berbagai entitas (user, role, product, dll.)
+ * - Aktivitas login/logout pengguna
+ * - Operasi sistem seperti export, import, upload
+ * 
+ * Fitur utama:
+ * - Pencarian teks bebas berdasarkan user, tabel, atau deskripsi
+ * - Pagination untuk navigasi koleksi besar
+ * - Modal detail untuk melihat perubahan spesifik
+ * - Klasifikasi visual tindakan dengan badge warna
+ * - Humanisasi konten untuk keterbacaan yang lebih baik
+ */
+
 import React, { useRef } from "react";
 import {
   FileText,
@@ -17,11 +33,23 @@ import { generatePageNumbers } from "../utils/pagination";
 import { getActionBadgeClass, formatActionName } from "../utils/actionHelper";
 import "../sass/views/AuditLog/AuditLog.scss";
 
+/**
+ * Komponen halaman audit log utama.
+ * Menampilkan tabel aktivitas sistem dengan fitur pencarian dan pagination.
+ *
+ * @component
+ */
 const AuditLog = () => {
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input pencarian */
   const searchInputRef = useRef(null);
+
   const { openModal, closeModal } = useModalContext();
 
   // Fetch audit logs tanpa filter action
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data audit log.
+   * Mendukung pencarian teks bebas berdasarkan konten log.
+   */
   const {
     searchTerm,
     setSearchTerm,
@@ -41,14 +69,26 @@ const AuditLog = () => {
     800
   );
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data audit log secara otomatis.
+   */
   useAutoRefetch(() => {
     refresh(); // useDebouncedSearch sudah punya refresh function
   });
 
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Membuka modal detail audit log.
+   * @param {Object} log - Data log yang akan dilihat detailnya
+   */
   const handleViewDetails = (log) => {
     openModal(
       `audit-log-detail-${log.id}`,
@@ -64,6 +104,11 @@ const AuditLog = () => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data audit log.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -82,14 +127,21 @@ const AuditLog = () => {
     }
   };
 
+  /**
+   * Navigasi ke halaman berikutnya.
+   */
   const goToNextPage = () => {
     if (currentPage < totalPages) goToPage(currentPage + 1);
   };
 
+  /**
+   * Navigasi ke halaman sebelumnya.
+   */
   const goToPrevPage = () => {
     if (currentPage > 1) goToPage(currentPage - 1);
   };
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
   return (
@@ -103,7 +155,7 @@ const AuditLog = () => {
         </div>
       </div>
 
-      {/* ✅ Filter Container - Hanya Search */}
+      {/* Filter Container - Hanya Search */}
       <div className="filter-container">
         <div className="search-wrapper">
           <SearchIcon
@@ -111,6 +163,7 @@ const AuditLog = () => {
             stroke="currentColor"
             className="search-icon"
             onClick={() => searchInputRef.current?.focus()}
+            aria-label="Focus search input"
           />
           <input
             ref={searchInputRef}
@@ -119,6 +172,7 @@ const AuditLog = () => {
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search audit logs"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -129,7 +183,7 @@ const AuditLog = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             Retry
           </button>
         </div>
@@ -177,6 +231,7 @@ const AuditLog = () => {
                       className={`badge action ${getActionBadgeClass(
                         log.action
                       )}`}
+                      aria-label={`Action: ${formatActionName(log.action) || "Unknown"}`}
                     >
                       {formatActionName(log.action) || "—"}
                     </span>

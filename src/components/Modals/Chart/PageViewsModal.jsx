@@ -1,4 +1,19 @@
-// src/components/Modals/Chart/PageViewsModal.jsx
+/**
+ * @file PageViewsModal.jsx
+ * @description Komponen modal untuk menampilkan insight detail kunjungan halaman.
+ * Menyediakan dua tab utama:
+ * - **Top Pages**: Halaman dengan jumlah kunjungan tertinggi
+ * - **Trend**: Tren harian total kunjungan halaman
+ * 
+ * Menggunakan Recharts untuk visualisasi data dengan:
+ * - Tooltip kustom yang informatif
+ * - Responsivitas untuk mobile/desktop
+ * - Penanganan data kosong yang elegan
+ * 
+ * Fitur performance (durasi sesi per halaman) saat ini dikomentari
+ * karena keterbatasan data dari endpoint /analytics.
+ */
+
 import React, { useState, useEffect } from "react";
 import { Eye, TrendingUp, FileText } from "lucide-react";
 import { analyticsService } from "../../../services/analyticsService";
@@ -16,12 +31,47 @@ import {
 } from "recharts";
 import "../../../sass/components/Modals/PageViewsModal/PageViewsModal.scss";
 
+/**
+ * Props untuk komponen PageViewsModal.
+ * @typedef {Object} PageViewsModalProps
+ * @property {string} startDate - Tanggal mulai filter (YYYY-MM-DD)
+ * @property {string} endDate - Tanggal akhir filter (YYYY-MM-DD)
+ * @property {function(): void} onClose - Handler saat modal ditutup
+ */
+
+/**
+ * Komponen modal insight kunjungan halaman.
+ * Menampilkan visualisasi data analitik kunjungan halaman dalam format yang mudah dipahami.
+ *
+ * @component
+ * @param {PageViewsModalProps} props - Props komponen
+ */
 const PageViewsModal = ({ startDate, endDate, onClose }) => {
+  /**
+   * Tab aktif di modal insight kunjungan halaman.
+   * @type {['topPages'|'trend', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activeTab, setActiveTab] = useState("topPages");
+
+  /**
+   * Status loading saat mengambil data insight.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Data insight kunjungan halaman dari service.
+   * @type {Object|null}
+   */
   const [data, setData] = useState(null);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
 
+  /** @type {string} Rentang tanggal terformat untuk ditampilkan di UI */
   const formattedRange =
     startDate && endDate
       ? `${baseService.formatDate(startDate)} – ${baseService.formatDate(
@@ -29,6 +79,7 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
         )}`
       : "";
 
+  // Fetch data insight kunjungan halaman
   useEffect(() => {
     const fetchData = async () => {
       if (!startDate || !endDate) {
@@ -62,6 +113,15 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
   }, [startDate, endDate]);
 
   // === Custom Tooltips ===
+  /**
+   * Tooltip kustom untuk chart bar top pages.
+   * Menampilkan URL halaman, jumlah kunjungan, dan persentase.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomTopPagesTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
@@ -80,6 +140,16 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
+  /**
+   * Tooltip kustom untuk chart garis tren kunjungan.
+   * Menampilkan tanggal dan jumlah kunjungan harian.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @param {string} props.label - Label sumbu X (tanggal)
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomTrendTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -123,12 +193,26 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
   };
   */
 
+  /**
+   * Memotong teks label chart agar tidak terlalu panjang.
+   * 
+   * @param {string} text - Teks yang akan dipotong
+   * @param {number} [max=18] - Jumlah karakter maksimum sebelum dipotong
+   * @returns {string} Teks yang telah dipotong dengan ellipsis jika perlu
+   */
   const truncateLabel = (text, max = 18) => {
     if (!text) return "";
     return text.length > max ? text.slice(0, max) + "…" : text;
   };
 
   // === Pesan no-data per tab ===
+  /**
+   * Merender pesan ketika tidak ada data untuk tab tertentu.
+   * Menyesuaikan ikon dan pesan berdasarkan jenis tab.
+   * 
+   * @param {'topPages'|'trend'} tab - Jenis tab yang tidak memiliki data
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = (tab) => {
     const messages = {
       topPages: {
@@ -141,11 +225,6 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
         title: "No Trend Data",
         description: "Aggregated page views trend is not yet available.",
       },
-      // performance: {
-      //   icon: <Eye size={48} />,
-      //   title: "No Performance Data",
-      //   description: "No performance data available for this period.",
-      // },
     };
 
     const msg = messages[tab];
@@ -167,25 +246,17 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeTab === "trend" ? "active" : ""}
             onClick={() => setActiveTab("trend")}
+            aria-label="Show page views trend chart"
           >
             <TrendingUp size={16} /> Trend
           </button>
           <button
             className={activeTab === "topPages" ? "active" : ""}
             onClick={() => setActiveTab("topPages")}
+            aria-label="Show top pages chart"
           >
             <FileText size={16} /> Top Pages
           </button>
-
-          {/* === PERFORMANCE TAB — DIKOMENTARI === */}
-          {/* 
-          <button
-            className={activeTab === "performance" ? "active" : ""}
-            onClick={() => setActiveTab("performance")}
-          >
-            <Eye size={16} /> Performance
-          </button>
-          */}
         </div>
 
         <div className="pageviews-date-range-label">{formattedRange}</div>
@@ -388,142 +459,6 @@ const PageViewsModal = ({ startDate, endDate, onClose }) => {
                 )}
               </div>
             )}
-
-            {/* === TAB: PERFORMANCE — DIKOMENTARI === */}
-            {/*
-            {activeTab === "performance" && (
-              <div className="pageviews-chart-section">
-                <div className="pageviews-chart-header">
-                  <h3 className="pageviews-chart-title">Content Performance</h3>
-                  <p className="pageviews-chart-description">
-                    Pages with the longest average session duration.
-                  </p>
-                </div>
-
-                {data?.performanceData?.length ? (
-                  <>
-                    <div className="pageviews-bar-chart-wrapper">
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart
-                          data={data.performanceData.slice(0, 7)}
-                          margin={{ top: 20, right: 20, left: 20, bottom: 40 }}
-                        >
-                          <CartesianGrid
-                            strokeDasharray="3 3"
-                            stroke="#e5e7eb"
-                          />
-                          <XAxis
-                            dataKey="path"
-                            stroke="#6b7280"
-                            tick={{ fontSize: 11 }}
-                            angle={-25}
-                            textAnchor="end"
-                            height={60}
-                            interval={0}
-                            tickFormatter={(v) => truncateLabel(v, 13)}
-                          />
-                          <YAxis
-                            stroke="#6b7280"
-                            tick={{ fontSize: 12 }}
-                            domain={[0, "dataMax * 1.1"]}
-                            tickFormatter={(v) => `${v}s`}
-                          />
-                          <RechartsTooltip
-                            content={<CustomPerformanceTooltip />}
-                          />
-                          <Bar
-                            dataKey="avgDuration"
-                            fill="#10b981"
-                            radius={[4, 4, 0, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="pageviews-table-container pageviews-table-container--desktop">
-                      <h4 className="pageviews-table-title">
-                        Top Engaging Pages
-                      </h4>
-                      <table className="pageviews-table">
-                        <thead>
-                          <tr>
-                            <th>Page</th>
-                            <th>Views</th>
-                            <th>Avg. Duration</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.performanceData.map((item, index) => (
-                            <tr key={index}>
-                              <td>
-                                <div className="pageviews-page-title">
-                                  {item.title}
-                                </div>
-                                <div className="pageviews-page-url">
-                                  {item.path}
-                                </div>
-                              </td>
-                              <td>{item.views.toLocaleString()}</td>
-                              <td>{formatDuration(item.avgDuration)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="pageviews-table-container pageviews-table-container--mobile">
-                      <h4 className="pageviews-table-title">
-                        Top Engaging Pages
-                      </h4>
-                      <div className="pageviews-mobile-table">
-                        {data.performanceData.map((item, index) => (
-                          <div
-                            key={index}
-                            className="pageviews-mobile-table-row"
-                          >
-                            <div className="pageviews-mobile-table-cell">
-                              <span className="pageviews-mobile-table-label">
-                                Page Title
-                              </span>
-                              <span className="pageviews-mobile-table-value">
-                                {item.title}
-                              </span>
-                            </div>
-                            <div className="pageviews-mobile-table-cell">
-                              <span className="pageviews-mobile-table-label">
-                                Page URL
-                              </span>
-                              <span className="pageviews-mobile-table-value">
-                                {item.path}
-                              </span>
-                            </div>
-                            <div className="pageviews-mobile-table-cell">
-                              <span className="pageviews-mobile-table-label">
-                                Views
-                              </span>
-                              <span className="pageviews-mobile-table-value">
-                                {item.views.toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="pageviews-mobile-table-cell">
-                              <span className="pageviews-mobile-table-label">
-                                Avg. Duration
-                              </span>
-                              <span className="pageviews-mobile-table-value">
-                                {formatDuration(item.avgDuration)}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  renderNoDataMessage("performance")
-                )}
-              </div>
-            )}
-            */}
           </>
         )}
       </div>

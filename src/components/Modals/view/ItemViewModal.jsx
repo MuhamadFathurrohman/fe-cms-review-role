@@ -1,3 +1,16 @@
+/**
+ * @file ItemViewModal.jsx
+ * @description Komponen modal untuk menampilkan preview lengkap produk/item dalam format yang ramah pengguna.
+ * Menyediakan tampilan readonly dari konten produk dengan:
+ * - Dukungan multi-bahasa (English/Indonesian)
+ * - Galeri gambar interaktif dengan navigasi dan thumbnail
+ * - Tampilan metadata (status, tanggal, sort order)
+ * - Konten terstruktur (overview, deskripsi, fitur, spesifikasi)
+ * 
+ * Dirancang untuk memberikan pengalaman melihat detail produk yang optimal
+ * sebelum atau setelah publikasi.
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   ChevronLeft,
@@ -12,11 +25,48 @@ import { itemService } from "../../../services/itemService";
 import SkeletonItem from "../../Loaders/SkeletonItem";
 import "../../../sass/components/Modals/ItemViewModal/ItemViewModal.css";
 
+/**
+ * Props untuk komponen ItemViewModal.
+ * @typedef {Object} ItemViewModalProps
+ * @property {string|number} itemId - ID produk yang akan ditampilkan
+ */
+
+/**
+ * Komponen modal preview produk.
+ * Menampilkan konten produk dalam format yang siap baca dengan dukungan bilingual.
+ *
+ * @component
+ * @param {ItemViewModalProps} props - Props komponen
+ */
 const ItemViewModal = ({ itemId }) => {
+  /**
+   * Data produk yang sedang ditampilkan.
+   * @type {Object|null}
+   */
   const [item, setItem] = useState(null);
+
+  /**
+   * Status loading saat mengambil data produk.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {string|null}
+   */
   const [error, setError] = useState(null);
+
+  /**
+   * Indeks gambar yang sedang aktif di galeri.
+   * @type {[number, React.Dispatch<React.SetStateAction<number>>]}
+   */
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  /**
+   * Bahasa yang sedang aktif untuk ditampilkan.
+   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
+   */
   const [currentLanguage, setCurrentLanguage] = useState("EN");
 
   // Fetch item data
@@ -26,7 +76,7 @@ const ItemViewModal = ({ itemId }) => {
         setLoading(true);
         setError(null);
 
-        // ✅ Pass language parameter
+        // Pass language parameter
         const result = await itemService.getById(itemId, currentLanguage);
 
         if (result.success) {
@@ -45,18 +95,31 @@ const ItemViewModal = ({ itemId }) => {
     fetchItem();
   }, [itemId, currentLanguage]);
 
+  /** @type {string[]} Daftar URL gambar produk */
   const images = item?.images || [];
+
+  /** @type {boolean} Status apakah produk memiliki multiple gambar */
   const hasMultipleImages = images.length > 1;
 
+  /**
+   * Navigasi ke gambar berikutnya di galeri.
+   */
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
+  /**
+   * Navigasi ke gambar sebelumnya di galeri.
+   */
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  // ✅ Handle language change
+  // Handle language change
+  /**
+   * Handler perubahan bahasa tampilan.
+   * @param {'EN'|'ID'} lang - Bahasa yang dipilih
+   */
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
   };
@@ -142,7 +205,7 @@ const ItemViewModal = ({ itemId }) => {
     return (
       <div className="item-view-content">
         <div className="view-error">
-          <XCircle size={64} />
+          <XCircle size={64} aria-hidden="true" />
           <h3>Failed to Load Item</h3>
           <p>{error}</p>
         </div>
@@ -163,21 +226,23 @@ const ItemViewModal = ({ itemId }) => {
                   src={images[currentImageIndex]}
                   alt={`${item.name} - ${currentImageIndex + 1}`}
                   className="gallery-image"
+                  loading="lazy"
+                  aria-label={`Product image ${currentImageIndex + 1} of ${images.length}`}
                 />
 
                 {hasMultipleImages && (
                   <>
-                    <button className="gallery-nav prev" onClick={prevImage}>
+                    <button className="gallery-nav prev" onClick={prevImage} aria-label="Previous image">
                       <ChevronLeft size={24} />
                     </button>
-                    <button className="gallery-nav next" onClick={nextImage}>
+                    <button className="gallery-nav next" onClick={nextImage} aria-label="Next image">
                       <ChevronRight size={24} />
                     </button>
                   </>
                 )}
 
                 {hasMultipleImages && (
-                  <div className="image-counter">
+                  <div className="image-counter" aria-live="polite">
                     {currentImageIndex + 1} / {images.length}
                   </div>
                 )}
@@ -192,8 +257,16 @@ const ItemViewModal = ({ itemId }) => {
                         index === currentImageIndex ? "active" : ""
                       }`}
                       onClick={() => setCurrentImageIndex(index)}
+                      aria-label={`Go to image ${index + 1}`}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setCurrentImageIndex(index);
+                        }
+                      }}
                     >
-                      <img src={img} alt={`Thumbnail ${index + 1}`} />
+                      <img src={img} alt={`Thumbnail ${index + 1}`} loading="lazy" />
                     </div>
                   ))}
                 </div>
@@ -201,7 +274,7 @@ const ItemViewModal = ({ itemId }) => {
             </>
           ) : (
             <div className="no-image-placeholder">
-              <Package size={64} />
+              <Package size={64} aria-hidden="true" />
               <p>No Image Available</p>
             </div>
           )}
@@ -210,18 +283,20 @@ const ItemViewModal = ({ itemId }) => {
 
       {/* Right Side - Product Details */}
       <div className="view-right">
-        {/* ✅ Language Switcher with Icon */}
+        {/* Language Switcher with Icon */}
         <div className="view-language-switcher">
-          <Globe size={16} />
+          <Globe size={16} aria-hidden="true" />
           <button
             className={`lang-btn ${currentLanguage === "EN" ? "active" : ""}`}
             onClick={() => handleLanguageChange("EN")}
+            aria-label="Switch to English"
           >
             EN
           </button>
           <button
             className={`lang-btn ${currentLanguage === "ID" ? "active" : ""}`}
             onClick={() => handleLanguageChange("ID")}
+            aria-label="Switch to Indonesian"
           >
             ID
           </button>
@@ -234,19 +309,20 @@ const ItemViewModal = ({ itemId }) => {
               className={`status-badge ${
                 item.isActive ? "active" : "inactive"
               }`}
+              aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
             >
               {item.isActive ? (
                 <>
-                  <CheckCircle size={14} /> Active
+                  <CheckCircle size={14} aria-hidden="true" /> Active
                 </>
               ) : (
                 <>
-                  <XCircle size={14} /> Inactive
+                  <XCircle size={14} aria-hidden="true" /> Inactive
                 </>
               )}
             </span>
             <span className="date-info">
-              <Calendar size={14} />
+              <Calendar size={14} aria-hidden="true" />
               {item.createdAtFormatted}
             </span>
           </div>
@@ -290,7 +366,7 @@ const ItemViewModal = ({ itemId }) => {
               <ul className="features-list">
                 {item.features.map((feature, index) => (
                   <li key={index}>
-                    <CheckCircle size={16} className="feature-icon" />
+                    <CheckCircle size={16} className="feature-icon" aria-hidden="true" />
                     <span>{feature}</span>
                   </li>
                 ))}

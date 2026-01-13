@@ -1,9 +1,39 @@
-// src/services/categoriesService.js
+/**
+ * @file categoriesService.js
+ * @description Layanan terpusat untuk mengelola operasi data kategori produk.
+ * Menyediakan abstraksi di atas `dataService.categories` dengan fitur tambahan:
+ * - Transformasi data untuk tampilan UI
+ * - Formatting tanggal yang konsisten
+ * - Dukungan pagination dengan filter
+ * - Validasi input dan penanganan error
+ * 
+ * Setiap kategori produk berisi informasi dasar:
+ * - Nama kategori (wajib)
+ * - Deskripsi (opsional)
+ * - Status aktif/non-aktif
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan kategori terpusat.
+ * Mengelola semua operasi CRUD dan transformasi terkait data kategori produk.
+ * 
+ * @namespace categoriesService
+ */
 export const categoriesService = {
-  // Process list of categories, adding formatted dates
+  /**
+   * Memproses daftar kategori untuk ditampilkan di UI.
+   * Menambahkan properti tanggal yang diformat.
+   * 
+   * @param {Array<Object>} categories - Daftar kategori dari API
+   * @returns {Array<Object>} Daftar kategori yang telah diproses dengan properti tambahan
+   * 
+   * @example
+   * const processedCategories = categoriesService.processList(rawCategories);
+   * // Setiap kategori memiliki: createdAtFormatted, updatedAtFormatted
+   */
   processList: (categories) => {
     return categories.map((category) => ({
       ...category,
@@ -14,7 +44,17 @@ export const categoriesService = {
     }));
   },
 
-  // Process single category (optional, bisa digunakan di getById)
+  /**
+   * Memproses data kategori tunggal untuk ditampilkan di UI.
+   * Menambahkan properti tanggal yang diformat.
+   * 
+   * @param {Object} category - Data kategori dari API
+   * @returns {Object} Data kategori yang telah diproses dengan properti tambahan
+   * 
+   * @example
+   * const processedCategory = categoriesService.processSingle(rawCategory);
+   * // Kategori memiliki: createdAtFormatted, updatedAtFormatted
+   */
   processSingle: (category) => {
     return {
       ...category,
@@ -25,6 +65,17 @@ export const categoriesService = {
     };
   },
 
+  /**
+   * Mendapatkan semua kategori tanpa pagination.
+   * Digunakan untuk dropdown seleksi atau komponen yang membutuhkan data lengkap.
+   * 
+   * @async
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   message?: string
+   * }} Respons dengan daftar kategori yang diproses
+   */
   getAll: async () => {
     try {
       const result = await dataService.categories.getAll();
@@ -41,6 +92,18 @@ export const categoriesService = {
     }
   },
 
+  /**
+   * Mendapatkan detail kategori berdasarkan ID.
+   * Secara otomatis memproses formatting tanggal.
+   * 
+   * @async
+   * @param {string|number} id - ID kategori yang diminta
+   * @returns {{
+   *   success: boolean,
+   *   data?: Object,
+   *   message?: string
+   * }} Respons dengan data kategori yang diproses
+   */
   getById: async (id) => {
     try {
       const result = await dataService.categories.getById(id);
@@ -59,7 +122,25 @@ export const categoriesService = {
     }
   },
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // parameter bypassCache
+  /**
+   * Mendapatkan daftar kategori dengan pagination, pencarian, dan filter.
+   * Mendukung filter berdasarkan status aktif dan pencarian teks bebas.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=10] - Jumlah kategori per halaman
+   * @param {string} [search=""] - String pencarian (nama kategori)
+   * @param {Object} [filters={}] - Filter tambahan
+   * @param {boolean} [filters.isActive] - Filter berdasarkan status aktif
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar kategori yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 10,
@@ -105,6 +186,17 @@ export const categoriesService = {
     }
   },
 
+  /**
+   * Membuat kategori baru.
+   * Melakukan validasi dasar dan memproses data sebelum dikirim ke backend.
+   * 
+   * @async
+   * @param {Object} categoryData - Data kategori yang akan dibuat
+   * @param {string} categoryData.name - Nama kategori (wajib)
+   * @param {string} [categoryData.description] - Deskripsi kategori (opsional)
+   * @param {boolean} categoryData.isActive - Status aktif kategori
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data kategori yang dibuat
+   */
   create: async (categoryData) => {
     try {
       const newCategory = {
@@ -129,6 +221,18 @@ export const categoriesService = {
     }
   },
 
+  /**
+   * Memperbarui kategori yang sudah ada.
+   * Melakukan validasi dasar dan memproses data sebelum dikirim ke backend.
+   * 
+   * @async
+   * @param {string|number} id - ID kategori yang akan diperbarui
+   * @param {Object} categoryData - Data pembaruan
+   * @param {string} categoryData.name - Nama kategori baru
+   * @param {string} [categoryData.description] - Deskripsi kategori baru
+   * @param {boolean} categoryData.isActive - Status aktif baru
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data kategori yang diperbarui
+   */
   update: async (id, categoryData) => {
     try {
       const updateData = {
@@ -153,7 +257,13 @@ export const categoriesService = {
     }
   },
 
-  // Soft delete
+  /**
+   * Melakukan soft delete kategori (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID kategori yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       const result = await dataService.categories.softDelete(id);
@@ -174,6 +284,13 @@ export const categoriesService = {
     }
   },
 
+  /**
+   * Melakukan hard delete kategori (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID kategori yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       const result = await dataService.categories.hardDelete(id);

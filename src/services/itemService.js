@@ -1,9 +1,47 @@
-// src/services/itemService.js
+/**
+ * @file itemService.js
+ * @description Layanan terpusat untuk mengelola operasi data produk/item.
+ * Menyediakan abstraksi di atas `dataService.products` dengan fitur tambahan:
+ * - Dukungan terjemahan bilingual (English/Indonesian)
+ * - Transformasi URL gambar lengkap
+ * - Validasi input bilingual yang ketat
+ * - Normalisasi data dari berbagai format (CMS vs backend)
+ * - Formatting tanggal untuk tampilan UI
+ * 
+ * Setiap entri produk mendukung konten dalam dua bahasa dengan struktur:
+ * - English (wajib): Deskripsi pendek/panjang, spesifikasi, fitur
+ * - Indonesian (opsional): Harus lengkap jika disediakan
+ * - Gambar produk (array)
+ * - Metadata SEO bilingual
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan produk terpusat.
+ * Mengelola semua operasi CRUD dan transformasi terkait data produk.
+ * 
+ * @namespace itemService
+ */
 export const itemService = {
-  // Helper untuk generate URL lengkap
+  /**
+   * Menghasilkan URL lengkap untuk gambar produk.
+   * Mendeteksi apakah path sudah merupakan URL lengkap atau perlu digabungkan dengan base URL.
+   * 
+   * @param {string|null|undefined} imagePath - Path gambar dari backend
+   * @returns {string|null} URL lengkap gambar atau null jika path tidak valid
+   * 
+   * @example
+   * // Path relatif
+   * itemService._getFullImageUrl("products/image123.jpg");
+   * // → "https://api.example.com/products/image123.jpg"
+   * 
+   * @example
+   * // URL lengkap
+   * itemService._getFullImageUrl("https://external.com/image.jpg");
+   * // → "https://external.com/image.jpg"
+   */
   _getFullImageUrl: (imagePath) => {
     if (!imagePath) return null;
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
@@ -16,6 +54,13 @@ export const itemService = {
     return `${apiBaseUrl}${cleanPath}`;
   },
 
+  /**
+   * Menormalisasi data terjemahan ke format backend yang konsisten.
+   * Mendukung konversi dari format CMS (flatten) ke format backend (array).
+   * 
+   * @param {Object} data - Data produk mentah
+   * @returns {Array<{language: string, ...}>} Array terjemahan dalam format backend
+   */
   normalizeTranslations: (data) => {
     // Jika sudah dalam backend format (array translations)
     if (Array.isArray(data.translations)) {
@@ -50,7 +95,19 @@ export const itemService = {
   // ==================== VALIDATION ====================
 
   /**
-   * Validate product data before create/update
+   * Memvalidasi data produk sebelum operasi create/update.
+   * Menerapkan aturan bilingual yang ketat:
+   * - English selalu wajib (deskripsi pendek dan panjang)
+   * - Indonesian opsional tapi harus lengkap jika disediakan
+   * - Gambar wajib hanya saat create
+   * 
+   * @param {Array<{language: string, shortDescription: string, longDescription: string}>} translations - Daftar terjemahan
+   * @param {boolean} [isUpdate=false] - Apakah ini operasi update
+   * @param {boolean} [hasImage=false] - Apakah ada gambar yang disediakan
+   * @returns {{
+   *   isValid: boolean,
+   *   errors: string[]
+   * }} Hasil validasi dengan daftar error jika tidak valid
    */
   validateItemData: (translations, isUpdate = false, hasImage = false) => {
     const errors = [];
@@ -94,6 +151,15 @@ export const itemService = {
 
   // ==================== CREATE & UPDATE (via dataService) ====================
 
+  /**
+   * Membuat entri produk baru dengan dukungan multi-bahasa.
+   * Melakukan validasi ketat sesuai aturan bilingual.
+   * 
+   * @async
+   * @param {Object} productData - Data produk yang akan dibuat
+   * @param {string|number} currentUserId - ID pengguna yang membuat
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data produk yang dibuat
+   */
   create: async (productData, currentUserId) => {
     try {
       if (!currentUserId) {
@@ -123,6 +189,15 @@ export const itemService = {
     }
   },
 
+  /**
+   * Memperbarui entri produk yang sudah ada dengan dukungan multi-bahasa.
+   * Melakukan validasi ketat sesuai aturan bilingual.
+   * 
+   * @async
+   * @param {string|number} id - ID produk yang akan diperbarui
+   * @param {Object} productData - Data pembaruan
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data produk yang diperbarui
+   */
   update: async (id, productData) => {
     try {
       if (!id) {
@@ -158,6 +233,18 @@ export const itemService = {
 
   // ==================== READ & DELETE (via dataService) ====================
 
+  /**
+   * Mendapatkan semua produk tanpa pagination.
+   * Digunakan untuk dropdown seleksi atau komponen yang membutuhkan data lengkap.
+   * 
+   * @async
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa untuk ditampilkan
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   message?: string
+   * }} Respons dengan daftar produk yang diproses
+   */
   getAll: async (language = "EN") => {
     try {
       const result = await dataService.products.getAll();
@@ -168,7 +255,7 @@ export const itemService = {
       const processedItems = itemService.processList(result.data, language);
       return {
         success: true,
-        processedItems,
+         processedItems,
       };
     } catch (error) {
       console.error("Error in itemService.getAll:", error);
@@ -179,6 +266,20 @@ export const itemService = {
     }
   },
 
+  /**
+   * Mendapatkan detail produk berdasarkan ID dengan dukungan multi-bahasa.
+   * Menyediakan fallback ke English jika bahasa yang diminta tidak tersedia.
+   * Mengembalikan struktur data yang dioptimalkan untuk form edit.
+   * 
+   * @async
+   * @param {string|number} id - ID produk yang diminta
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa utama untuk ditampilkan
+   * @returns {{
+   *   success: boolean,
+   *   data?: Object,
+   *   message?: string
+   * }} Respons dengan data produk yang diproses
+   */
   getById: async (id, language = "EN") => {
     try {
       const result = await dataService.products.getById(id);
@@ -279,6 +380,13 @@ export const itemService = {
     }
   },
 
+  /**
+   * Melakukan soft delete produk (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID produk yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       const result = await dataService.products.softDelete(id);
@@ -298,6 +406,13 @@ export const itemService = {
     }
   },
 
+  /**
+   * Melakukan hard delete produk (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID produk yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       const result = await dataService.products.hardDelete(id);
@@ -320,13 +435,33 @@ export const itemService = {
 
   // ==================== PAGINATION & FILTERS ====================
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // parameter bypassCache
+  /**
+   * Mendapatkan daftar produk dengan pagination, pencarian, dan filter.
+   * Mendukung filter berdasarkan brand, kategori, dan status aktif.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=8] - Jumlah produk per halaman
+   * @param {string} [search=""] - String pencarian (nama produk)
+   * @param {Object} [filters={}] - Filter tambahan
+   * @param {string} [filters.brandId] - Filter berdasarkan ID brand
+   * @param {string} [filters.categoryId] - Filter berdasarkan ID kategori
+   * @param {boolean} [filters.isActive] - Filter berdasarkan status aktif
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar produk yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 8,
     search = "",
     filters = {},
-    bypassCache = false // ← Tambah parameter
+    bypassCache = false
   ) => {
     try {
       const params = {
@@ -334,7 +469,7 @@ export const itemService = {
         limit,
         search,
         deleted: "false",
-        bypassCache, // ← Pass ke dataService
+        bypassCache,
       };
 
       if (filters.brandId) params.brandId = filters.brandId;
@@ -367,10 +502,26 @@ export const itemService = {
 
   // ==================== HELPER FUNCTIONS ====================
 
+  /**
+   * Memproses daftar produk untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan URL gambar lengkap.
+   * 
+   * @param {Array<Object>} items - Daftar produk dari API
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa untuk ditampilkan
+   * @returns {Array<Object>} Daftar produk yang telah diproses
+   */
   processList: (items, language = "EN") => {
     return items.map((item) => itemService.processSingle(item, language));
   },
 
+  /**
+   * Memproses data produk tunggal untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat, URL gambar, dan konten terjemahan.
+   * 
+   * @param {Object} item - Data produk dari API
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa untuk ditampilkan
+   * @returns {Object} Data produk yang telah diproses
+   */
   processSingle: (item, language = "EN") => {
     const translation = item.translations?.find((t) => t.language === language);
 

@@ -1,7 +1,25 @@
-// src/hooks/useDateRangeFilter.js
+/**
+ * @file useDateRangeFilter.js
+ * @description Hook custom untuk mengelola rentang tanggal filter dengan persistensi.
+ * Menyediakan sinkronisasi tiga arah antara:
+ * - State React (untuk UI interaktif)
+ * - URL query parameters (untuk bookmarkable URLs)
+ * - SessionStorage (untuk mempertahankan filter saat refresh)
+ * 
+ * Mendukung dua mode operasi:
+ * - **Custom range**: Menggunakan date picker dengan state sementara
+ * - **Preset range**: Langsung menerapkan rentang tanggal tertentu
+ */
+
 import { useState, useEffect } from "react";
 
-// ✅ Helper: format Date → YYYY-MM-DD (tanpa zona waktu)
+/**
+ * Memformat objek Date ke string YYYY-MM-DD tanpa timezone.
+ * Digunakan untuk komunikasi dengan backend yang mengharapkan format ini.
+ * 
+ * @param {Date} date - Objek Date JavaScript
+ * @returns {string} Tanggal dalam format YYYY-MM-DD
+ */
 const formatDateForBackend = (date) => {
   if (!date) return "";
   const year = date.getFullYear();
@@ -11,18 +29,81 @@ const formatDateForBackend = (date) => {
 };
 
 /**
- * Hook untuk mengelola rentang tanggal dengan URL + sessionStorage
+ * Hook custom untuk mengelola rentang tanggal filter dengan persistensi.
+ * Menggabungkan state management, URL sync, dan sessionStorage persistence.
+ * 
+ * @param {number} [defaultDaysBack=6] - Jumlah hari ke belakang untuk rentang default
+ * @param {string} [storageKey="dateRangeFilter"] - Kunci untuk sessionStorage
+ * @returns {{
+ *   startDate: string,
+ *   endDate: string,
+ *   tempStartDate: string,
+ *   tempEndDate: string,
+ *   setTempStartDate: function(string): void,
+ *   setTempEndDate: function(string): void,
+ *   applyFilter: function(string, string): void,
+ *   resetToDefault: function(): void,
+ *   isTempAtDefault: function(): boolean,
+ *   isAppliedAtDefault: function(): boolean
+ * }} Objek berisi state dan fungsi kontrol rentang tanggal
+ * 
+ * @example
+ * // Penggunaan dasar
+ * const {
+ *   startDate,
+ *   endDate,
+ *   tempStartDate,
+ *   tempEndDate,
+ *   setTempStartDate,
+ *   setTempEndDate,
+ *   applyFilter,
+ *   resetToDefault
+ * } = useDateRangeFilter(6, "analyticsDateRange");
+ * 
+ * @example
+ * // Menerapkan preset langsung
+ * const applyLast7Days = () => {
+ *   const today = new Date();
+ *   const start = formatDateForBackend(new Date(today - 6 * 86400000));
+ *   const end = formatDateForBackend(today);
+ *   applyFilter(start, end);
+ * };
  */
 export const useDateRangeFilter = (
   defaultDaysBack = 6,
   storageKey = "dateRangeFilter"
 ) => {
+  /**
+   * Tanggal mulai sementara untuk date picker UI.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [tempStartDate, setTempStartDate] = useState("");
+
+  /**
+   * Tanggal akhir sementara untuk date picker UI.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [tempEndDate, setTempEndDate] = useState("");
+
+  /**
+   * Tanggal mulai yang diterapkan saat ini.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [startDate, setStartDate] = useState("");
+
+  /**
+   * Tanggal akhir yang diterapkan saat ini.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [endDate, setEndDate] = useState("");
 
   // Fungsi internal: dapatkan rentang default menggunakan tanggal lokal
+  /**
+   * Mendapatkan rentang tanggal default berdasarkan parameter days back.
+   * Menggunakan tanggal lokal browser untuk konsistensi UX.
+   * 
+   * @returns {{ startDate: string, endDate: string }} Rentang tanggal default
+   */
   const getDefaultDateRange = () => {
     const today = new Date();
     const start = new Date(today);
@@ -33,6 +114,7 @@ export const useDateRangeFilter = (
     };
   };
 
+  // Inisialisasi state dari URL atau sessionStorage
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     let startFromUrl = urlParams.get("startDate");
@@ -99,9 +181,13 @@ export const useDateRangeFilter = (
   }, [defaultDaysBack, storageKey]);
 
   /**
-   * applyFilter
-   * - Jika dipanggil tanpa argumen -> gunakan tempStartDate/tempEndDate (UI custom date)
-   * - Jika dipanggil dengan (start, end) -> langsung apply kedua tanggal itu (berguna untuk preset)
+   * Menerapkan filter rentang tanggal.
+   * Mendukung dua pola panggilan:
+   * - `applyFilter()` → Gunakan nilai sementara dari date picker
+   * - `applyFilter(startDate, endDate)` → Terapkan rentang langsung (untuk preset)
+   * 
+   * @param {string} [startArg] - Tanggal mulai opsional (YYYY-MM-DD)
+   * @param {string} [endArg] - Tanggal akhir opsional (YYYY-MM-DD)
    */
   const applyFilter = (startArg, endArg) => {
     let s = startArg || tempStartDate;
@@ -136,6 +222,10 @@ export const useDateRangeFilter = (
     window.history.replaceState(null, "", newUrl);
   };
 
+  /**
+   * Mereset filter ke rentang default.
+   * Membersihkan sessionStorage dan menghapus parameter URL.
+   */
   const resetToDefault = () => {
     const defaultRange = getDefaultDateRange();
     setStartDate(defaultRange.startDate);
@@ -151,6 +241,10 @@ export const useDateRangeFilter = (
     window.history.replaceState(null, "", newUrl);
   };
 
+  /**
+   * Memeriksa apakah rentang yang diterapkan saat ini sama dengan default.
+   * @returns {boolean} `true` jika menggunakan rentang default
+   */
   const isAppliedAtDefault = () => {
     const defaultRange = getDefaultDateRange();
     return (
@@ -158,6 +252,10 @@ export const useDateRangeFilter = (
     );
   };
 
+  /**
+   * Memeriksa apakah rentang sementara saat ini sama dengan default.
+   * @returns {boolean} `true` jika rentang sementara menggunakan default
+   */
   const isTempAtDefault = () => {
     const defaultRange = getDefaultDateRange();
     return (

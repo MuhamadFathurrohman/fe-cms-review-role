@@ -1,4 +1,22 @@
-// src/pages/Analytics.jsx
+/**
+ * @file Analytics.jsx
+ * @description Komponen halaman analitik website yang komprehensif.
+ * Menyediakan dashboard lengkap untuk memantau:
+ * - Traffic pengunjung (new vs returning)
+ * - Page views dan engagement
+ * - Bounce rate dan sesi pengguna
+ * 
+ * Fitur utama:
+ * - Filter berbasis rentang tanggal dengan preset (Today, 7 Days, 30 Days)
+ * - Perhitungan tren otomatis dibandingkan periode sebelumnya
+ * - Modal detail insight untuk setiap metrik
+ * - Ekspor data berbasis periode
+ * - Pagination untuk data harian
+ * 
+ * Menggunakan dua jenis data:
+ * 1. **Data agregat harian**: Untuk statistik dan tabel
+ * 2. **Data event-level**: Untuk modal insight detail
+ */
 
 import React, {
   useState,
@@ -41,7 +59,13 @@ import SkeletonItem from "../components/Loaders/SkeletonItem";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-// Helper: format Date → YYYY-MM-DD (without timezone)
+/**
+ * Memformat objek Date ke string YYYY-MM-DD tanpa timezone.
+ * Digunakan untuk komunikasi dengan backend yang mengharapkan format ini.
+ * 
+ * @param {Date} date - Objek Date JavaScript
+ * @returns {string} Tanggal dalam format YYYY-MM-DD
+ */
 const formatDateForBackend = (date) => {
   if (!date) return "";
   const year = date.getFullYear();
@@ -50,18 +74,59 @@ const formatDateForBackend = (date) => {
   return `${year}-${month}-${day}`;
 };
 
+/**
+ * Komponen halaman analitik utama.
+ * Menampilkan dashboard statistik dan tabel data analitik harian.
+ *
+ * @component
+ */
 const Analytics = () => {
   const { openModal, closeModal } = useModalContext();
+
+  /**
+   * Tampilan statistik pengunjung (new vs returning).
+   * @type {['new'|'returning', React.Dispatch<React.SetStateAction<'new'|'returning'>>]}
+   */
   const [visitorView, setVisitorView] = useState("new");
+
+  /**
+   * Status loading saat mengambil data analitik.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
+
+  /**
+   * Status dropdown preset terbuka/tutup.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isPresetOpen, setIsPresetOpen] = useState(false);
+
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke dropdown preset */
   const presetRef = useRef(null);
+
+  /** @type {React.RefObject<DatePicker>} Ref ke date picker mulai */
   const startDatePickerRef = useRef(null);
+
+  /** @type {React.RefObject<DatePicker>} Ref ke date picker akhir */
   const endDatePickerRef = useRef(null);
 
   // === State untuk UI label saja (tidak dipakai untuk logika trend) ===
+  /**
+   * Preset aktif untuk ditampilkan di UI.
+   * @type {['today'|'7d'|'30d'|null, React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activePreset, setActivePreset] = useState("7d");
+
+  /**
+   * Status apakah menggunakan rentang kustom.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isCustomRange, setIsCustomRange] = useState(false);
 
   const { user: currentUser } = useAuth();
@@ -82,12 +147,24 @@ const Analytics = () => {
     isAppliedAtDefault,
   } = useDateRangeFilter(6, "analyticsDateRange"); // default last 7 days
 
+  /** @type {Array<{value: string, label: string}>} Opsi preset tanggal */
   const presetOptions = [
     { value: "today", label: "Today" },
     { value: "7d", label: "Last 7 Days" },
     { value: "30d", label: "Last 30 Days" },
   ];
 
+  /**
+   * Statistik ringkas dari data analitik.
+   * @type {{
+   *   totalPageViews: number,
+   *   totalNewVisitors: number,
+   *   totalReturningVisitors: number,
+   *   totalBounceRate: number,
+   *   avgSessionDuration: number,
+   *   avgSessionDurationFormatted: string
+   * }}
+   */
   const [stats, setStats] = useState({
     totalPageViews: 0,
     totalNewVisitors: 0,
@@ -97,6 +174,16 @@ const Analytics = () => {
     avgSessionDurationFormatted: "0m 0s",
   });
 
+  /**
+   * Tren perubahan persentase dibandingkan periode sebelumnya.
+   * @type {{
+   *   newVisitors: number,
+   *   returningVisitors: number,
+   *   pageViews: number,
+   *   bounceRate: number,
+   *   avgSession: number
+   * }}
+   */
   const [trends, setTrends] = useState({
     newVisitors: 0,
     returningVisitors: 0,
@@ -105,11 +192,31 @@ const Analytics = () => {
     avgSession: 0,
   });
 
+  /**
+   * Data analitik lengkap untuk pagination.
+   * @type {Array<Object>}
+   */
   const [fullData, setFullData] = useState([]);
+
+  /**
+   * Halaman saat ini untuk pagination.
+   * @type {[number, React.Dispatch<React.SetStateAction<number>>]}
+   */
   const [currentPage, setCurrentPage] = useState(1);
+
+  /** @type {number} Jumlah item per halaman */
   const itemsPerPage = 8;
+
+  /**
+   * Total halaman berdasarkan data lengkap.
+   * @type {number}
+   */
   const totalPages = Math.max(1, Math.ceil(fullData.length / itemsPerPage));
 
+  /**
+   * Status apakah data tidak tersedia untuk periode yang dipilih.
+   * @type {boolean}
+   */
   const isDataUnavailable = useMemo(() => {
     return (
       stats.totalPageViews === 0 &&
@@ -147,6 +254,16 @@ const Analytics = () => {
   }, [startDate, endDate]);
 
   // === Fetch data utama + hitung trend dengan 2 panggilan ===
+  /**
+   * Mengambil dan memproses data analitik untuk rentang tanggal tertentu.
+   * Melakukan dua panggilan API:
+   * 1. Data periode saat ini (untuk UI)
+   * 2. Data periode sebelumnya (untuk perhitungan tren)
+   * 
+   * @async
+   * @param {string} start - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} end - Tanggal akhir (YYYY-MM-DD)
+   */
   const fetchDataForRange = useCallback(async (start, end) => {
     setLoading(true);
     setError(null);
@@ -232,6 +349,11 @@ const Analytics = () => {
     }
   }, []);
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data analitik secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = useCallback(() => {
     if (startDate && endDate) {
       fetchDataForRange(startDate, endDate);
@@ -257,16 +379,25 @@ const Analytics = () => {
   }, [startDate, endDate, fetchDataForRange]);
 
   // --- Pagination helpers ---
+  /**
+   * Data yang ditampilkan di halaman saat ini.
+   * @type {Array<Object>}
+   */
   const currentData = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     return fullData.slice(startIndex, startIndex + itemsPerPage);
   }, [fullData, currentPage]);
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return generatePageNumbers(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
   // --- Actions ---
+  /**
+   * Menerapkan preset tanggal yang dipilih.
+   * @param {'today'|'7d'|'30d'} preset - Preset yang dipilih
+   */
   const applyPreset = (preset) => {
     const today = new Date();
     let start, end;
@@ -293,6 +424,9 @@ const Analytics = () => {
     setIsPresetOpen(false);
   };
 
+  /**
+   * Menerapkan filter rentang tanggal kustom.
+   */
   const handleApplyFilter = () => {
     const maxRangeDays = 90;
     if (!tempStartDate || !tempEndDate) return;
@@ -309,18 +443,28 @@ const Analytics = () => {
     setIsCustomRange(true);
   };
 
+  /**
+   * Mereset filter ke preset default (7 hari terakhir).
+   */
   const handleReset = () => {
     resetToDefault();
     setActivePreset("7d");
     setIsCustomRange(false);
   };
 
+  /**
+   * Navigasi ke halaman pagination tertentu.
+   * @param {number} page - Nomor halaman yang dituju
+   */
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
   };
 
+  /**
+   * Memperbarui data analitik dengan rentang tanggal saat ini.
+   */
   const refresh = () => {
     if (startDate && endDate) {
       fetchDataForRange(startDate, endDate);
@@ -333,6 +477,10 @@ const Analytics = () => {
   };
 
   // --- Modal handlers ---
+  /**
+   * Membuka modal insight detail untuk metrik tertentu.
+   * @param {'visitors'|'pageViews'|'bounceRate'|'avgSession'} type - Jenis metrik
+   */
   const handleCardClick = (type) => {
     const modals = {
       visitors: VisitorsModal,
@@ -364,7 +512,14 @@ const Analytics = () => {
     );
   };
 
+  /**
+   * Menutup modal ekspor.
+   */
   const handleClose = () => closeModal("exportAnalytics");
+
+  /**
+   * Membuka modal ekspor data analitik.
+   */
   const handleExportClick = () => {
     openModal(
       "exportAnalytics",
@@ -396,6 +551,10 @@ const Analytics = () => {
   }, []);
 
   // --- Visitor stats selector ---
+  /**
+   * Statistik pengunjung berdasarkan tampilan saat ini (new vs returning).
+   * @type {{ count: number, trend: number }}
+   */
   const visitorStats = useMemo(() => {
     return {
       count:
@@ -408,6 +567,10 @@ const Analytics = () => {
   }, [visitorView, stats, trends]);
 
   // --- Process table rows ---
+  /**
+   * Data analitik yang telah diproses untuk ditampilkan di tabel.
+   * @type {Array<Object>}
+   */
   const processedAnalytics = useMemo(() => {
     return currentData.map((item, index) => {
       const totalVisitor = (item.visitor || 0) + (item.uniqueVisitor || 0);
@@ -512,7 +675,6 @@ const Analytics = () => {
         {/* Card 1: Total Visitors */}
         <div className="stat-card" onClick={() => handleCardClick("visitors")}>
           {loading ? (
-            // ... skeleton same as before ...
             <>
               <div className="card-header">
                 <SkeletonItem
@@ -617,7 +779,6 @@ const Analytics = () => {
         {/* Card 2: Total Page Views */}
         <div className="stat-card" onClick={() => handleCardClick("pageViews")}>
           {loading ? (
-            // ... skeleton same as before ...
             <>
               <div className="card-header">
                 <SkeletonItem
@@ -695,7 +856,6 @@ const Analytics = () => {
           onClick={() => handleCardClick("bounceRate")}
         >
           {loading ? (
-            // ... skeleton same as before ...
             <>
               <div className="card-header">
                 <SkeletonItem
@@ -773,7 +933,6 @@ const Analytics = () => {
           onClick={() => handleCardClick("avgSession")}
         >
           {loading ? (
-            // ... skeleton same as before ...
             <>
               <div className="card-header">
                 <SkeletonItem
@@ -864,11 +1023,13 @@ const Analytics = () => {
                 placeholderText="DD/MM/YYYY"
                 onKeyDown={(e) => e.preventDefault()}
                 onPaste={(e) => e.preventDefault()}
+                aria-label="Start date"
               />
               <button
                 type="button"
                 className="date-input-icon"
                 onClick={() => startDatePickerRef.current.setOpen(true)}
+                aria-label="Open start date picker"
               >
                 <Calendar size={18} />
               </button>
@@ -891,11 +1052,13 @@ const Analytics = () => {
                 placeholderText="DD/MM/YYYY"
                 onKeyDown={(e) => e.preventDefault()}
                 onPaste={(e) => e.preventDefault()}
+                aria-label="End date"
               />
               <button
                 type="button"
                 className="date-input-icon"
                 onClick={() => endDatePickerRef.current.setOpen(true)}
+                aria-label="Open end date picker"
               >
                 <Calendar size={18} />
               </button>
@@ -913,6 +1076,7 @@ const Analytics = () => {
                   !tempEndDate ||
                   (tempStartDate === startDate && tempEndDate === endDate)
                 }
+                aria-label="Apply date filter"
               >
                 Apply Filter
               </button>
@@ -921,6 +1085,7 @@ const Analytics = () => {
                 type="button"
                 className="btn-filter btn-reset"
                 onClick={handleReset}
+                aria-label="Reset date filter"
               >
                 Reset Filter
               </button>
@@ -933,7 +1098,7 @@ const Analytics = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             <RefreshCw size={14} />
           </button>
         </div>
@@ -991,6 +1156,7 @@ const Analytics = () => {
             className={`pagination-btn pagination-arrow ${
               currentPage === 1 ? "disabled" : ""
             }`}
+            aria-label="Previous page"
           >
             <ChevronLeft size={16} />
             <span>Prev</span>
@@ -1009,6 +1175,7 @@ const Analytics = () => {
                   className={`pagination-page ${
                     currentPage === page ? "active" : ""
                   }`}
+                  aria-label={`Go to page ${page}`}
                 >
                   {page}
                 </button>
@@ -1022,6 +1189,7 @@ const Analytics = () => {
             className={`pagination-btn pagination-arrow ${
               currentPage === totalPages ? "disabled" : ""
             }`}
+            aria-label="Next page"
           >
             <span>Next</span>
             <ChevronRight size={16} />

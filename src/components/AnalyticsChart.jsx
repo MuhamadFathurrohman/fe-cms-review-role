@@ -1,4 +1,15 @@
-// src/components/AnalyticsChart.jsx
+/**
+ * @file AnalyticsChart.jsx
+ * @description Komponen chart analitik untuk menampilkan tren pengunjung website 30 hari terakhir.
+ * Menggunakan Recharts untuk visualisasi data dengan:
+ * - Dua garis: New Visitor dan Returning Visitor
+ * - Tooltip kustom dengan format tanggal
+ * - Legend kustom di posisi kanan atas
+ * - Statistik ringkas di bawah chart
+ * 
+ * Dirancang sebagai komponen klikable yang mengarahkan ke halaman analitik lengkap.
+ */
+
 import React, { useMemo } from "react";
 import { BarChart3 } from "lucide-react";
 import {
@@ -10,12 +21,35 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Warna yang digunakan di line chart
+/**
+ * Konfigurasi warna untuk garis chart.
+ * @type {{ newVisitors: string, returningVisitors: string }}
+ */
 const COLORS = {
   newVisitors: "#3b82f6", // blue-500
   returningVisitors: "#D946ef", // fuchsia-500
 };
 
+/**
+ * Props untuk komponen AnalyticsChart.
+ * @typedef {Object} AnalyticsChartProps
+ * @property {Object} analyticsSnapshot - Data snapshot analitik
+ * @property {number} analyticsSnapshot.totalPageViews - Total page views
+ * @property {number} analyticsSnapshot.totalBounceRate - Persentase bounce rate
+ * @property {string} analyticsSnapshot.avgSessionDurationFormatted - Durasi sesi rata-rata
+ * @property {Array<{ date: string, newVisitors: number, returningVisitors: number }>} [analyticsTrend=[]] - Data tren 30 hari
+ * @property {function(): void} onChartClick - Handler saat chart diklik
+ */
+
+/**
+ * Tooltip kustom untuk chart analitik.
+ * Menampilkan tanggal dan nilai untuk setiap garis dengan warna yang sesuai.
+ *
+ * @param {Object} props - Props komponen
+ * @param {boolean} props.active - Status aktif tooltip
+ * @param {Array} props.payload - Data yang ditampilkan di tooltip
+ * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+ */
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const data = payload[0].payload;
@@ -47,7 +81,13 @@ const CustomTooltip = ({ active, payload }) => {
   );
 };
 
-// ✅ CUSTOM LEGEND COMPONENT
+/**
+ * Legend kustom untuk chart analitik.
+ * Ditampilkan di posisi kanan atas chart dengan warna yang sesuai.
+ *
+ * @component
+ * @returns {JSX.Element} Container legend dengan item warna dan label
+ */
 const CustomLegend = () => {
   return (
     <div className="analytics-legend">
@@ -69,6 +109,14 @@ const CustomLegend = () => {
   );
 };
 
+/**
+ * Komponen chart analitik utama.
+ * Menampilkan visualisasi tren pengunjung dan statistik ringkas.
+ *
+ * @component
+ * @param {AnalyticsChartProps} props - Props komponen
+ * @returns {JSX.Element} Kartu chart analitik yang klikable
+ */
 const AnalyticsChart = ({
   analyticsSnapshot,
   analyticsTrend = [],
@@ -80,6 +128,11 @@ const AnalyticsChart = ({
     avgSessionDurationFormatted = "0m 0s",
   } = analyticsSnapshot || {};
 
+  /**
+   * Data tren yang telah diproses dan divalidasi.
+   * Mengurutkan berdasarkan tanggal dan memfilter data tidak valid.
+   * @type {Array<{ date: string, newVisitors: number, returningVisitors: number }>}
+   */
   const trendData = useMemo(() => {
     if (!Array.isArray(analyticsTrend) || analyticsTrend.length === 0) {
       return [];
@@ -105,6 +158,11 @@ const AnalyticsChart = ({
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   }, [analyticsTrend]);
 
+  /**
+   * Nilai maksimum untuk sumbu Y chart.
+   * Memberikan ruang 20% di atas nilai maksimum untuk visualisasi yang lebih baik.
+   * @type {number}
+   */
   const maxYValue = useMemo(() => {
     if (!trendData.length) return 1;
 
@@ -124,6 +182,9 @@ const AnalyticsChart = ({
       className="home-dashboard-card home-chart-card home-analytics-card"
       onClick={onChartClick}
       style={{ cursor: "pointer" }}
+      role="button"
+      tabIndex={0}
+      aria-label="View detailed analytics"
     >
       <div className="home-chart-header">
         <h3>Website Analytics (30 Days)</h3>
@@ -162,8 +223,6 @@ const AnalyticsChart = ({
                       tickLine={false}
                     />
                     <Tooltip content={<CustomTooltip />} />
-                    {/* ✅ HILANGKAN LEGEND BAWAAN */}
-                    {/* <Legend /> */}
                     <Line
                       type="monotone"
                       dataKey="newVisitors"
@@ -186,7 +245,6 @@ const AnalyticsChart = ({
                 </ResponsiveContainer>
               </div>
 
-              {/* ✅ CUSTOM LEGEND DI KANAN ATAS CHART */}
               <CustomLegend />
 
               <div className="home-analytics-stats-horizontal">

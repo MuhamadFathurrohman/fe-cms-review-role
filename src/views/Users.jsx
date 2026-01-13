@@ -1,4 +1,19 @@
-// src/views/Users.jsx
+/**
+ * @file Users.jsx
+ * @description Komponen halaman manajemen pengguna sistem.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar pengguna dengan pencarian dan pagination
+ * - Menambah, mengedit, dan menghapus pengguna
+ * - Menampilkan informasi peran dan status
+ * - Ekspor data pengguna (jika diizinkan)
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage user": Akses CRUD
+ * - Pengguna dengan izin "read user": Hanya melihat
+ * - Pengguna tanpa izin: Tidak bisa mengakses halaman
+ */
+
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { formatRoleName, getRoleBadgeClass } from "../utils/roleHelper";
 import {
@@ -25,12 +40,19 @@ import Modal from "../components/Modals/Modal";
 import AlertModal from "../components/Alerts/AlertModal";
 import ExportDropdown from "../components/ExportDropdown";
 
+/**
+ * Komponen halaman manajemen pengguna utama.
+ * Menampilkan tabel pengguna dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Users = () => {
   const { user: currentUser, updateUser } = useAuth();
   const searchInputRef = useRef(null);
   const { openModal, closeModal } = useModalContext();
   const [roles, setRoles] = useState([]);
 
+  // === Hook pencarian dengan debouncing dan pagination ===
   const {
     searchTerm,
     setSearchTerm,
@@ -51,11 +73,29 @@ const Users = () => {
   );
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola pengguna.
+   * @type {boolean}
+   */
   const canManageUsers = isSuper || canManage(currentUser?.permissions, "user");
+
+  /**
+   * Status apakah pengguna memiliki izin mengekspor data pengguna.
+   * @type {boolean}
+   */
   const canExportUsers = isSuper || canExport(currentUser?.permissions, "user");
 
   // === Load Roles ===
+  /**
+   * Memuat daftar peran dari server untuk digunakan dalam form pengguna.
+   * @async
+   */
   const loadRoles = async () => {
     try {
       const result = await roleService.getAll();
@@ -73,12 +113,14 @@ const Users = () => {
     loadRoles();
   }, []);
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data pengguna dan peran secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
-
-      // Refetch roles data
       await loadRoles();
     } catch (error) {
       console.error("❌ Users.jsx: Auto-refetch failed:", error);
@@ -88,6 +130,10 @@ const Users = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Role Mapping ===
+  /**
+   * Peta ID peran ke nama peran untuk lookup cepat.
+   * @type {Object.<number, string>}
+   */
   const roleMap = useMemo(() => {
     return roles.reduce((acc, role) => {
       acc[role.id] = role.name;
@@ -95,10 +141,20 @@ const Users = () => {
     }, {});
   }, [roles]);
 
+  /**
+   * Mendapatkan nama peran berdasarkan ID peran.
+   * @param {number|string} roleId - ID peran
+   * @returns {string} Nama peran atau ID asli jika tidak ditemukan
+   */
   const getRoleName = (roleId) => {
     return roleMap[roleId] || roleId;
   };
 
+  /**
+   * Memperbarui data dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await usersService.getPaginated(
@@ -127,16 +183,29 @@ const Users = () => {
   };
 
   // === Handlers ===
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Handler untuk perubahan halaman pagination.
+   * @param {number} page - Nomor halaman yang dituju
+   */
   const handlePageChange = (page) => {
     goToPage(page);
   };
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
+  /**
+   * Membuka modal edit pengguna.
+   * @param {Object} user - Data pengguna yang akan diedit
+   */
   const handleEdit = async (user) => {
     if (!canManageUsers) return;
 
@@ -192,6 +261,10 @@ const Users = () => {
     }
   };
 
+  /**
+   * Membuka modal konfirmasi hapus pengguna.
+   * @param {Object} user - Data pengguna yang akan dihapus
+   */
   const handleDelete = (user) => {
     if (!canManageUsers) return;
     openModal(
@@ -265,6 +338,9 @@ const Users = () => {
     );
   };
 
+  /**
+   * Membuka modal tambah pengguna baru.
+   */
   const handleAddUser = () => {
     if (!canManageUsers) return;
     openModal(
@@ -289,7 +365,12 @@ const Users = () => {
     );
   };
 
-  // ✅ TAMBAH: Function untuk render pesan no data
+  // Function untuk render pesan no data
+  /**
+   * Merender pesan ketika tidak ada data pengguna.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -352,6 +433,7 @@ const Users = () => {
             stroke="currentColor"
             className="search-icon"
             onClick={() => searchInputRef.current?.focus()}
+            aria-label="Focus search input"
           />
           <input
             ref={searchInputRef}
@@ -360,6 +442,7 @@ const Users = () => {
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search users"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -370,7 +453,7 @@ const Users = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             <RefreshCw size={14} />
           </button>
         </div>
@@ -424,14 +507,14 @@ const Users = () => {
                         <button
                           className="btn-edit"
                           onClick={() => handleEdit(user)}
-                          aria-label="Edit user"
+                          aria-label={`Edit user ${user.name}`}
                         >
                           <Edit2 />
                         </button>
                         <button
                           className="btn-delete"
                           onClick={() => handleDelete(user)}
-                          aria-label="Delete user"
+                          aria-label={`Delete user ${user.name}`}
                         >
                           <Trash2 />
                         </button>
@@ -443,7 +526,6 @@ const Users = () => {
             ) : (
               <tr>
                 <td colSpan={canManageUsers ? 7 : 6} className="no-data">
-                  {/* ✅ UPDATE: Gunakan function untuk render pesan dinamis */}
                   {renderNoDataMessage()}
                 </td>
               </tr>

@@ -1,4 +1,22 @@
-// src/components/Modals/Form/CatalogsForm.jsx
+/**
+ * @file CatalogsForm.jsx
+ * @description Komponen form modal untuk manajemen data katalog produk.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat katalog baru dengan link Google Drive
+ * - **Edit**: Mengedit katalog yang sudah ada
+ * 
+ * Menyediakan fitur khusus:
+ * - Validasi ketat terhadap Google Drive link
+ * - Preview embed file langsung di form
+ * - Penanganan error untuk akses file yang tidak publik
+ * - Validasi input real-time
+ * 
+ * Persyaratan Google Drive:
+ * - Hanya menerima domain `drive.google.com`
+ * - Harus mengarah ke file spesifik (`/file/d/{fileId}`)
+ * - File harus diatur sebagai "Anyone with the link can view"
+ */
+
 import React, { useState, useEffect } from "react";
 import PulseDots from "../../Loaders/PulseDots";
 import catalogService from "../../../services/catalogService";
@@ -6,21 +24,70 @@ import { useModalContext } from "../../../contexts/ModalContext";
 import AlertModal from "../../Alerts/AlertModal";
 import "../../../sass/components/Modals/CatalogsForm/CatalogsForm.css";
 
+/**
+ * Props untuk komponen CatalogsForm.
+ * @typedef {Object} CatalogsFormProps
+ * @property {Object|null} [initialData=null] - Data awal untuk mode edit
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ * @property {function(): void} onCancel - Callback saat form dibatalkan
+ */
+
+/**
+ * Komponen form modal untuk manajemen data katalog.
+ * Digunakan dalam konteks modal untuk operasi CRUD katalog.
+ *
+ * @component
+ * @param {CatalogsFormProps} props - Props komponen
+ */
 const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
   const { openModal, closeModal } = useModalContext();
 
+  /**
+   * State form data katalog.
+   * @type {{
+   *   name: string,
+   *   description: string,
+   *   file: string
+   * }}
+   */
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     file: "", // Google Drive URL (string)
   });
 
+  /**
+   * URL embed untuk preview file Google Drive.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [embedUrl, setEmbedUrl] = useState("");
+
+  /**
+   * Status error saat memuat preview embed.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [previewError, setPreviewError] = useState(false);
+
+  /**
+   * Pesan error validasi per field.
+   * @type {{[fieldName: string]: string}}
+   */
   const [errors, setErrors] = useState({});
+
+  /**
+   * Status loading saat proses penyimpanan berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Extract FILE_ID from Google Drive share URL
+  /**
+   * Mengekstrak ID file dari URL Google Drive sharing.
+   * Mendukung format: `https://drive.google.com/file/d/{FILE_ID}/view`
+   * 
+   * @param {string} url - URL Google Drive sharing
+   * @returns {string|null} ID file atau null jika tidak valid
+   */
   const extractFileIdFromDriveUrl = (url) => {
     const regex = /\/file\/d\/([a-zA-Z0-9_-]+)/;
     const match = url.match(regex);
@@ -28,12 +95,25 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
   };
 
   // Convert share URL to embed URL
+  /**
+   * Mengonversi URL sharing Google Drive ke URL embed untuk preview.
+   * 
+   * @param {string} shareUrl - URL sharing Google Drive
+   * @returns {string|null} URL embed atau null jika tidak valid
+   */
   const convertToEmbedUrl = (shareUrl) => {
     const fileId = extractFileIdFromDriveUrl(shareUrl);
     return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
   };
 
   // Validate: only Google Drive file URLs
+  /**
+   * Memvalidasi apakah URL adalah Google Drive file yang valid.
+   * Memeriksa domain, path, dan format ID file.
+   * 
+   * @param {string} url - URL yang akan divalidasi
+   * @returns {boolean} `true` jika valid, `false` jika tidak
+   */
   const isValidGoogleDriveUrl = (url) => {
     if (!url) return false;
     try {
@@ -79,6 +159,11 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
     }
   }, [initialData]);
 
+  /**
+   * Handler perubahan input form.
+   * Membersihkan error field yang sedang diubah.
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>} e - Event input
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -92,6 +177,11 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
     }
   };
 
+  /**
+   * Validasi form sebelum submit.
+   * Memeriksa nama katalog dan URL Google Drive.
+   * @returns {boolean} `true` jika valid, `false` jika tidak
+   */
   const validate = () => {
     const newErrors = {};
 
@@ -111,6 +201,11 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update katalog.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -133,7 +228,7 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
         result = await catalogService.create(payload);
       }
 
-      // ✅ Perbaiki kondisi success
+
       if (result && (result.success === true || result.data)) {
         onCancel?.();
         openModal(
@@ -185,6 +280,8 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
           onChange={handleInputChange}
           className={errors.name ? "input-error" : ""}
           maxLength={200}
+          aria-label="Catalog name"
+          aria-required="true"
         />
         {errors.name && (
           <div className="error-message">
@@ -202,6 +299,7 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
           value={formData.description}
           onChange={handleInputChange}
           rows={3}
+          aria-label="Catalog description"
         />
       </div>
 
@@ -216,6 +314,8 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
           value={formData.file}
           onChange={handleInputChange}
           className={errors.file ? "input-error" : ""}
+          aria-label="Google Drive file link"
+          aria-required="true"
         />
         {errors.file && (
           <div className="error-message">
@@ -239,6 +339,7 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
                 title="Catalog Preview"
                 onLoad={() => setPreviewError(false)}
                 onError={() => setPreviewError(true)}
+                aria-label="Catalog file preview"
               />
             </div>
             {previewError && (
@@ -260,6 +361,7 @@ const CatalogsForm = ({ initialData = null, onSuccess, onCancel }) => {
           onClick={onCancel}
           className="btn-secondary"
           disabled={isSubmitting}
+          aria-label="Cancel form"
         >
           Cancel
         </button>

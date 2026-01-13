@@ -1,4 +1,20 @@
-// Items.jsx
+/**
+ * @file Items.jsx
+ * @description Komponen halaman manajemen produk/item dengan dukungan multi-bahasa.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar produk dalam format grid
+ * - Membuat, mengedit, dan menghapus produk
+ * - Pencarian berdasarkan nama atau deskripsi
+ * - Ekspor data berdasarkan periode
+ * - Preview detail produk dalam modal
+ * 
+ * Mendukung konten bilingual (English/Indonesian) dengan tampilan default dalam bahasa Inggris.
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage product": Akses CRUD
+ * - Pengguna dengan izin "export product": Akses ekspor
+ */
+
 import React, { useMemo } from "react";
 import {
   Eye,
@@ -26,11 +42,21 @@ import { canManage, canExport, isSuperAdmin } from "../../utils/permissions";
 import ExportDropdown from "../../components/ExportDropdown";
 import "../../sass/views/Items/Items.css";
 
+/**
+ * Komponen halaman manajemen produk utama.
+ * Menampilkan grid produk dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Items = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // parameter bypassCache
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data produk.
+   * Mendukung pencarian teks bebas berdasarkan nama atau deskripsi produk.
+   */
   const {
     searchTerm,
     setSearchTerm,
@@ -43,12 +69,11 @@ const Items = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       return await itemService.getPaginated(
         page,
         limit,
         search,
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
     },
     1,
@@ -56,14 +81,19 @@ const Items = () => {
     800
   );
 
-  // ✅ UPDATE: refreshWithPageValidation dengan bypassCache
+  // refreshWithPageValidation dengan bypassCache
+  /**
+   * Memperbarui data produk dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await itemService.getPaginated(
         1,
         10,
         searchTerm,
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
 
       if (result.success) {
@@ -71,7 +101,7 @@ const Items = () => {
         const targetPage = Math.min(currentPage, newTotalPages);
 
         if (targetPage === currentPage) {
-          refresh(bypassCache); // ← Pass bypassCache ke refresh
+          refresh(bypassCache);
         } else {
           goToPage(targetPage);
         }
@@ -84,9 +114,13 @@ const Items = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data produk secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Items.jsx: Auto-refetch failed:", error);
@@ -96,20 +130,42 @@ const Items = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Permission Logic ===//
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola produk.
+   * @type {boolean}
+   */
   const canManageItems =
     isSuper || canManage(currentUser?.permissions, "product");
+
+  /**
+   * Status apakah pengguna memiliki izin mengekspor data produk.
+   * @type {boolean}
+   */
   const canExportItems =
     isSuper || canExport(currentUser?.permissions, "product");
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return generatePageNumbers(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Membuka modal tambah produk baru.
+   */
   const handleAddItem = () => {
     if (!canManageItems) return;
     openModal(
@@ -131,6 +187,10 @@ const Items = () => {
     );
   };
 
+  /**
+   * Membuka modal preview produk.
+   * @param {Object} item - Data produk yang akan dilihat
+   */
   const handleViewItem = (item) => {
     openModal(
       "view-item",
@@ -149,7 +209,11 @@ const Items = () => {
     );
   };
 
-  // ✅ UPDATE: handleEditItem dengan refreshWithPageValidation
+  // handleEditItem dengan refreshWithPageValidation
+  /**
+   * Membuka modal edit produk.
+   * @param {Object} item - Data produk yang akan diedit
+   */
   const handleEditItem = async (item) => {
     if (!canManageItems) return;
 
@@ -186,7 +250,7 @@ const Items = () => {
             onClose={() => closeModal(`editItem-${item.id}`)}
             onSuccess={() => {
               closeModal(`editItem-${item.id}`);
-              refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+              refreshWithPageValidation(true);
             }}
           />
         </Modal>
@@ -209,6 +273,10 @@ const Items = () => {
   };
 
   // handleDeleteItem dengan refreshWithPageValidation
+  /**
+   * Membuka modal konfirmasi hapus produk.
+   * @param {Object} item - Data produk yang akan dihapus
+   */
   const handleDeleteItem = (item) => {
     if (!canManageItems) return;
     openModal(
@@ -283,6 +351,11 @@ const Items = () => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data produk.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika ada filter aktif
@@ -317,6 +390,11 @@ const Items = () => {
   };
 
   // Skeleton Item Component
+  /**
+   * Komponen skeleton untuk loading state produk.
+   * @component
+   * @returns {JSX.Element} Skeleton item untuk placeholder loading
+   */
   const ItemSkeleton = () => (
     <div className="item skeleton-loading">
       <div className="item-image-wrapper">
@@ -377,13 +455,14 @@ const Items = () => {
 
       <div className="items-filters">
         <div className="search-wrapper">
-          <Search size={18} className="search-icon" />
+          <Search size={18} className="search-icon" aria-label="Search icon" />
           <input
             type="text"
             placeholder="Search by name or description..."
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search items"
           />
         </div>
       </div>
@@ -391,7 +470,7 @@ const Items = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             Retry
           </button>
         </div>
@@ -415,6 +494,7 @@ const Items = () => {
                       alt={item.name}
                       className="item-image"
                       loading="lazy"
+                      aria-label={`Product image for ${item.name}`}
                     />
                   ) : (
                     <div className="item-placeholder">
@@ -432,6 +512,7 @@ const Items = () => {
                           e.stopPropagation();
                           handleViewItem(item);
                         }}
+                        aria-label={`View details for ${item.name}`}
                       >
                         <Eye size={16} />
                       </button>
@@ -445,6 +526,7 @@ const Items = () => {
                               e.stopPropagation();
                               handleEditItem(item);
                             }}
+                            aria-label={`Edit ${item.name}`}
                           >
                             <Edit2 size={16} />
                           </button>
@@ -455,6 +537,7 @@ const Items = () => {
                               e.stopPropagation();
                               handleDeleteItem(item);
                             }}
+                            aria-label={`Delete ${item.name}`}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -474,6 +557,7 @@ const Items = () => {
                       className={`item-status ${
                         item.isActive ? "active" : "inactive"
                       }`}
+                      aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
                     >
                       {item.isActive ? "Active" : "Inactive"}
                     </span>
@@ -498,6 +582,7 @@ const Items = () => {
               }`}
               onClick={() => goToPage(currentPage - 1)}
               disabled={currentPage === 1}
+              aria-label="Previous page"
             >
               <ChevronLeft size={18} />
               <span>Prev</span>
@@ -519,6 +604,7 @@ const Items = () => {
                       currentPage === page ? "active" : ""
                     }`}
                     onClick={() => goToPage(page)}
+                    aria-label={`Go to page ${page}`}
                   >
                     {page}
                   </button>
@@ -532,6 +618,7 @@ const Items = () => {
               }`}
               onClick={() => goToPage(currentPage + 1)}
               disabled={currentPage === totalPages}
+              aria-label="Next page"
             >
               <span>Next</span>
               <ChevronRight size={18} />

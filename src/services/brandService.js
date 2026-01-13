@@ -1,8 +1,47 @@
-// brandService.js
+/**
+ * @file brandService.js
+ * @description Layanan terpusat untuk mengelola operasi data brand/merek.
+ * Menyediakan abstraksi di atas `dataService.brands` dengan fitur tambahan:
+ * - Transformasi URL logo lengkap
+ * - Formatting tanggal untuk tampilan UI
+ * - Validasi input ketat untuk operasi CRUD
+ * - Dukungan pagination dengan filter
+ * 
+ * Setiap entri brand berisi informasi dasar:
+ * - Nama brand (wajib)
+ * - Tipe brand (default: "PRODUCT")
+ * - Logo brand (opsional)
+ * - Urutan tampilan (sortOrder)
+ * - Status publikasi
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan brand terpusat.
+ * Mengelola semua operasi CRUD dan transformasi terkait data brand.
+ * 
+ * @namespace brandService
+ */
 export const brandService = {
+  /**
+   * Menghasilkan URL lengkap untuk logo brand.
+   * Mendeteksi apakah path sudah merupakan URL lengkap atau perlu digabungkan dengan base URL.
+   * 
+   * @param {string|null|undefined} logoPath - Path logo dari backend
+   * @returns {string|null} URL lengkap logo atau null jika path tidak valid
+   * 
+   * @example
+   * // Path relatif
+   * brandService._getFullLogoUrl("brands/logo123.png");
+   * // → "https://api.example.com/brands/logo123.png"
+   * 
+   * @example
+   * // URL lengkap
+   * brandService._getFullLogoUrl("https://external.com/logo.png");
+   * // → "https://external.com/logo.png"
+   */
   _getFullLogoUrl: (logoPath) => {
     if (!logoPath) return null;
 
@@ -15,6 +54,17 @@ export const brandService = {
     return `${apiBaseUrl}${cleanPath}`;
   },
 
+  /**
+   * Memproses daftar brand untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan URL logo lengkap.
+   * 
+   * @param {Array<Object>} brands - Daftar brand dari API
+   * @returns {Array<Object>} Daftar brand yang telah diproses dengan properti tambahan
+   * 
+   * @example
+   * const processedBrands = brandService.processList(rawBrands);
+   * // Setiap brand memiliki: logoUrl, createdAtFormatted, sortOrder
+   */
   processList: (brands) => {
     return brands.map((brand) => ({
       ...brand,
@@ -27,6 +77,17 @@ export const brandService = {
     }));
   },
 
+  /**
+   * Memproses data brand tunggal untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan URL logo lengkap.
+   * 
+   * @param {Object} brand - Data brand dari API
+   * @returns {Object|null} Data brand yang telah diproses atau null jika input tidak valid
+   * 
+   * @example
+   * const processedBrand = brandService.processSingle(rawBrand);
+   * // Brand memiliki: logoUrl, createdAtFormatted, sortOrder
+   */
   processSingle: (brand) => {
     if (!brand) return null;
     return {
@@ -40,6 +101,17 @@ export const brandService = {
     };
   },
 
+  /**
+   * Mendapatkan semua brand tanpa pagination.
+   * Digunakan untuk dropdown seleksi atau komponen yang membutuhkan data lengkap.
+   * 
+   * @async
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   message?: string
+   * }} Respons dengan daftar brand yang diproses
+   */
   getAll: async () => {
     try {
       const result = await dataService.brands.getAll();
@@ -57,6 +129,18 @@ export const brandService = {
     }
   },
 
+  /**
+   * Mendapatkan detail brand berdasarkan ID.
+   * Secara otomatis memproses URL logo dan formatting tanggal.
+   * 
+   * @async
+   * @param {string|number} id - ID brand yang diminta
+   * @returns {{
+   *   success: boolean,
+   *   data?: Object,
+   *   message?: string
+   * }} Respons dengan data brand yang diproses
+   */
   getById: async (id) => {
     try {
       const result = await dataService.brands.getById(id);
@@ -73,20 +157,39 @@ export const brandService = {
     }
   },
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // Tambah parameter bypassCache
+  /**
+   * Mendapatkan daftar brand dengan pagination, pencarian, dan filter.
+   * Mendukung filter berdasarkan status publikasi dan tipe brand.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=10] - Jumlah brand per halaman
+   * @param {string} [search=""] - String pencarian (nama brand)
+   * @param {Object} [filters={}] - Filter tambahan
+   * @param {boolean} [filters.isPublished] - Filter berdasarkan status publikasi
+   * @param {string} [filters.type] - Filter berdasarkan tipe brand
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar brand yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 10,
     search = "",
     filters = {},
-    bypassCache = false // ← Tambah parameter
+    bypassCache = false
   ) => {
     try {
       const params = {
         page,
         limit,
         deletedAt: null,
-        bypassCache, // ← Pass ke dataService
+        bypassCache,
       };
 
       if (search) {
@@ -122,6 +225,18 @@ export const brandService = {
     }
   },
 
+  /**
+   * Membuat brand baru.
+   * Melakukan validasi ketat dan memproses data sebelum dikirim ke backend.
+   * 
+   * @async
+   * @param {Object} brandData - Data brand yang akan dibuat
+   * @param {string} brandData.name - Nama brand (wajib)
+   * @param {string} [brandData.type="PRODUCT"] - Tipe brand
+   * @param {number} [brandData.sortOrder=0] - Urutan tampilan
+   * @param {File|string|null} [brandData.logo] - Logo brand (opsional)
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data brand yang dibuat
+   */
   create: async (brandData) => {
     try {
       if (!brandData.name?.trim()) {
@@ -145,6 +260,21 @@ export const brandService = {
     }
   },
 
+  /**
+   * Memperbarui brand yang sudah ada.
+   * Melakukan validasi ketat dan memproses data sebelum dikirim ke backend.
+   * Menangani konversi tipe data untuk kompatibilitas FormData.
+   * 
+   * @async
+   * @param {string|number} id - ID brand yang akan diperbarui
+   * @param {Object} brandData - Data pembaruan
+   * @param {string} brandData.name - Nama brand baru (wajib)
+   * @param {string} [brandData.type="PRODUCT"] - Tipe brand baru
+   * @param {number} [brandData.sortOrder=0] - Urutan tampilan baru
+   * @param {File|string|null} [brandData.logo] - Logo brand baru
+   * @param {boolean|string} [brandData.isActive] - Status aktif baru
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data brand yang diperbarui
+   */
   update: async (id, brandData) => {
     try {
       if (!id) {
@@ -190,6 +320,13 @@ export const brandService = {
     }
   },
 
+  /**
+   * Melakukan soft delete brand (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID brand yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       const result = await dataService.brands.softDelete(id);
@@ -210,6 +347,13 @@ export const brandService = {
     }
   },
 
+  /**
+   * Melakukan hard delete brand (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID brand yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       const result = await dataService.brands.hardDelete(id);

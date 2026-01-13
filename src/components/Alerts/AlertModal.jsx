@@ -1,4 +1,18 @@
-// src/components/Modal/AlertModal.jsx
+/**
+ * @file AlertModal.jsx
+ * @description Komponen modal alert generik untuk menampilkan pesan kepada pengguna.
+ * Mendukung lima tipe notifikasi dengan ikon dan warna yang sesuai:
+ * - `success`: Operasi berhasil
+ * - `error`: Kesalahan sistem atau validasi
+ * - `warning`: Peringatan atau konfirmasi
+ * - `delete`: Konfirmasi penghapusan data
+ * - `info`: Informasi umum
+ * 
+ * Menyediakan dua mode interaksi:
+ * - **Simple mode**: Satu tombol (OK) untuk pesan informasi
+ * - **Confirmation mode**: Dua tombol (Cancel/Confirm) untuk konfirmasi aksi
+ */
+
 import React from "react";
 import Modal from "../Modals/Modal";
 import {
@@ -10,18 +24,63 @@ import {
 } from "lucide-react";
 import "../../sass/components/Alerts/AlertModal/AlertModal.css";
 
+/**
+ * Props untuk komponen AlertModal.
+ * @typedef {Object} AlertModalProps
+ * @property {string} title - Judul alert (opsional, akan menggunakan default berdasarkan tipe)
+ * @property {string} message - Pesan utama yang ditampilkan
+ * @property {function(): void} onClose - Handler saat modal ditutup
+ * @property {function(): void} [onConfirm] - Handler saat tombol konfirmasi diklik
+ * @property {function(): void} [onCancel] - Handler saat tombol cancel diklik
+ * @property {'success'|'error'|'warning'|'delete'|'info'} [type='success'] - Tipe alert yang menentukan ikon dan warna
+ * @property {boolean} [showActions=false] - Jika true, tampilkan dua tombol (confirmation mode); jika false, satu tombol (simple mode)
+ * @property {string} [confirmText] - Teks kustom untuk tombol konfirmasi
+ * @property {string} [cancelText='Cancel'] - Teks kustom untuk tombol cancel
+ */
+
+/**
+ * Komponen modal alert generik dengan dukungan multi-tipe dan mode interaksi.
+ * Digunakan untuk menampilkan pesan, konfirmasi, atau peringatan kepada pengguna.
+ *
+ * @component
+ * @param {AlertModalProps} props - Props komponen
+ * @returns {JSX.Element} Modal alert dengan ikon, pesan, dan tombol aksi
+ *
+ * @example
+ * // Simple success message
+ * <AlertModal
+ *   type="success"
+ *   message="User created successfully!"
+ *   onClose={handleClose}
+ * />
+ *
+ * @example
+ * // Delete confirmation
+ * <AlertModal
+ *   type="delete"
+ *   title="Delete User"
+ *   message="Are you sure you want to delete this user? This action cannot be undone."
+ *   showActions={true}
+ *   onConfirm={handleDelete}
+ *   onCancel={handleClose}
+ *   onClose={handleClose}
+ * />
+ */
 const AlertModal = ({
   title,
   message,
   onClose,
   onConfirm,
   onCancel,
-  type = "success", // "success", "error", "warning", "delete", "info"
-  showActions = false, // false = simple (1 button), true = confirmation (2 buttons)
+  type = "success",
+  showActions = false,
   confirmText,
   cancelText = "Cancel",
 }) => {
-  // Icon berdasarkan type
+  /**
+   * Merender ikon yang sesuai berdasarkan tipe alert.
+   * @returns {JSX.Element} Ikon Lucide React yang sesuai
+   */
   const renderIcon = () => {
     const iconProps = {
       size: 32,
@@ -44,7 +103,7 @@ const AlertModal = ({
     }
   };
 
-  // Default title jika tidak disediakan
+  /** @type {{[key: string]: string}} Default judul berdasarkan tipe alert */
   const defaultTitle = {
     success: "Success!",
     error: "Error",
@@ -53,7 +112,7 @@ const AlertModal = ({
     info: "Information",
   };
 
-  // Default confirm text jika tidak disediakan
+  /** @type {{[key: string]: string}} Default teks tombol konfirmasi berdasarkan tipe alert */
   const defaultConfirmText = {
     success: "OK",
     error: "OK",
@@ -62,6 +121,10 @@ const AlertModal = ({
     info: "OK",
   };
 
+  /**
+   * Handler untuk tombol konfirmasi.
+   * Memanggil `onConfirm` jika disediakan, atau `onClose` sebagai fallback.
+   */
   const handleConfirm = () => {
     if (onConfirm) {
       onConfirm();
@@ -70,6 +133,10 @@ const AlertModal = ({
     }
   };
 
+  /**
+   * Handler untuk tombol cancel.
+   * Memanggil `onCancel` jika disediakan, atau `onClose` sebagai fallback.
+   */
   const handleCancel = () => {
     if (onCancel) {
       onCancel();
@@ -82,7 +149,7 @@ const AlertModal = ({
     <Modal
       title={title || defaultTitle[type]}
       showHeader={false}
-      showCloseButton={!showActions} // Hide close button jika ada 2 tombol action
+      showCloseButton={!showActions}
       onClose={onClose}
       size="small"
       className={`alert-modal alert-${type}`}
@@ -102,6 +169,7 @@ const AlertModal = ({
               className="alert-btn alert-btn-cancel"
               onClick={handleCancel}
               type="button"
+              aria-label={`Cancel ${title || defaultTitle[type]}`}
             >
               {cancelText}
             </button>
@@ -109,16 +177,17 @@ const AlertModal = ({
               className="alert-btn alert-btn-primary"
               onClick={handleConfirm}
               type="button"
+              aria-label={`Confirm ${title || defaultTitle[type]}`}
             >
               {confirmText || defaultConfirmText[type]}
             </button>
           </>
         ) : (
-          // Simple mode: 1 button (OK)
           <button
             className="alert-btn alert-btn-primary alert-btn-single"
             onClick={handleConfirm}
             type="button"
+            aria-label={title || defaultTitle[type]}
           >
             {confirmText || defaultConfirmText[type]}
           </button>

@@ -1,4 +1,21 @@
-// Gallery.jsx
+/**
+ * @file Gallery.jsx
+ * @description Komponen halaman galeri gambar dokumentasi.
+ * Menyediakan antarmuka visual untuk melihat dan mengelola gambar galeri dalam format grid.
+ * 
+ * Fitur utama:
+ * - Tampilan grid responsif dengan lazy loading
+ * - Preview gambar dalam modal fullscreen
+ * - Operasi CRUD (Create, Delete) dengan konfirmasi
+ * - Pagination untuk navigasi koleksi besar
+ * - Kontrol akses berbasis izin pengguna
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage gallery": Akses CRUD
+ * - Pengguna tanpa izin: Hanya bisa melihat galeri
+ */
+
 import React, { useMemo } from "react";
 import {
   Eye,
@@ -23,12 +40,25 @@ import SkeletonItem from "../../components/Loaders/SkeletonItem";
 import { canManage, isSuperAdmin } from "../../utils/permissions";
 import "../../sass/views/Gallery/Gallery.css";
 
+/**
+ * Komponen halaman galeri utama.
+ * Menampilkan grid gambar galeri dengan fitur manajemen dan preview.
+ *
+ * @component
+ */
 const Gallery = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {number} Jumlah item galeri per halaman */
   const itemsPerPage = 10;
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // Tambah parameter bypassCache
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data galeri.
+   * Meskipun galeri tidak mendukung pencarian teks, hook ini digunakan untuk
+   * konsistensi pola dan dukungan pagination/cache control.
+   */
   const {
     data: galleryItems,
     loading,
@@ -39,7 +69,6 @@ const Gallery = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, _search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       // Gallery tidak pakai search, tapi tetap terima parameter untuk konsistensi
       return await galleryService.getPaginated(page, limit, bypassCache);
     },
@@ -48,7 +77,12 @@ const Gallery = () => {
     0
   );
 
-  // ✅ UPDATE: refreshWithPageValidation dengan bypassCache
+  // refreshWithPageValidation dengan bypassCache
+  /**
+   * Memperbarui data galeri dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       // Fetch halaman 1 dengan bypass cache
@@ -63,7 +97,7 @@ const Gallery = () => {
         const targetPage = Math.min(currentPage, newTotalPages);
 
         if (targetPage === currentPage) {
-          refresh(bypassCache); // ✅ Pass bypassCache ke refresh
+          refresh(bypassCache);
         } else {
           goToPage(targetPage);
         }
@@ -76,9 +110,13 @@ const Gallery = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data galeri secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Gallery.jsx: Auto-refetch failed:", error);
@@ -88,14 +126,30 @@ const Gallery = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola galeri.
+   * @type {boolean}
+   */
   const canManageGallery =
     isSuper || canManage(currentUser?.permissions, "gallery");
 
+  /**
+   * Handler untuk menutup banner error dan merefresh data.
+   */
   const handleCloseError = () => {
     refresh();
   };
 
+  /**
+   * Membuka modal tambah galeri baru.
+   * @param {React.MouseEvent} e - Event klik
+   */
   const handleAddGallery = (e) => {
     if (!canManageGallery) return;
     e.stopPropagation();
@@ -118,6 +172,11 @@ const Gallery = () => {
     );
   };
 
+  /**
+   * Membuka modal preview gambar galeri.
+   * @param {Object} item - Data item galeri
+   * @param {React.MouseEvent} e - Event klik
+   */
   const handleViewGallery = (item, e) => {
     e.stopPropagation();
     openModal(
@@ -147,14 +206,18 @@ const Gallery = () => {
   //         onClose={() => closeModal("edit-gallery")}
   //         onSuccess={() => {
   //           closeModal("edit-gallery");
-  //           refreshWithPageValidation(true); // ✅ Jika di-uncomment, tambahkan ini
+  //           refreshWithPageValidation(true);
   //         }}
   //       />
   //     </Modal>
   //   );
   // };
 
-  // ✅ UPDATE: handleDeleteGallery dengan refreshWithPageValidation(true)
+  /**
+   * Membuka modal konfirmasi hapus item galeri.
+   * @param {Object} item - Data item galeri yang akan dihapus
+   * @param {React.MouseEvent} e - Event klik
+   */
   const handleDeleteGallery = (item, e) => {
     if (!canManageGallery) return;
     e.stopPropagation();
@@ -183,7 +246,7 @@ const Gallery = () => {
                   message="Image has been successfully deleted."
                   onClose={() => {
                     closeModal("deleteSuccessAlert");
-                    refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+                    refreshWithPageValidation(true);
                   }}
                 />,
                 "small"
@@ -219,6 +282,7 @@ const Gallery = () => {
     );
   };
 
+  /** @type {number[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return Array.from({ length: totalPages }, (_, i) => i + 1);
   }, [totalPages]);
@@ -298,6 +362,7 @@ const Gallery = () => {
                         className="gallery-image"
                         loading="lazy"
                         alt={item.createdAtFormatted || "Gallery image"}
+                        aria-label={`Gallery image from ${item.createdAtFormatted}`}
                       />
                     ) : (
                       <div className="gallery-placeholder">
@@ -312,6 +377,7 @@ const Gallery = () => {
                           className="gallery-action-btn view-btn"
                           title="View details"
                           onClick={(e) => handleViewGallery(item, e)}
+                          aria-label="View gallery image"
                         >
                           <Eye size={16} />
                         </button>
@@ -329,6 +395,7 @@ const Gallery = () => {
                               className="gallery-action-btn delete-btn"
                               title="Delete gallery"
                               onClick={(e) => handleDeleteGallery(item, e)}
+                              aria-label="Delete gallery image"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -357,6 +424,7 @@ const Gallery = () => {
                   }`}
                   onClick={() => goToPage(currentPage - 1)}
                   disabled={currentPage === 1}
+                  aria-label="Previous page"
                 >
                   <ChevronLeft size={16} />
                   <span>Prev</span>
@@ -370,6 +438,7 @@ const Gallery = () => {
                         currentPage === page ? "active" : ""
                       }`}
                       onClick={() => goToPage(page)}
+                      aria-label={`Go to page ${page}`}
                     >
                       {page}
                     </button>
@@ -382,6 +451,7 @@ const Gallery = () => {
                   }`}
                   onClick={() => goToPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
+                  aria-label="Next page"
                 >
                   <span>Next</span>
                   <ChevronRight size={16} />

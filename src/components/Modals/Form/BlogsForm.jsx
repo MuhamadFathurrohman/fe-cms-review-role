@@ -1,3 +1,20 @@
+/**
+ * @file BlogsForm.jsx
+ * @description Komponen form modal untuk manajemen data blog dengan dukungan multi-bahasa.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat blog baru dengan konten bilingual
+ * - **Edit**: Mengedit blog yang sudah ada
+ * 
+ * Menyediakan fitur lengkap:
+ * - Dukungan terjemahan bilingual (English wajib, Indonesian opsional)
+ * - Upload gambar featured dengan preview
+ * - Editor rich text (Tiptap) untuk konten blog
+ * - Manajemen tag per bahasa
+ * - Pengaturan SEO bilingual
+ * - Status publish/draft dan featured
+ * - Validasi input bilingual yang ketat
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import { Globe, AlertCircle, X, Upload, Trash2 } from "lucide-react";
 import { blogService } from "../../../services/blogService";
@@ -9,14 +26,47 @@ import PulseDots from "../../Loaders/PulseDots";
 import TiptapEditor from "../../TiptapEditor";
 import "../../../sass/components/Modals/BlogsForm/BlogsForm.scss";
 
+/**
+ * Props untuk komponen BlogsForm.
+ * @typedef {Object} BlogsFormProps
+ * @property {Object|null} [item=null] - Data blog awal untuk mode edit
+ * @property {function(): void} onClose - Callback saat form ditutup
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ */
+
+/**
+ * Komponen form modal untuk manajemen data blog bilingual.
+ * Digunakan dalam konteks modal untuk operasi CRUD blog.
+ *
+ * @component
+ * @param {BlogsFormProps} props - Props komponen
+ */
 const BlogsForm = ({ item = null, onClose, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {React.RefObject<HTMLFormElement>} Ref ke form utama */
   const formRef = useRef(null);
+
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input file gambar */
   const fileInputRef = useRef(null);
+
+  /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
 
+  /**
+   * Bahasa yang sedang aktif untuk pengisian form.
+   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
+   */
   const [currentLanguage, setCurrentLanguage] = useState("EN");
+
+  /**
+   * Data terjemahan untuk kedua bahasa.
+   * @type {{
+   *   EN: { title: string, excerpt: string, content: string, metaTitle: string, metaDescription: string, metaKeywords: string, tags: string[] },
+   *   ID: { title: string, excerpt: string, content: string, metaTitle: string, metaDescription: string, metaKeywords: string, tags: string[] }
+   * }}
+   */
   const [translations, setTranslations] = useState({
     EN: {
       title: "",
@@ -38,20 +88,56 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     },
   });
 
+  /**
+   * Data master blog (non-terjemahan).
+   * @type {{
+   *   embedUrl: string,
+   *   isPublished: boolean,
+   *   isFeatured: boolean
+   * }}
+   */
   const [masterData, setMasterData] = useState({
     embedUrl: "",
     isPublished: false,
     isFeatured: false,
   });
 
-  // ✅ Single image state (mirror ItemsForm but for single image)
+  
+  /**
+   * State gambar featured blog.
+   * Struktur: { id: string, file: File|null, preview: string, isExisting: boolean }
+   * @type {{ id: string, file: File|null, preview: string, isExisting: boolean }|null}
+   */
   const [image, setImage] = useState(null);
-  // image format: { id: unique_id, file: File|null, preview: url, isExisting: boolean }
 
+  /**
+   * Pesan error validasi untuk upload gambar.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [imageError, setImageError] = useState("");
+
+  /**
+   * Input teks sementara untuk penambahan tag.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [tagInput, setTagInput] = useState("");
+
+  /**
+   * Status loading saat proses submit berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
+
+  /**
+   * Pesan error umum untuk form.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [error, setError] = useState("");
+
+  /**
+   * Pesan error validasi per field.
+   * @type {{[fieldName: string]: string}}
+   */
   const [validationErrors, setValidationErrors] = useState({});
 
   // Load data on edit
@@ -63,7 +149,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         isFeatured: item.isFeatured ?? false,
       });
 
-      // ✅ Load existing image
+      // Load existing image
       if (item.image) {
         setImage({
           id: "existing-0",
@@ -73,7 +159,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         });
       }
 
-      // ✅ Load English translations
+      // Load English translations
       const enData = {
         title: item.titleEn || "",
         excerpt: item.excerptEn || "",
@@ -84,7 +170,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         tags: Array.isArray(item.tagsEn) ? item.tagsEn : [],
       };
 
-      // ✅ Load Indonesian translations
+      // Load Indonesian translations
       const idData = {
         title: item.titleId || "",
         excerpt: item.excerptId || "",
@@ -107,7 +193,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     }
   }, [item, isEditing]);
 
-  // ✅ Cleanup blob URLs
+  // Cleanup blob URLs
   useEffect(() => {
     return () => {
       if (image && image.preview && image.preview.startsWith("blob:")) {
@@ -116,6 +202,15 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     };
   }, [image]);
 
+  /**
+   * Memvalidasi form sebelum submit.
+   * Menerapkan aturan bilingual yang ketat:
+   * - English selalu wajib (title dan content)
+   * - Indonesian opsional tapi harus lengkap jika disediakan
+   * - Gambar wajib hanya saat create
+   * 
+   * @returns {boolean} `true` jika valid, `false` jika tidak
+   */
   const validateForm = () => {
     const errors = {};
 
@@ -152,12 +247,21 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handler perubahan bahasa aktif.
+   * @param {'EN'|'ID'} lang - Bahasa yang dipilih
+   */
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
     setTagInput("");
     if (error) setError("");
   };
 
+  /**
+   * Handler perubahan field terjemahan.
+   * @param {string} field - Nama field yang diubah
+   * @param {string} value - Nilai baru
+   */
   const handleTranslationChange = (field, value) => {
     setTranslations((prev) => ({
       ...prev,
@@ -176,12 +280,22 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
+  /**
+   * Handler perubahan field master data.
+   * @param {string} field - Nama field yang diubah
+   * @param {string|boolean} value - Nilai baru
+   */
   const handleMasterChange = (field, value) => {
     setMasterData((prev) => ({ ...prev, [field]: value }));
     if (error) setError("");
   };
 
-  // ✅ Handle single image upload
+  // Handle single image upload
+  /**
+   * Handler perubahan file gambar.
+   * Melakukan validasi file sebelum memproses preview.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
+   */
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -209,7 +323,11 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
-  // ✅ Remove image
+  
+  /**
+   * Handler penghapusan gambar dari form.
+   * Membersihkan state dan URL object.
+   */
   const handleImageRemove = () => {
     if (image && image.preview.startsWith("blob:")) {
       URL.revokeObjectURL(image.preview);
@@ -223,13 +341,19 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
-  // ✅ Change image
+ 
+  /**
+   * Memicu klik pada input file untuk mengganti gambar.
+   */
   const handleChangeImage = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  /**
+   * Handler penambahan tag dari input teks.
+   */
   const handleAddTag = () => {
     if (
       tagInput.trim() &&
@@ -246,6 +370,10 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Handler penghapusan tag tertentu.
+   * @param {string} tagToRemove - Tag yang akan dihapus
+   */
   const handleRemoveTag = (tagToRemove) => {
     setTranslations((prev) => ({
       ...prev,
@@ -258,6 +386,11 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update blog dengan validasi bilingual.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -291,12 +424,12 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
 
       const blogData = {
         embedUrl: masterData.embedUrl || undefined,
-        isPublished: masterData.isPublished, // ✅ Boolean
-        isFeatured: masterData.isFeatured, // ✅ Boolean
-        translations: [], // ✅ Will be array
+        isPublished: masterData.isPublished,
+        isFeatured: masterData.isFeatured,
+        translations: [],
       };
 
-      // ✅ Handle image
+      // Handle image
       if (image) {
         if (image.file instanceof File) {
           // New file upload
@@ -307,7 +440,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         }
       }
 
-      // ✅ Build English Translation (REQUIRED)
+      // Build English Translation (REQUIRED)
       if (translations.EN.title?.trim() || translations.EN.content?.trim()) {
         blogData.translations.push({
           language: "EN",
@@ -321,7 +454,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         });
       }
 
-      // ✅ Build Indonesian Translation (OPTIONAL, but COMPLETE)
+      // Build Indonesian Translation (OPTIONAL, but COMPLETE)
       const hasCompleteIdTranslation =
         translations.ID.title?.trim() && translations.ID.content?.trim();
 
@@ -413,10 +546,20 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Mendapatkan nilai field terjemahan untuk bahasa saat ini.
+   * @param {string} field - Nama field
+   * @returns {string} Nilai field
+   */
   const getCurrentField = (field) => {
     return translations[currentLanguage][field];
   };
 
+  /**
+   * Mengatur nilai field terjemahan untuk bahasa saat ini.
+   * @param {string} field - Nama field
+   * @param {string} value - Nilai baru
+   */
   const setCurrentField = (field, value) => {
     handleTranslationChange(field, value);
   };
@@ -447,6 +590,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "EN" ? "active" : ""}`}
             onClick={() => handleLanguageChange("EN")}
+            aria-label="Switch to English"
           >
             EN {translations.EN.title && "✓"}
           </button>
@@ -454,6 +598,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "ID" ? "active" : ""}`}
             onClick={() => handleLanguageChange("ID")}
+            aria-label="Switch to Indonesian"
           >
             ID {translations.ID.title && "✓"}
           </button>
@@ -493,6 +638,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 ? "Enter blog title in English (required)"
                 : "Masukkan judul blog dalam Bahasa (opsional)"
             }
+            aria-label={`Blog title in ${currentLanguage}`}
           />
           {validationErrors[`${currentLanguage}.title`] && (
             <span className="field-error">
@@ -513,6 +659,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 : "Ringkasan singkat dalam Bahasa (opsional)"
             }
             rows={2}
+            aria-label={`Blog excerpt in ${currentLanguage}`}
           />
         </div>
 
@@ -534,6 +681,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 ? "Write your blog content in English (required)"
                 : "Tulis konten blog dalam Bahasa (opsional)"
             }
+            aria-label={`Blog content in ${currentLanguage}`}
           />
           {validationErrors[`${currentLanguage}.content`] && (
             <span className="field-error">
@@ -553,13 +701,14 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
           {image ? (
             <div className="image-preview-container">
               <div className="image-preview">
-                <img src={image.preview} alt="Preview" />
+                <img src={image.preview} alt="Preview" aria-label="Image preview" />
                 <div className="image-actions">
                   <button
                     type="button"
                     className="change-image-btn"
                     onClick={handleChangeImage}
                     title="Change image"
+                    aria-label="Change image"
                   >
                     <Upload size={16} />
                   </button>
@@ -568,6 +717,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                     className="remove-image-btn"
                     onClick={handleImageRemove}
                     title="Remove image"
+                    aria-label="Remove image"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -580,6 +730,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 onChange={handleImageChange}
                 className="image-input"
                 style={{ display: "none" }}
+                aria-label="Upload featured image"
               />
             </div>
           ) : (
@@ -591,6 +742,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 onChange={handleImageChange}
                 id="blog-image-upload"
                 className="image-input"
+                aria-label="Upload featured image"
               />
               <label htmlFor="blog-image-upload" className="image-upload-btn">
                 <Upload size={20} />
@@ -614,7 +766,8 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
             type="url"
             value={masterData.embedUrl}
             onChange={(e) => handleMasterChange("embedUrl", e.target.value)}
-            placeholder="https://example.com/embed"
+            placeholder="https://example.com/embed  "
+            aria-label="Embed URL"
           />
         </div>
 
@@ -634,11 +787,13 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
               onKeyDown={(e) =>
                 e.key === "Enter" && (e.preventDefault(), handleAddTag())
               }
+              aria-label={`Add tags in ${currentLanguage}`}
             />
             <button
               type="button"
               onClick={handleAddTag}
               className="tag-add-btn"
+              aria-label="Add tag"
             >
               +
             </button>
@@ -651,6 +806,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   type="button"
                   onClick={() => handleRemoveTag(tag)}
                   className="tag-remove"
+                  aria-label={`Remove tag ${tag}`}
                 >
                   ×
                 </button>
@@ -668,6 +824,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={masterData.isPublished ? "active" : ""}
                 onClick={() => handleMasterChange("isPublished", true)}
+                aria-label="Set status to published"
               >
                 Published
               </button>
@@ -675,6 +832,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={!masterData.isPublished ? "active" : ""}
                 onClick={() => handleMasterChange("isPublished", false)}
+                aria-label="Set status to draft"
               >
                 Draft
               </button>
@@ -688,6 +846,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={masterData.isFeatured ? "active" : ""}
                 onClick={() => handleMasterChange("isFeatured", true)}
+                aria-label="Mark as featured"
               >
                 Yes
               </button>
@@ -695,6 +854,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={!masterData.isFeatured ? "active" : ""}
                 onClick={() => handleMasterChange("isFeatured", false)}
+                aria-label="Unmark as featured"
               >
                 No
               </button>
@@ -717,6 +877,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "SEO title in English (optional)"
                   : "Judul SEO dalam Bahasa (opsional)"
               }
+              aria-label={`Meta title in ${currentLanguage}`}
             />
           </div>
 
@@ -733,6 +894,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   : "Deskripsi SEO dalam Bahasa (opsional)"
               }
               rows={2}
+              aria-label={`Meta description in ${currentLanguage}`}
             />
           </div>
 
@@ -747,6 +909,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "Comma-separated keywords (optional)"
                   : "Kata kunci dipisah koma (opsional)"
               }
+              aria-label={`Meta keywords in ${currentLanguage}`}
             />
           </div>
         </div>
@@ -758,6 +921,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
             className="btn-secondary"
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel form"
           >
             Cancel
           </button>

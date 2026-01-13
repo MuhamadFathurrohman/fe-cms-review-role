@@ -1,4 +1,17 @@
-// src/components/Modals/Chart/AvgSessionModal.jsx
+/**
+ * @file AvgSessionModal.jsx
+ * @description Komponen modal untuk menampilkan insight detail durasi sesi rata-rata.
+ * Menyediakan tiga tab utama:
+ * - **Trend**: Grafik garis tren durasi sesi harian
+ * - **By Device**: Perbandingan durasi sesi berdasarkan jenis perangkat
+ * - **Top Pages**: Halaman dengan durasi sesi rata-rata terpanjang
+ * 
+ * Menggunakan Recharts untuk visualisasi data dengan:
+ * - Tooltip kustom yang menampilkan durasi dalam format "Xm Ys"
+ * - Responsivitas untuk mobile/desktop
+ * - Penanganan data kosong yang elegan
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   LineChart,
@@ -16,12 +29,47 @@ import { analyticsService } from "../../../services/analyticsService";
 import { baseService } from "../../../services/baseService";
 import "../../../sass/components/Modals/AvgSessionModal/AvgSessionModal.scss";
 
+/**
+ * Props untuk komponen AvgSessionModal.
+ * @typedef {Object} AvgSessionModalProps
+ * @property {string} startDate - Tanggal mulai filter (YYYY-MM-DD)
+ * @property {string} endDate - Tanggal akhir filter (YYYY-MM-DD)
+ * @property {function(): void} onClose - Handler saat modal ditutup
+ */
+
+/**
+ * Komponen modal insight durasi sesi rata-rata.
+ * Menampilkan visualisasi data analitik durasi sesi dalam format yang mudah dipahami.
+ *
+ * @component
+ * @param {AvgSessionModalProps} props - Props komponen
+ */
 const AvgSessionModal = ({ startDate, endDate, onClose }) => {
+  /**
+   * Tab aktif di modal insight durasi sesi.
+   * @type {['trend'|'device'|'pages', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activeTab, setActiveTab] = useState("trend");
+
+  /**
+   * Status loading saat mengambil data insight.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Data insight durasi sesi dari service.
+   * @type {Object|null}
+   */
   const [data, setData] = useState(null);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
 
+  /** @type {string} Rentang tanggal terformat untuk ditampilkan di UI */
   const formattedRange =
     startDate && endDate
       ? `${baseService.formatDate(startDate)} – ${baseService.formatDate(
@@ -29,6 +77,7 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
         )}`
       : "";
 
+  // Fetch data insight durasi sesi
   useEffect(() => {
     const fetchData = async () => {
       if (!startDate || !endDate) {
@@ -62,6 +111,16 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
   }, [startDate, endDate]);
 
   // === Custom Tooltips ===
+  /**
+   * Tooltip kustom untuk chart garis tren durasi sesi.
+   * Menampilkan tanggal dan durasi dalam format "Xm Ys".
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @param {string} props.label - Label sumbu X (tanggal)
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomTrendTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const duration = payload[0].value;
@@ -82,6 +141,15 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
+  /**
+   * Tooltip kustom untuk chart bar durasi sesi berdasarkan perangkat.
+   * Menampilkan jenis perangkat, durasi rata-rata, dan jumlah sesi.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomDeviceTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -100,6 +168,15 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
+  /**
+   * Tooltip kustom untuk chart bar halaman dengan durasi sesi terpanjang.
+   * Menampilkan judul halaman, durasi rata-rata, dan jumlah kunjungan.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomPagesTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -120,12 +197,26 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
+  /**
+   * Memotong teks label chart agar tidak terlalu panjang.
+   * 
+   * @param {string} text - Teks yang akan dipotong
+   * @param {number} [max=18] - Jumlah karakter maksimum sebelum dipotong
+   * @returns {string} Teks yang telah dipotong dengan ellipsis jika perlu
+   */
   const truncateLabel = (text, max = 18) => {
     if (!text) return "";
     return text.length > max ? text.slice(0, max) + "…" : text;
   };
 
   // === Komponen Pesan "No Data" ===
+  /**
+   * Merender pesan ketika tidak ada data untuk tab tertentu.
+   * Menyesuaikan ikon dan pesan berdasarkan jenis tab.
+   * 
+   * @param {'trend'|'device'|'pages'} tab - Jenis tab yang tidak memiliki data
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = (tab) => {
     const messages = {
       trend: {
@@ -165,18 +256,21 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeTab === "trend" ? "active" : ""}
             onClick={() => setActiveTab("trend")}
+            aria-label="Show session duration trend chart"
           >
             <TrendingUp size={16} /> Trend
           </button>
           <button
             className={activeTab === "device" ? "active" : ""}
             onClick={() => setActiveTab("device")}
+            aria-label="Show session duration by device chart"
           >
             <Monitor size={16} /> By Device
           </button>
           <button
             className={activeTab === "pages" ? "active" : ""}
             onClick={() => setActiveTab("pages")}
+            aria-label="Show top engaging pages chart"
           >
             <FileText size={16} /> Top Pages
           </button>
@@ -284,7 +378,7 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
                   </p>
                 </div>
 
-                {/* ✅ Tambahkan disclaimer */}
+                {/* Tambahkan disclaimer */}
                 <div className="avg-session-modal__disclaimer">
                   <Info size={16} />
                   <span>
@@ -416,7 +510,7 @@ const AvgSessionModal = ({ startDate, endDate, onClose }) => {
                   </p>
                 </div>
 
-                {/* ✅ Tambahkan disclaimer */}
+                {/* Tambahkan disclaimer */}
                 <div className="avg-session-modal__disclaimer">
                   <Info size={16} />
                   <span>

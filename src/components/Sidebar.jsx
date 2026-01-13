@@ -1,4 +1,18 @@
-// components/Sidebar.jsx (ENHANCED ANIMATION VERSION)
+/**
+ * @file Sidebar.jsx
+ * @description Komponen navigasi samping dashboard dengan dukungan:
+ * - Mode collapsed/expanded
+ * - Responsif mobile
+ * - Submenu dengan animasi buka/tutup halus
+ * - Tooltip ekspansi saat collapsed
+ * - Overlay backdrop untuk mobile
+ *
+ * Menggunakan kombinasi custom hooks dan context untuk mengelola state kompleks:
+ * - `useSidebar()`: Menyediakan daftar menu berdasarkan izin pengguna
+ * - `useSidebarContext()`: Mengelola state global sidebar (mobileOpen, activeSubmenu)
+ * - `useSidebarOverlay()`: Menangani tooltip dan interaksi mouse saat collapsed
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,6 +24,12 @@ import Logo from "../assets/images/logo1.png";
 import PulseDots from "../components/Loaders/PulseDots";
 import "../sass/components/Sidebar/Sidebar.css";
 
+/**
+ * Komponen sidebar navigasi utama.
+ * Menampilkan menu dinamis berdasarkan izin pengguna dan mendukung interaksi kompleks.
+ *
+ * @component
+ */
 const Sidebar = () => {
   const { logout } = useAuth();
   const { menuItems } = useSidebar();
@@ -27,15 +47,36 @@ const Sidebar = () => {
     handleSubmenuMouseLeave,
   } = useSidebarOverlay();
 
-  // State untuk mengelola animasi closing
+  /**
+   * ID submenu yang sedang dalam proses animasi penutupan.
+   * Digunakan untuk mencegah flicker saat toggle cepat.
+   * @type {[string | null, React.Dispatch<React.SetStateAction<string | null>>]}
+   */
   const [closingSubmenu, setClosingSubmenu] = useState(null);
+
+  /**
+   * Map timeout ID untuk setiap submenu yang sedang ditutup.
+   * Memungkinkan pembatalan animasi jika pengguna membuka kembali submenu.
+   * @type {{[submenuId: string]: number}}
+   */
   const [submenuTimeouts, setSubmenuTimeouts] = useState({});
+
+  /**
+   * Status loading saat proses logout berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Ref untuk mendeteksi klik di luar submenu
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke elemen sidebar untuk deteksi klik luar. */
   const sidebarRef = useRef(null);
+
+  /** @type {React.MutableRefObject<Function | null>} Ref ke handler klik luar untuk memastikan closure terbaru. */
   const handleClickOutsideRef = useRef();
 
+  /**
+   * Melakukan proses logout pengguna.
+   * Menonaktifkan tombol selama proses berlangsung.
+   */
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -47,7 +88,12 @@ const Sidebar = () => {
     }
   };
 
-  // Enhanced submenu closing dengan animasi
+  /**
+   * Menutup submenu dengan animasi delay.
+   * Memberikan waktu untuk transisi CSS sebelum menghapus dari DOM.
+   *
+   * @param {string} submenuId - ID submenu yang akan ditutup
+   */
   const closeSubmenuWithAnimation = (submenuId) => {
     if (submenuId && activeSubmenu === submenuId) {
       setClosingSubmenu(submenuId);
@@ -57,7 +103,6 @@ const Sidebar = () => {
       }
 
       const timeoutId = setTimeout(() => {
-        // Pastikan submenu masih dalam proses closing
         if (closingSubmenu === submenuId) {
           setActiveSubmenu(null);
           setClosingSubmenu(null);
@@ -79,14 +124,12 @@ const Sidebar = () => {
   // Handler untuk menutup submenu saat klik di luar
   useEffect(() => {
     handleClickOutsideRef.current = (event) => {
-      // 🔥 Tambahkan pengecekan tambahan: apakah event target adalah bagian dari modal?
-      // Ini adalah solusi alternatif jika stopPropagation tidak cukup
+      // Jangan tutup sidebar jika klik di dalam modal
       if (
         event.target.closest(".modal-overlay") ||
         event.target.closest(".modal-content") ||
-        event.target.closest(".modal-backdrop") // Jika modal Anda menggunakan class ini
+        event.target.closest(".modal-backdrop")
       ) {
-        // Jangan tutup sidebar jika klik di dalam modal
         return;
       }
 
@@ -100,6 +143,7 @@ const Sidebar = () => {
     };
   }, [activeSubmenu]);
 
+  // Pasang event listener global untuk deteksi klik luar
   useEffect(() => {
     const handleClick = (event) => {
       if (handleClickOutsideRef.current) {
@@ -116,7 +160,7 @@ const Sidebar = () => {
     };
   }, [activeSubmenu]);
 
-  // Cleanup timeouts saat component unmount
+  // Cleanup semua timeout saat komponen dilepas
   useEffect(() => {
     return () => {
       Object.values(submenuTimeouts).forEach((timeoutId) => {
@@ -125,6 +169,13 @@ const Sidebar = () => {
     };
   }, [submenuTimeouts]);
 
+  /**
+   * Handler klik pada item menu utama.
+   * Mengelola logika buka/tutup submenu dan navigasi.
+   *
+   * @param {Object} item - Item menu yang diklik
+   * @param {React.MouseEvent} e - Event klik
+   */
   const handleMenuClick = (item, e) => {
     if (hasSubmenu(item)) {
       e.preventDefault();
@@ -134,7 +185,6 @@ const Sidebar = () => {
       }
 
       if (closingSubmenu === item.id) {
-        // Batalkan timeout penutupan
         if (submenuTimeouts[item.id]) {
           clearTimeout(submenuTimeouts[item.id]);
           setSubmenuTimeouts((prev) => {
@@ -143,30 +193,23 @@ const Sidebar = () => {
             return newTimeouts;
           });
         }
-        // Reset state closing
         setClosingSubmenu(null);
-        // Langsung buka kembali
         setActiveSubmenu(item.id);
-        return; // Keluar dari fungsi
+        return;
       }
 
       if (activeSubmenu === item.id) {
-        // Tutup submenu yang sama
         closeSubmenuWithAnimation(item.id);
       } else {
-        // 🔹 BERSIHKAN SUBMENU SEBELUMNYA (termasuk yang sedang closing)
-        // Batalkan *semua* timeout yang ada
         Object.values(submenuTimeouts).forEach((timeoutId) => {
           clearTimeout(timeoutId);
         });
-        setSubmenuTimeouts({}); // Kosongkan state timeouts
-        setClosingSubmenu(null); // Reset state closing
+        setSubmenuTimeouts({});
+        setClosingSubmenu(null);
 
-        // Jika ada submenu aktif (bukan closing), set ke null sekarang
         if (activeSubmenu) {
           setActiveSubmenu(null);
         }
-        // 🔹 LANGSUNG BUKA SUBMENU BARU
         setActiveSubmenu(item.id);
       }
     } else {
@@ -177,6 +220,13 @@ const Sidebar = () => {
     }
   };
 
+  /**
+   * Handler mouse enter pada item menu.
+   * Menampilkan tooltip ekspansi saat mode collapsed.
+   *
+   * @param {Object} item - Item menu
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const handleMouseEnter = (item, e) => {
     if (collapsed && !isMobile) {
       const position = getPositionFromEvent(e);
@@ -184,6 +234,13 @@ const Sidebar = () => {
     }
   };
 
+  /**
+   * Handler mouse leave pada item menu.
+   * Menyembunyikan tooltip atau submenu overlay.
+   *
+   * @param {Object} item - Item menu
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const handleMouseLeave = (item, e) => {
     if (collapsed && !isMobile) {
       if (hasSubmenu(item)) {
@@ -194,6 +251,12 @@ const Sidebar = () => {
     }
   };
 
+  /**
+   * Handler mouse enter pada tombol logout.
+   * Menampilkan tooltip "Sign Out".
+   *
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const handleLogoutMouseEnter = (e) => {
     if (collapsed && !isMobile) {
       const position = getPositionFromEvent(e);
@@ -201,25 +264,35 @@ const Sidebar = () => {
     }
   };
 
+  /**
+   * Handler mouse leave pada tombol logout.
+   * Menyembunyikan tooltip logout.
+   */
   const handleLogoutMouseLeave = () => {
     if (collapsed && !isMobile) {
       hideExpandingLabel("logout");
     }
   };
 
-  // Handler untuk submenu item click - TIDAK menutup submenu
+  /**
+   * Handler klik pada item submenu.
+   * Mencegah penutupan submenu saat navigasi internal.
+   *
+   * @param {React.MouseEvent} e - Event klik
+   */
   const handleSubmenuClick = (e) => {
-    // Jangan tutup submenu saat mengklik submenu-link
-    // Hanya handle navigation
     handleSubmenuNavigation();
-
-    // Tutup mobile sidebar jika mobile
     if (isMobile) {
       closeMobileSidebar();
     }
   };
 
-  // Helper function untuk menentukan class submenu
+  /**
+   * Menentukan kelas CSS untuk submenu berdasarkan status animasi.
+   *
+   * @param {string} itemId - ID item menu induk
+   * @returns {string} String kelas CSS
+   */
   const getSubmenuClass = (itemId) => {
     const classes = ["submenu-list"];
 
@@ -234,7 +307,7 @@ const Sidebar = () => {
     return classes.join(" ");
   };
 
-  // Determine sidebar classes
+  // Tentukan kelas sidebar berdasarkan state
   const sidebarClasses = [
     "sidebar",
     collapsed && !isMobile ? "collapsed" : "",
@@ -246,13 +319,13 @@ const Sidebar = () => {
 
   return (
     <>
-      {/* Mobile Backdrop */}
+      {/* Backdrop untuk mobile */}
       {isMobile && mobileOpen && (
         <div className="sidebar-backdrop" onClick={closeMobileSidebar} />
       )}
 
       <aside className={sidebarClasses} ref={sidebarRef}>
-        {/* Logo Section */}
+        {/* Bagian Logo */}
         <div className="sidebar-logo-section">
           <div className="logo-container">
             <div className="logo-icon">
@@ -266,7 +339,7 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Navigation Menu */}
+        {/* Menu Navigasi */}
         <nav className="sidebar-nav">
           <ul className="nav-list">
             {menuItems.map((item) => {
@@ -311,7 +384,7 @@ const Sidebar = () => {
                     </NavLink>
                   </div>
 
-                  {/* Enhanced submenu with animation states */}
+                  {/* Submenu dengan animasi */}
                   {hasSubmenu(item) &&
                     (!collapsed || isMobile) &&
                     (isSubmenuOpen || isSubmenuClosing) && (
@@ -341,7 +414,7 @@ const Sidebar = () => {
             })}
           </ul>
 
-          {/* Logout Button */}
+          {/* Tombol Logout */}
           <div className="sidebar-footer">
             <div className="logout-container">
               <button
@@ -349,7 +422,8 @@ const Sidebar = () => {
                 onClick={handleLogout}
                 onMouseEnter={handleLogoutMouseEnter}
                 onMouseLeave={handleLogoutMouseLeave}
-                disabled={isLoggingOut} // 🔥 Nonaktifkan tombol saat loading
+                disabled={isLoggingOut}
+                aria-label={isLoggingOut ? "Signing out..." : "Sign out"}
               >
                 {isLoggingOut ? (
                   <PulseDots
@@ -361,7 +435,7 @@ const Sidebar = () => {
                 ) : (
                   <img
                     src={iconConfig.LogOut}
-                    alt="Logout"
+                    alt=""
                     className="logout-icon"
                   />
                 )}

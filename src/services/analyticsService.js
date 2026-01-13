@@ -1,8 +1,28 @@
+/**
+ * @file analyticsService.js
+ * @description Layanan terpusat untuk mengelola operasi data analitik website.
+ * Menyediakan abstraksi di atas `dataService.analytics` dengan fitur tambahan:
+ * - Agregasi statistik dari data mentah
+ * - Transformasi data untuk tampilan UI
+ * - Perhitungan tren dan insight
+ * - Dukungan pagination dan filter berdasarkan rentang tanggal
+ * - Ekspor data berbasis periode
+ * 
+ * Mengelola dua jenis data:
+ * 1. **Data agregat harian**: Statistik per hari (page views, bounce rate, dll.)
+ * 2. **Data event-level**: Detail setiap kunjungan halaman (device, browser, dll.)
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 import generalApiService from "./generalApiService";
 
-// Helper: format duration in "Xm Ys"
+/**
+ * Memformat durasi dalam detik ke format "Xm Ys".
+ * 
+ * @param {number} seconds - Durasi dalam detik
+ * @returns {string} Durasi terformat (misal: "5m 30s")
+ */
 const formatDuration = (seconds) => {
   if (!seconds || seconds <= 0) return "0m 0s";
   const mins = Math.floor(seconds / 60);
@@ -10,9 +30,21 @@ const formatDuration = (seconds) => {
   return `${mins}m ${secs}s`;
 };
 
+/**
+ * Layanan analitik terpusat.
+ * Mengelola semua operasi terkait data analitik website.
+ * 
+ * @namespace analyticsService
+ */
 export const analyticsService = {
   // Hitung statistik dari rentang tanggal yang diberikan (misal: 7 hari)
-  // Di analyticsService
+  /**
+   * Memproses data analitik menjadi statistik ringkas.
+   * Menghitung total dan rata-rata dari data agregat harian.
+   * 
+   * @param {Array<Object>} analytics - Data analitik agregat harian
+   * @returns {Object} Statistik ringkas dengan properti terformat
+   */
   processStats: (analytics) => {
     if (!Array.isArray(analytics) || analytics.length === 0) {
       return {
@@ -84,6 +116,13 @@ export const analyticsService = {
     };
   },
 
+  /**
+   * Memproses daftar data analitik untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan metadata.
+   * 
+   * @param {Array<Object>} analytics - Data analitik dari API
+   * @returns {Array<Object>} Data analitik yang telah diproses
+   */
   processList: (analytics) => {
     if (!Array.isArray(analytics)) return [];
 
@@ -99,7 +138,15 @@ export const analyticsService = {
     }));
   },
 
-  // ✅ Helper: Hitung trend dari dua periode terpisah
+  // Hitung trend dari dua periode terpisah
+  /**
+   * Menghitung perubahan persentase antara dua periode waktu.
+   * Digunakan untuk menampilkan tren naik/turun di dashboard.
+   * 
+   * @param {Array<Object>} currentPeriod - Data periode saat ini
+   * @param {Array<Object>} previousPeriod - Data periode sebelumnya
+   * @returns {Object} Objek dengan perubahan persentase per metrik
+   */
   calculateTrendsFromTwoPeriods: (currentPeriod, previousPeriod) => {
     const aggregate = (period) => {
       if (!Array.isArray(period) || period.length === 0) {
@@ -174,6 +221,21 @@ export const analyticsService = {
     };
   },
 
+  /**
+   * Mendapatkan daftar data analitik dengan pagination.
+   * Digunakan untuk halaman analitik utama.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=30] - Jumlah item per halaman
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   stats: Object,
+   *   message?: string
+   * }} Respons dengan data analitik yang diproses dan statistik
+   */
   getPaginated: async (page = 1, limit = 30) => {
     try {
       const params = { page, limit, deletedAt: null };
@@ -197,6 +259,21 @@ export const analyticsService = {
   },
 
   // method get data endpoint /analytics
+  /**
+   * Mendapatkan data analitik berdasarkan rentang tanggal.
+   * Digunakan untuk filter custom di halaman analitik.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   stats: Object,
+   *   message?: string
+   * }} Respons dengan data analitik yang difilter dan statistik
+   */
   getByDateRange: async (startDate, endDate) => {
     try {
       const result = await dataService.analytics.getByDateRange(
@@ -229,6 +306,23 @@ export const analyticsService = {
   },
 
   // method get data endpoint /analytics/page-views
+  /**
+   * Mendapatkan detail kunjungan halaman berdasarkan rentang tanggal.
+   * Menyediakan breakdown berdasarkan device, browser, dan OS.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *   processedPageViews: Array<Object>,
+   *   stats: Object,
+   *   deviceBreakdown: Array<Object>,
+   *   browserBreakdown: Array<Object>,
+   *   osBreakdown: Array<Object>,
+   *   message?: string
+   * }} Respons dengan data detail kunjungan dan breakdown
+   */
   getPageViewsByDateRange: async (startDate, endDate) => {
     try {
       const result = await dataService.analytics.getPageViewsByDateRange(
@@ -323,6 +417,13 @@ export const analyticsService = {
 
   // --- Fungsi untuk page-views (event-level) ---
 
+  /**
+   * Memproses data kunjungan halaman untuk ditampilkan di UI.
+   * Menambahkan properti yang diformat dan metadata.
+   * 
+   * @param {Array<Object>} pageViews - Data kunjungan halaman dari API
+   * @returns {Array<Object>} Data kunjungan yang telah diproses
+   */
   processPageViews: (pageViews) => {
     return (pageViews || []).map((item) => ({
       ...item,
@@ -343,6 +444,12 @@ export const analyticsService = {
     }));
   },
 
+  /**
+   * Menghitung statistik dari data kunjungan halaman.
+   * 
+   * @param {Array<Object>} pageViews - Data kunjungan halaman
+   * @returns {Object} Statistik ringkas
+   */
   getPageViewsStats: (pageViews) => {
     if (!pageViews.length) {
       return {
@@ -363,6 +470,12 @@ export const analyticsService = {
     };
   },
 
+  /**
+   * Mendapatkan halaman teratas dari data analitik agregat.
+   * 
+   * @param {Array<Object>} analyticsData - Data analitik agregat harian
+   * @returns {Array<Object>} Daftar halaman teratas dengan persentase
+   */
   getTopPagesFromAggregated: (analyticsData) => {
     if (!analyticsData || !Array.isArray(analyticsData)) return [];
 
@@ -383,7 +496,6 @@ export const analyticsService = {
       .map(([path, views]) => ({
         page: path,
         views,
-        // ✅ Bulatkan persentase ke 2 desimal
         percentage:
           totalViews > 0 ? Math.round((views / totalViews) * 10000) / 100 : 0,
         title:
@@ -399,6 +511,13 @@ export const analyticsService = {
   // aggregasi dan penjumlahan data agar sinkron dengan preset
   // untuk device, country, browser, os
 
+  /**
+   * Mengagregasi breakdown data dari analitik harian.
+   * Menghitung persentase untuk country, device, browser, dan OS.
+   * 
+   * @param {Array<Object>} analyticsData - Data analitik agregat harian
+   * @returns {Object} Breakdown data dengan persentase
+   */
   aggregateBreakdowns: (analyticsData) => {
     const countries = {};
     const devices = {};
@@ -467,7 +586,7 @@ export const analyticsService = {
         .map(([key, value]) => ({
           [labelKey]: key,
           [valueKey]: value,
-          percentage: total > 0 ? Math.round((value / total) * 10000) / 100 : 0, // Bulatkan ke 2 desimal
+          percentage: total > 0 ? Math.round((value / total) * 10000) / 100 : 0,
         }))
         .sort((a, b) => b[valueKey] - a[valueKey]);
     };
@@ -495,6 +614,19 @@ export const analyticsService = {
     };
   },
 
+  /**
+   * Mendapatkan insight pengunjung berdasarkan rentang tanggal.
+   * Menyediakan tren dan breakdown berdasarkan country, device, dll.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *   data: Object,
+   *   message?: string
+   * }} Respons dengan data insight pengunjung
+   */
   getVisitorInsights: async (startDate, endDate) => {
     try {
       const result = await dataService.analytics.getByDateRange(
@@ -511,7 +643,7 @@ export const analyticsService = {
 
       const analyticsData = result.data || [];
 
-      // ✅ Ambil trend data (sudah benar)
+      // Ambil trend data (sudah benar)
       const trendData = analyticsData
         .map((item) => ({
           rawDate: item.date,
@@ -521,7 +653,7 @@ export const analyticsService = {
         }))
         .sort((a, b) => new Date(a.rawDate) - new Date(b.rawDate));
 
-      // ✅ Ambil breakdown dari data agregat
+      // Ambil breakdown dari data agregat
       const breakdowns = analyticsService.aggregateBreakdowns(analyticsData);
 
       return {
@@ -544,9 +676,22 @@ export const analyticsService = {
     }
   },
 
+  /**
+   * Mendapatkan insight kunjungan halaman berdasarkan rentang tanggal.
+   * Menyediakan halaman teratas dan tren kunjungan.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *   data: Object,
+   *   message?: string
+   * }} Respons dengan data insight kunjungan halaman
+   */
   getPageViewsInsights: async (startDate, endDate) => {
     try {
-      // ✅ Hanya gunakan /analytics
+      // Hanya gunakan /analytics
       const result = await dataService.analytics.getByDateRange(
         startDate,
         endDate
@@ -567,7 +712,6 @@ export const analyticsService = {
           data: {
             topPages: [],
             trendData: [],
-            performanceData: [], // Tidak tersedia dari /analytics
           },
         };
       }
@@ -596,17 +740,11 @@ export const analyticsService = {
         current.setDate(current.getDate() + 1);
       }
 
-      // // === PERFORMANCE DATA ===
-      // // ❌ Tidak bisa dihitung dari /analytics (tidak ada durasi per halaman)
-      // // Jadi kembalikan array kosong
-      // const performanceData = [];
-
       return {
         success: true,
         data: {
           topPages,
           trendData,
-          // performanceData,
         },
       };
     } catch (error) {
@@ -619,6 +757,19 @@ export const analyticsService = {
     }
   },
 
+  /**
+   * Mendapatkan detail bounce rate berdasarkan rentang tanggal.
+   * Menyediakan tren, halaman dengan bounce rate tinggi, dan breakdown referrer.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *   data: Object,
+   *   message?: string
+   * }} Respons dengan data detail bounce rate
+   */
   getBounceRateDetail: async (startDate, endDate) => {
     try {
       // 1. Ambil data agregat harian dari /analytics untuk trend
@@ -643,7 +794,7 @@ export const analyticsService = {
           month: "short",
           day: "numeric",
         }),
-        rate: parseFloat(day.bounceRate) || 0, // contoh: "25.4" → 25.4
+        rate: parseFloat(day.bounceRate) || 0,
       }));
 
       // 3. Ambil data granular dari /page-views untuk breakdown
@@ -747,9 +898,9 @@ export const analyticsService = {
 
             return {
               source: ref.source,
-              views: ref.totalSessions, // X-axis
-              bounceRate: rate, // Y-axis
-              impactScore: ref.totalSessions * rate, // Bubble size
+              views: ref.totalSessions,
+              bounceRate: rate,
+              impactScore: ref.totalSessions * rate,
             };
           });
         }
@@ -773,6 +924,19 @@ export const analyticsService = {
     }
   },
 
+  /**
+   * Mendapatkan insight durasi sesi rata-rata berdasarkan rentang tanggal.
+   * Menyediakan tren, breakdown device, dan halaman teratas berdasarkan durasi.
+   * 
+   * @async
+   * @param {string} startDate - Tanggal mulai (YYYY-MM-DD)
+   * @param {string} endDate - Tanggal akhir (YYYY-MM-DD)
+   * @returns {{
+   *   success: boolean,
+   *   data: Object,
+   *   message?: string
+   * }} Respons dengan data insight durasi sesi
+   */
   getAvgSessionInsights: async (startDate, endDate) => {
     try {
       // 1. Ambil data agregat harian dari /analytics untuk trend
@@ -793,12 +957,12 @@ export const analyticsService = {
 
       // 2. Bangun trendData dari data agregat
       const trendData = analyticsData.map((day) => ({
-        rawDate: day.date.split("T")[0], // YYYY-MM-DD
+        rawDate: day.date.split("T")[0],
         date: baseService.formatDate(day.date.split("T")[0], {
           month: "short",
           day: "numeric",
         }),
-        avgDuration: day.avgSessionTime || 0, // detik
+        avgDuration: day.avgSessionTime || 0,
         avgDurationFormatted: formatDuration(day.avgSessionTime || 0),
       }));
 
@@ -919,6 +1083,15 @@ export const analyticsService = {
 
   // --- Export ---
 
+  /**
+   * Mengekspor data analitik ke format file berdasarkan periode bulan/tahun.
+   * 
+   * @async
+   * @param {number} month - Bulan (1-12)
+   * @param {number} year - Tahun (misal: 2026)
+   * @param {'pdf'|'excel'} format - Format ekspor yang diinginkan
+   * @returns {{ success: boolean, fileName?: string, error?: string }} Respons dengan nama file jika sukses
+   */
   exportData: async (month, year, format) => {
     const url = `/analytics/export/${format}`;
     const params = {
@@ -932,6 +1105,14 @@ export const analyticsService = {
     return await generalApiService.downloadFile(url, params, fallbackFilename);
   },
 
+  /**
+   * Mendapatkan tren 30 hari terakhir untuk chart di dashboard.
+   * Mengisi data kosong dengan nilai 0 untuk visualisasi yang konsisten.
+   * 
+   * @async
+   * @param {number} [days=30] - Jumlah hari ke belakang
+   * @returns {{ success: boolean, data: Array<Object> }} Respons dengan data tren
+   */
   getLast30DaysTrend: async (days = 30) => {
     try {
       // Validasi input
@@ -956,7 +1137,7 @@ export const analyticsService = {
 
       if (!result.success) {
         console.warn("getByDateRange failed, returning empty trend");
-        return { success: true, data: [] }; // jangan error, beri data kosong
+        return { success: true, data: [] };
       }
 
       // Ambil data, jika tidak ada, beri array kosong
@@ -968,7 +1149,7 @@ export const analyticsService = {
         if (!item || !item.date) return;
 
         // Normalisasi format date (jika ada time)
-        const dateKey = item.date.split("T")[0]; // ambil hanya YYYY-MM-DD
+        const dateKey = item.date.split("T")[0];
 
         dataMap[dateKey] = {
           visitor: typeof item.visitor === "number" ? item.visitor : 0,
@@ -991,11 +1172,11 @@ export const analyticsService = {
         const dayData = dataMap[date] || { visitor: 0, uniqueVisitor: 0 };
 
         return {
-          date, // YYYY-MM-DD (untuk tooltip dan sorting)
+          date,
           label: baseService.formatDate(date, {
             month: "short",
             day: "numeric",
-          }), // contoh: "Dec 5"
+          }),
           newVisitors: dayData.visitor,
           returningVisitors: dayData.uniqueVisitor,
         };
@@ -1009,11 +1190,18 @@ export const analyticsService = {
       console.error("getLast30DaysTrend error:", error);
       return {
         success: false,
-        data: [], // selalu kembalikan array, jangan undefined/null
+        data: [],
       };
     }
   },
 
+  /**
+   * Mendapatkan snapshot statistik untuk dashboard overview.
+   * 
+   * @async
+   * @param {number} [days=30] - Jumlah hari untuk perhitungan statistik
+   * @returns {{ success: boolean, data: Object }} Respons dengan statistik ringkas
+   */
   getDashboardOverviewTrend: async (days = 30) => {
     const endDate = new Date();
     const startDate = new Date();
@@ -1023,7 +1211,6 @@ export const analyticsService = {
     const endStr = endDate.toISOString().split("T")[0];
 
     try {
-      // Panggil sekali, dapatkan stats + data
       const result = await analyticsService.getByDateRange(startStr, endStr);
 
       if (!result.success) {
@@ -1038,7 +1225,6 @@ export const analyticsService = {
         };
       }
 
-      // Ambil stats yang sudah dihitung oleh processStats
       const stats = result.stats || {};
 
       return {
@@ -1065,6 +1251,13 @@ export const analyticsService = {
     }
   },
 
+  /**
+   * Mendapatkan daftar kunjungan halaman terbaru untuk aktivitas dashboard.
+   * 
+   * @async
+   * @param {number} [limit=20] - Jumlah maksimum item yang dikembalikan
+   * @returns {{ success: boolean, recentItems: Array<Object> }} Respons dengan daftar kunjungan terbaru
+   */
   getRecentPageViewsForDashboard: async (limit = 20) => {
     try {
       const result = await dataService.analytics.getPageViews({

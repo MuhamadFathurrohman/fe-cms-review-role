@@ -1,4 +1,21 @@
-// src/components/Modals/Form/ItemsForm.jsx
+/**
+ * @file ItemsForm.jsx
+ * @description Komponen form modal untuk manajemen data produk/item dengan dukungan multi-bahasa.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat produk baru dengan konten bilingual
+ * - **Edit**: Mengedit produk yang sudah ada
+ * 
+ * Menyediakan fitur lengkap:
+ * - Dukungan terjemahan bilingual (English wajib, Indonesian opsional)
+ * - Upload multiple gambar dengan preview dan urutan primary
+ * - Seleksi kategori dan brand dari dropdown dinamis
+ * - Editor rich text (Tiptap) untuk deskripsi panjang
+ * - Manajemen spesifikasi (key-value pairs) dan fitur (tags)
+ * - Pengaturan SEO bilingual
+ * - Status aktif/featured dan sort order
+ * - Validasi input bilingual yang ketat
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import {
   Globe,
@@ -20,6 +37,21 @@ import PulseDots from "../../Loaders/PulseDots";
 import TiptapEditor from "../../TiptapEditor";
 import "../../../sass/components/Modals/ItemsForm/ItemsForm.scss";
 
+/**
+ * Komponen custom select dropdown dengan dukungan loading dan disabled state.
+ * Digunakan untuk seleksi kategori dan brand.
+ * 
+ * @component
+ * @param {Object} props - Props komponen
+ * @param {string} props.label - Label untuk dropdown
+ * @param {string} props.value - Nilai yang dipilih saat ini
+ * @param {function(string): void} props.onChange - Handler saat nilai berubah
+ * @param {Array<{value: string, label: string}>} props.options - Opsi yang tersedia
+ * @param {string} props.placeholder - Placeholder saat tidak ada pilihan
+ * @param {boolean} [props.required=false] - Apakah field wajib diisi
+ * @param {boolean} [props.disabled=false] - Apakah dropdown dinonaktifkan
+ * @param {boolean} [props.loading=false] - Status loading dropdown
+ */
 const CustomSelect = ({
   label,
   value,
@@ -105,12 +137,41 @@ const CustomSelect = ({
   );
 };
 
+/**
+ * Props untuk komponen ItemsForm.
+ * @typedef {Object} ItemsFormProps
+ * @property {Object|null} [item=null] - Data produk awal untuk mode edit
+ * @property {function(): void} onClose - Callback saat form ditutup
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ */
+
+/**
+ * Komponen form modal untuk manajemen data produk bilingual.
+ * Digunakan dalam konteks modal untuk operasi CRUD produk.
+ *
+ * @component
+ * @param {ItemsFormProps} props - Props komponen
+ */
 const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
 
+  /**
+   * Bahasa yang sedang aktif untuk pengisian form.
+   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
+   */
   const [currentLanguage, setCurrentLanguage] = useState("EN");
+
+  /**
+   * Data terjemahan untuk kedua bahasa.
+   * @type {{
+   *   EN: { shortDescription: string, longDescription: string, specifications: Object, features: string[], metaTitle: string, metaDescription: string, metaKeywords: string },
+   *   ID: { shortDescription: string, longDescription: string, specifications: Object, features: string[], metaTitle: string, metaDescription: string, metaKeywords: string }
+   * }}
+   */
   const [translations, setTranslations] = useState({
     EN: {
       shortDescription: "",
@@ -132,6 +193,18 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     },
   });
 
+  /**
+   * Data master produk (non-terjemahan).
+   * @type {{
+   *   name: string,
+   *   categoryId: string,
+   *   brandId: string,
+   *   images: string,
+   *   isActive: boolean,
+   *   isFeatured: boolean,
+   *   sortOrder: number
+   * }}
+   */
   const [masterData, setMasterData] = useState({
     name: "",
     categoryId: "",
@@ -142,23 +215,87 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     sortOrder: 0,
   });
 
-  // ✅ Updated image state - array of objects
+  
+  /**
+   * State gambar produk (multiple).
+   * Struktur: Array of { id: string, file: File|null, preview: string, isExisting: boolean }
+   * @type {Array<{ id: string, file: File|null, preview: string, isExisting: boolean }>}
+   */
   const [images, setImages] = useState([]);
-  // images format: [{ id: unique_id, file: File|null, preview: url, isExisting: boolean }]
 
+  /**
+   * Pesan error validasi untuk upload gambar.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [imageError, setImageError] = useState("");
+
+  /**
+   * Input teks sementara untuk penambahan fitur.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [featureInput, setFeatureInput] = useState("");
+
+  /**
+   * Input kunci sementara untuk penambahan spesifikasi.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [specKey, setSpecKey] = useState("");
+
+  /**
+   * Input nilai sementara untuk penambahan spesifikasi.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [specValue, setSpecValue] = useState("");
+
+  /**
+   * Pesan error validasi untuk spesifikasi.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [specError, setSpecError] = useState("");
+
+  /**
+   * Status loading saat proses submit berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
+
+  /**
+   * Pesan error umum untuk form.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [error, setError] = useState("");
+
+  /**
+   * Pesan error validasi per field.
+   * @type {{[fieldName: string]: string}}
+   */
   const [validationErrors, setValidationErrors] = useState({});
+
+  /**
+   * Daftar kategori yang tersedia untuk seleksi.
+   * @type {Array<Object>}
+   */
   const [categories, setCategories] = useState([]);
+
+  /**
+   * Daftar brand yang tersedia untuk seleksi.
+   * @type {Array<Object>}
+   */
   const [brands, setBrands] = useState([]);
+
+  /**
+   * Status loading saat mengambil data kategori.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+
+  /**
+   * Status loading saat mengambil data brand.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [brandsLoading, setBrandsLoading] = useState(false);
 
+  // Load kategori dan brand saat komponen dipasang
   useEffect(() => {
     const loadOptions = async () => {
       try {
@@ -206,6 +343,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     loadOptions();
   }, []);
 
+  // Load data pada mode edit
   useEffect(() => {
     if (isEditing && item) {
       setMasterData({
@@ -265,7 +403,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
   }, [item, isEditing, categories, brands]);
 
-  // ✅ Cleanup blob URLs
+  // Cleanup blob URLs
   useEffect(() => {
     return () => {
       images.forEach((img) => {
@@ -276,6 +414,16 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     };
   }, [images]);
 
+  /**
+   * Memvalidasi form sebelum submit.
+   * Menerapkan aturan bilingual yang ketat:
+   * - English selalu wajib (deskripsi pendek dan panjang)
+   * - Indonesian opsional tapi harus lengkap jika disediakan
+   * - Gambar minimal 1 buah
+   * - Kategori dan brand wajib diisi
+   * 
+   * @returns {boolean} `true` jika valid, `false` jika tidak
+   */
   const validateForm = () => {
     const errors = {};
 
@@ -322,6 +470,10 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     return Object.keys(errors).length === 0;
   };
 
+  /**
+   * Handler perubahan bahasa aktif.
+   * @param {'EN'|'ID'} lang - Bahasa yang dipilih
+   */
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
     setFeatureInput("");
@@ -329,6 +481,11 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     setSpecValue("");
   };
 
+  /**
+   * Handler perubahan field terjemahan.
+   * @param {string} field - Nama field yang diubah
+   * @param {string} value - Nilai baru
+   */
   const handleTranslationChange = (field, value) => {
     setTranslations((prev) => ({
       ...prev,
@@ -344,6 +501,11 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     });
   };
 
+  /**
+   * Handler perubahan field master data.
+   * @param {string} field - Nama field yang diubah
+   * @param {string|boolean|number} value - Nilai baru
+   */
   const handleMasterChange = (field, value) => {
     setMasterData((prev) => ({ ...prev, [field]: value }));
     setValidationErrors((prev) => {
@@ -353,7 +515,12 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
-  // ✅ Handle multiple image uploads
+  // Handle multiple image uploads
+  /**
+   * Handler penambahan multiple gambar.
+   * Melakukan validasi file sebelum memproses preview.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
+   */
   const handleImageAdd = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -387,7 +554,12 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     e.target.value = "";
   };
 
-  // ✅ Remove image
+  // Remove image
+  /**
+   * Handler penghapusan gambar tertentu dari form.
+   * Membersihkan state dan URL object.
+   * @param {string} imageId - ID gambar yang akan dihapus
+   */
   const handleImageRemove = (imageId) => {
     setImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === imageId);
@@ -403,6 +575,9 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     setImageError("");
   };
 
+  /**
+   * Handler penambahan fitur dari input teks.
+   */
   const handleAddFeature = () => {
     if (
       featureInput.trim() &&
@@ -419,6 +594,10 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Handler penghapusan fitur tertentu.
+   * @param {string} featureToRemove - Fitur yang akan dihapus
+   */
   const handleRemoveFeature = (featureToRemove) => {
     setTranslations((prev) => ({
       ...prev,
@@ -431,8 +610,11 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler penambahan spesifikasi (key-value pair).
+   */
   const handleAddSpecification = () => {
-    // ✅ Validasi: harus mengisi keduanya
+    // Validasi: harus mengisi keduanya
     if (specKey.trim() && !specValue.trim()) {
       setSpecError("Please fill in the specification value");
       return;
@@ -461,16 +643,28 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Handler perubahan input kunci spesifikasi.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSpecKeyChange = (e) => {
     setSpecKey(e.target.value);
     if (specError) setSpecError(""); // Clear error saat user mulai mengisi
   };
 
+  /**
+   * Handler perubahan input nilai spesifikasi.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSpecValueChange = (e) => {
     setSpecValue(e.target.value);
     if (specError) setSpecError(""); // Clear error saat user mulai mengisi
   };
 
+  /**
+   * Handler penghapusan spesifikasi tertentu.
+   * @param {string} keyToRemove - Kunci spesifikasi yang akan dihapus
+   */
   const handleRemoveSpecification = (keyToRemove) => {
     const newSpecs = { ...translations[currentLanguage].specifications };
     delete newSpecs[keyToRemove];
@@ -483,14 +677,27 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler perubahan status aktif/non-aktif.
+   * @param {boolean} status - Status baru
+   */
   const handleStatusChange = (status) => {
     setMasterData((prev) => ({ ...prev, isActive: status }));
   };
 
+  /**
+   * Handler perubahan status featured.
+   * @param {boolean} featured - Status featured baru
+   */
   const handleFeaturedChange = (featured) => {
     setMasterData((prev) => ({ ...prev, isFeatured: featured }));
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update produk dengan validasi bilingual.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -640,14 +847,25 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Mendapatkan nilai field terjemahan untuk bahasa saat ini.
+   * @param {string} field - Nama field
+   * @returns {string|Object|Array} Nilai field
+   */
   const getCurrentField = (field) => {
     return translations[currentLanguage][field];
   };
 
+  /**
+   * Mengatur nilai field terjemahan untuk bahasa saat ini.
+   * @param {string} field - Nama field
+   * @param {string|Object|Array} value - Nilai baru
+   */
   const setCurrentField = (field, value) => {
     handleTranslationChange(field, value);
   };
 
+  /** @type {Array<{value: string, label: string}>} Opsi kategori untuk dropdown */
   const categoryOptions = Array.isArray(categories)
     ? categories.map((cat) => ({
         value: cat.id,
@@ -655,6 +873,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       }))
     : [];
 
+  /** @type {Array<{value: string, label: string}>} Opsi brand untuk dropdown */
   const brandOptions = Array.isArray(brands)
     ? brands.map((brand) => ({
         value: brand.id,
@@ -687,6 +906,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "EN" ? "active" : ""}`}
             onClick={() => handleLanguageChange("EN")}
+            aria-label="Switch to English"
           >
             EN {translations.EN.longDescription && "✓"}
           </button>
@@ -694,6 +914,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "ID" ? "active" : ""}`}
             onClick={() => handleLanguageChange("ID")}
+            aria-label="Switch to Indonesian"
           >
             ID {translations.ID.longDescription && "✓"}
           </button>
@@ -725,6 +946,8 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             value={masterData.name}
             onChange={(e) => handleMasterChange("name", e.target.value)}
             placeholder="Enter item name in English"
+            aria-label="Item name"
+            aria-required="true"
           />
           {validationErrors.name && (
             <span className="field-error">{validationErrors.name}</span>
@@ -746,6 +969,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               required={true}
               loading={categoriesLoading}
               disabled={categoriesLoading}
+              aria-label="Select category"
             />
             {validationErrors.categoryId && (
               <span className="field-error">{validationErrors.categoryId}</span>
@@ -766,6 +990,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               required={true}
               loading={brandsLoading}
               disabled={brandsLoading}
+              aria-label="Select brand"
             />
             {validationErrors.brandId && (
               <span className="field-error">{validationErrors.brandId}</span>
@@ -795,6 +1020,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 : "Masukkan deskripsi singkat dalam Bahasa (opsional)"
             }
             rows={2}
+            aria-label={`Short description in ${currentLanguage}`}
           />
           {validationErrors[`${currentLanguage}.shortDescription`] && (
             <span className="field-error">
@@ -823,6 +1049,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 : "Masukkan deskripsi panjang dalam Bahasa (opsional)"
             }
             rows={6}
+            aria-label={`Long description in ${currentLanguage}`}
           />
           {validationErrors[`${currentLanguage}.longDescription`] && (
             <span className="field-error">
@@ -837,35 +1064,38 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             <input
               type="text"
               value={specKey}
-              onChange={handleSpecKeyChange} // ✅ Gunakan handler baru
+              onChange={handleSpecKeyChange}
               placeholder={
                 currentLanguage === "EN"
                   ? "Key (e.g., capacity)"
                   : "Kunci (misal: kapasitas)"
               }
               className="spec-key"
+              aria-label={`Specification key in ${currentLanguage}`}
             />
             <input
               type="text"
               value={specValue}
-              onChange={handleSpecValueChange} // ✅ Gunakan handler baru
+              onChange={handleSpecValueChange}
               placeholder={
                 currentLanguage === "EN"
                   ? "Value (e.g., 500W)"
                   : "Nilai (misal: 500W)"
               }
               className="spec-value"
+              aria-label={`Specification value in ${currentLanguage}`}
             />
             <button
               type="button"
               onClick={handleAddSpecification}
               className="spec-add-btn"
+              aria-label="Add specification"
             >
               +
             </button>
           </div>
 
-          {/* ✅ Tampilkan error message */}
+          {/* Tampilkan error message */}
           {specError && (
             <div className="field-error" style={{ marginTop: "3px" }}>
               {specError}
@@ -883,6 +1113,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                     type="button"
                     onClick={() => handleRemoveSpecification(key)}
                     className="spec-remove"
+                    aria-label={`Remove specification ${key}`}
                   >
                     ×
                   </button>
@@ -907,11 +1138,13 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               onKeyDown={(e) =>
                 e.key === "Enter" && (e.preventDefault(), handleAddFeature())
               }
+              aria-label={`Add features in ${currentLanguage}`}
             />
             <button
               type="button"
               onClick={handleAddFeature}
               className="tag-add-btn"
+              aria-label="Add feature"
             >
               +
             </button>
@@ -924,6 +1157,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   type="button"
                   onClick={() => handleRemoveFeature(feature)}
                   className="tag-remove"
+                  aria-label={`Remove feature ${feature}`}
                 >
                   ×
                 </button>
@@ -931,7 +1165,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             ))}
           </div>
         </div>
-        {/* ✅ Updated Images Section */}
+        {/* Updated Images Section */}
         <div
           className={`form-group ${validationErrors.images ? "has-error" : ""}`}
         >
@@ -944,12 +1178,13 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             <div className="image-grid">
               {images.map((img, index) => (
                 <div key={img.id} className="image-grid-item">
-                  <img src={img.preview} alt={`Image ${index + 1}`} />
+                  <img src={img.preview} alt={`Image ${index + 1}`} aria-label={`Product image ${index + 1}`} />
                   <button
                     type="button"
                     className="image-remove-btn"
                     onClick={() => handleImageRemove(img.id)}
                     title="Remove image"
+                    aria-label="Remove image"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -970,6 +1205,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               onChange={handleImageAdd}
               id="item-images-upload"
               className="image-input"
+              aria-label="Upload product images"
             />
             <label htmlFor="item-images-upload" className="image-upload-btn">
               <Upload size={16} />
@@ -1002,6 +1238,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             }}
             placeholder="0"
             min="0"
+            aria-label="Sort order"
           />
           <small className="field-hint">
             • <strong>0</strong> = Automatic positioning (placed at the end)
@@ -1016,6 +1253,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={masterData.isActive ? "active" : ""}
                 onClick={() => handleStatusChange(true)}
+                aria-label="Set status to active"
               >
                 Active
               </button>
@@ -1023,6 +1261,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={!masterData.isActive ? "active" : ""}
                 onClick={() => handleStatusChange(false)}
+                aria-label="Set status to inactive"
               >
                 Inactive
               </button>
@@ -1036,6 +1275,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={masterData.isFeatured ? "active" : ""}
                 onClick={() => handleFeaturedChange(true)}
+                aria-label="Mark as featured"
               >
                 Yes
               </button>
@@ -1043,6 +1283,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 type="button"
                 className={!masterData.isFeatured ? "active" : ""}
                 onClick={() => handleFeaturedChange(false)}
+                aria-label="Unmark as featured"
               >
                 No
               </button>
@@ -1064,6 +1305,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "SEO title in English (optional)"
                   : "Judul SEO dalam Bahasa (opsional)"
               }
+              aria-label={`Meta title in ${currentLanguage}`}
             />
           </div>
           <div className="form-group">
@@ -1079,6 +1321,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   : "Deskripsi SEO dalam Bahasa (opsional)"
               }
               rows={2}
+              aria-label={`Meta description in ${currentLanguage}`}
             />
           </div>
           <div className="form-group">
@@ -1092,6 +1335,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "Comma-separated English keywords (optional)"
                   : "Kata kunci Bahasa dipisah koma (opsional)"
               }
+              aria-label={`Meta keywords in ${currentLanguage}`}
             />
           </div>
         </div>
@@ -1103,6 +1347,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             className="btn-secondary"
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel form"
           >
             Cancel
           </button>

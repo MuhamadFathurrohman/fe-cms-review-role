@@ -1,22 +1,60 @@
-// catalogService.js
+/**
+ * @file catalogService.js
+ * @description Layanan terpusat untuk mengelola operasi data katalog.
+ * Menyediakan abstraksi di atas `dataService.catalogs` dengan fitur tambahan:
+ * - Validasi data katalog (nama, Google Drive link)
+ * - Transformasi data untuk tampilan UI
+ * - Dukungan pagination dengan filter
+ * - Penanganan error yang konsisten
+ * 
+ * Khusus untuk validasi Google Drive link:
+ * - Hanya menerima domain `drive.google.com`
+ * - Harus mengarah ke file spesifik (`/file/d/{fileId}`)
+ * - Memvalidasi format URL yang benar
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan katalog terpusat.
+ * Mengelola semua operasi CRUD dan validasi terkait data katalog.
+ * 
+ * @namespace catalogService
+ */
 const catalogService = {
   // UPDATE: Tambah parameter bypassCache
+  /**
+   * Mendapatkan daftar katalog dengan pagination, pencarian, dan filter.
+   * Mendukung filter berdasarkan status dan pencarian teks bebas.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=10] - Jumlah katalog per halaman
+   * @param {string} [search=""] - String pencarian (nama katalog)
+   * @param {Object} [filters={}] - Filter tambahan
+   * @param {string} [filters.status] - Filter berdasarkan status katalog
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar katalog yang diformat dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 10,
     search = "",
     filters = {},
-    bypassCache = false // ← Tambah parameter
+    bypassCache = false
   ) => {
     try {
       const params = {
         page,
         limit,
         deletedAt: null,
-        bypassCache, // ← Pass ke dataService
+        bypassCache,
       };
 
       if (search) {
@@ -52,7 +90,16 @@ const catalogService = {
     }
   },
 
-  // Create new catalog
+  /**
+   * Membuat katalog baru.
+   * Data harus divalidasi sebelum dipanggil service ini.
+   * 
+   * @async
+   * @param {Object} catalogData - Data katalog yang akan dibuat
+   * @param {string} catalogData.name - Nama katalog
+   * @param {string} catalogData.file - Google Drive link file
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data katalog yang dibuat
+   */
   create: async (catalogData) => {
     try {
       const result = await dataService.catalogs.create(catalogData);
@@ -66,7 +113,16 @@ const catalogService = {
     }
   },
 
-  // Update catalog
+  /**
+   * Memperbarui katalog yang sudah ada.
+   * 
+   * @async
+   * @param {string|number} id - ID katalog yang akan diperbarui
+   * @param {Object} updatedData - Data pembaruan
+   * @param {string} [updatedData.name] - Nama katalog baru
+   * @param {string} [updatedData.file] - Google Drive link baru
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data katalog yang diperbarui
+   */
   update: async (id, updatedData) => {
     try {
       const result = await dataService.catalogs.update(id, updatedData);
@@ -80,6 +136,13 @@ const catalogService = {
     }
   },
 
+  /**
+   * Melakukan soft delete katalog (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID katalog yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       const result = await dataService.catalogs.softDelete(id);
@@ -98,6 +161,13 @@ const catalogService = {
     }
   },
 
+  /**
+   * Melakukan hard delete katalog (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID katalog yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       const result = await dataService.catalogs.hardDelete(id);
@@ -118,7 +188,13 @@ const catalogService = {
     }
   },
 
-  // Get catalog by ID
+  /**
+   * Mendapatkan detail katalog berdasarkan ID.
+   * 
+   * @async
+   * @param {string|number} id - ID katalog yang diminta
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data katalog
+   */
   getById: async (id) => {
     try {
       const result = await dataService.catalogs.getById(id);
@@ -133,6 +209,17 @@ const catalogService = {
   },
 
   // Helper functions (dipertahankan)
+  /**
+   * Memformat data katalog untuk ditampilkan di UI.
+   * Menambahkan properti tanggal yang diformat.
+   * 
+   * @param {Object} catalog - Data katalog dari API
+   * @returns {Object} Data katalog yang telah diformat dengan properti tambahan
+   * 
+   * @example
+   * const formattedCatalog = catalogService.formatCatalogForDisplay(rawCatalog);
+   * // Hasil memiliki: formattedCreatedAt, formattedUpdatedAt
+   */
   formatCatalogForDisplay: (catalog) => {
     const formattedCreatedAt = baseService.formatDateTime(catalog.createdAt);
     const formattedUpdatedAt = catalog.updatedAt
@@ -146,6 +233,27 @@ const catalogService = {
     };
   },
 
+  /**
+   * Memvalidasi data katalog sebelum disimpan.
+   * Melakukan validasi ketat terhadap:
+   * - Nama katalog (wajib, maks 200 karakter)
+   * - Google Drive link (domain, path, format)
+   * 
+   * @param {Object} catalogData - Data katalog yang akan divalidasi
+   * @param {string} catalogData.name - Nama katalog
+   * @param {string} catalogData.file - Google Drive link
+   * @returns {{
+   *   isValid: boolean,
+   *   errors: string[]
+   * }} Hasil validasi dengan daftar error jika tidak valid
+   * 
+   * @example
+   * const validation = catalogService.validateCatalogData({
+   *   name: "Product Catalog",
+   *   file: "https://drive.google.com/file/d/123456789/view"
+   * });
+   * // validation.isValid === true
+   */
   validateCatalogData: (catalogData) => {
     const errors = [];
 

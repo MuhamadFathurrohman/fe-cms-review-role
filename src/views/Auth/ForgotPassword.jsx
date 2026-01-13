@@ -1,3 +1,11 @@
+/**
+ * @file ForgotPassword.jsx
+ * @description Halaman lupa kata sandi.
+ * Memungkinkan pengguna memasukkan email untuk meminta tautan reset password.
+ * Mengimplementasikan mekanisme cooldown (120 detik) untuk mencegah spam,
+ * serta menampilkan feedback visual melalui alert dan loading state.
+ */
+
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import generalApiService from "../../services/generalApiService";
@@ -5,18 +13,57 @@ import Logo from "../../assets/images/logo.svg";
 import PulseDots from "../../components/Loaders/PulseDots";
 import "../../sass/views/Auth/ForgotPassword/ForgotPassword.css";
 
+/**
+ * Komponen halaman "Lupa Password".
+ * Mengelola input email, validasi, permintaan reset, dan batasan cooldown.
+ *
+ * @component
+ * @example
+ * <ForgotPassword />
+ */
 const ForgotPassword = () => {
+  /**
+   * Email yang dimasukkan pengguna.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [email, setEmail] = useState("");
+
+  /**
+   * Status loading saat mengirim permintaan reset.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
+
+  /**
+   * State untuk menampilkan pesan alert (sukses/error).
+   * @type {[{show: boolean, message: string, type: 'success'|'error'}, React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [alert, setAlert] = useState({ show: false, message: "", type: "" });
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [isFadingOut, setIsFadingOut] = useState(false);
 
-  // ✅ Cooldown state
+  // Cooldown state
+  /**
+   * Menandai apakah cooldown aktif (mencegah permintaan berulang).
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [cooldownActive, setCooldownActive] = useState(false);
+
+  /**
+   * Sisa waktu cooldown dalam detik.
+   * @type {[number, React.Dispatch<React.SetStateAction<number>>]}
+   */
   const [countdown, setCountdown] = useState(0);
+
+  /** @constant {number} Durasi cooldown dalam detik (2 menit). */
   const COOLDOWN_SECONDS = 120;
 
-  // ✅ Countdown timer
+  // Countdown timer
+  /**
+   * Efek samping untuk menjalankan timer mundur saat cooldown aktif.
+   * Secara otomatis menonaktifkan cooldown saat hitungan selesai.
+   */
   useEffect(() => {
     let timer;
     if (cooldownActive && countdown > 0) {
@@ -29,7 +76,10 @@ const ForgotPassword = () => {
     return () => clearInterval(timer);
   }, [cooldownActive, countdown]);
 
-  // ✅ Auto-hide alert
+  // Auto-hide alert
+  /**
+   * Efek samping untuk menyembunyikan alert secara otomatis setelah 3–4 detik.
+   */
   useEffect(() => {
     if (alert.show) {
       const fadeOutTimeout = setTimeout(() => setIsFadingOut(true), 3000);
@@ -44,7 +94,16 @@ const ForgotPassword = () => {
     }
   }, [alert.show]);
 
-  // ✅ Submit handler — disesuaikan penuh dengan backend
+  /**
+   * Menangani pengiriman formulir permintaan reset password.
+   * - Memvalidasi cooldown
+   * - Mengirim email ke endpoint `/auth/forgot-password`
+   * - Menyimpan email di localStorage (untuk halaman reset berikutnya)
+   * - Menampilkan feedback sesuai respons API
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit form
+   * @async
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -134,6 +193,7 @@ const ForgotPassword = () => {
               className="form-input"
               required
               disabled={loading || cooldownActive}
+              aria-describedby={alert.show ? "alert-message" : undefined}
             />
           </div>
 
@@ -141,6 +201,7 @@ const ForgotPassword = () => {
             type="submit"
             className="auth-button"
             disabled={loading || cooldownActive}
+            aria-disabled={loading || cooldownActive}
           >
             {loading ? (
               <span className="login-button-loading">

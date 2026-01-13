@@ -1,4 +1,21 @@
-// src/views/Catalogs.jsx
+/**
+ * @file Catalogs.jsx
+ * @description Komponen halaman manajemen katalog produk.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar katalog dengan informasi dasar
+ * - Membuat, mengedit, dan menghapus katalog
+ * - Pencarian berdasarkan nama katalog
+ * - Pagination responsif
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage catalog": Akses CRUD
+ * - Pengguna tanpa izin: Hanya bisa melihat (jika diizinkan oleh rute)
+ * 
+ * Setiap katalog berisi link Google Drive yang telah divalidasi untuk memastikan
+ * hanya file dari domain yang sah yang dapat diunggah.
+ */
+
 import React, { useRef, useMemo } from "react";
 import {
   FileText,
@@ -22,12 +39,18 @@ import AlertModal from "../components/Alerts/AlertModal";
 import { canManage, isSuperAdmin } from "../utils/permissions";
 import "../sass/views/Catalogs/Catalogs.css";
 
+/**
+ * Komponen halaman manajemen katalog utama.
+ * Menampilkan tabel katalog dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Catalogs = () => {
   const { user: currentUser } = useAuth();
   const searchInputRef = useRef(null);
   const { openModal, closeModal } = useModalContext();
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // === Hook pencarian dengan debouncing dan pagination ===
   const {
     searchTerm,
     setSearchTerm,
@@ -40,13 +63,12 @@ const Catalogs = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       return await catalogService.getPaginated(
         page,
         limit,
         search,
         {}, // filters
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
     },
     1,
@@ -55,16 +77,35 @@ const Catalogs = () => {
   );
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola katalog.
+   * @type {boolean}
+   */
   const canManageCatalog =
     isSuper || canManage(currentUser?.permissions, "catalog");
 
   // Format data for display
+  /**
+   * Data katalog yang telah diformat untuk ditampilkan di UI.
+   * Menggunakan memoisasi untuk mencegah re-komputasi yang tidak perlu.
+   * @type {Array<Object>}
+   */
   const catalogs = useMemo(() => {
     return rawCatalogs.map(catalogService.formatCatalogForDisplay);
   }, [rawCatalogs]);
 
-  // ✅ TAMBAH: refreshWithPageValidation
+  // refreshWithPageValidation
+  /**
+   * Memperbarui data dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await catalogService.getPaginated(
@@ -93,9 +134,13 @@ const Catalogs = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data katalog secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Catalogs.jsx: Auto-refetch failed:", error);
@@ -105,15 +150,26 @@ const Catalogs = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // === Handlers ===
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Handler untuk perubahan halaman pagination.
+   * @param {number} page - Nomor halaman yang dituju
+   */
   const handlePageChange = (page) => {
     goToPage(page);
   };
 
-  // ✅ UPDATE: handleEdit dengan refreshWithPageValidation
+  /**
+   * Membuka modal edit katalog.
+   * @param {Object} catalog - Data katalog yang akan diedit
+   */
   const handleEdit = (catalog) => {
     if (!canManageCatalog) return;
     openModal(
@@ -129,7 +185,7 @@ const Catalogs = () => {
           initialData={catalog}
           onSuccess={() => {
             closeModal("catalogEditModal");
-            refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+            refreshWithPageValidation(true);
           }}
           onCancel={() => closeModal("catalogEditModal")}
         />
@@ -137,7 +193,10 @@ const Catalogs = () => {
     );
   };
 
-  // ✅ UPDATE: handleDelete dengan refreshWithPageValidation
+  /**
+   * Membuka modal konfirmasi hapus katalog.
+   * @param {Object} catalog - Data katalog yang akan dihapus
+   */
   const handleDelete = (catalog) => {
     if (!canManageCatalog) return;
     openModal(
@@ -174,7 +233,7 @@ const Catalogs = () => {
                   }
                   onClose={() => {
                     closeModal("deleteSuccessAlert");
-                    refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+                    refreshWithPageValidation(true);
                   }}
                 />,
                 "small"
@@ -213,6 +272,9 @@ const Catalogs = () => {
     );
   };
 
+  /**
+   * Membuka modal tambah katalog baru.
+   */
   const handleAddCatalog = () => {
     if (!canManageCatalog) return;
     openModal(
@@ -235,6 +297,11 @@ const Catalogs = () => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data katalog.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -265,6 +332,7 @@ const Catalogs = () => {
     }
   };
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
   // === Render ===
@@ -293,6 +361,7 @@ const Catalogs = () => {
             stroke="currentColor"
             className="search-icon"
             onClick={() => searchInputRef.current?.focus()}
+            aria-label="Focus search input"
           />
           <input
             ref={searchInputRef}
@@ -301,6 +370,7 @@ const Catalogs = () => {
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search catalogs"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -311,7 +381,7 @@ const Catalogs = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             <RefreshCw size={14} />
           </button>
         </div>
@@ -349,14 +419,14 @@ const Catalogs = () => {
                         <button
                           className="btn-edit"
                           onClick={() => handleEdit(catalog)}
-                          aria-label="Edit catalog"
+                          aria-label={`Edit catalog ${catalog.name}`}
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           className="btn-delete"
                           onClick={() => handleDelete(catalog)}
-                          aria-label="Delete catalog"
+                          aria-label={`Delete catalog ${catalog.name}`}
                         >
                           <Trash2 size={16} />
                         </button>

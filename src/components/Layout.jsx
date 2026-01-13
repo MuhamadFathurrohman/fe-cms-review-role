@@ -1,4 +1,19 @@
-// src/components/Layout.jsx
+/**
+ * @file Layout.jsx
+ * @description Komponen layout utama untuk halaman dashboard.
+ * Bertindak sebagai kerangka aplikasi yang menyediakan:
+ * - Sidebar navigasi
+ * - TopBar (header dengan info pengguna)
+ * - Area konten dinamis (`<Outlet />`)
+ * - Modal peringatan sesi kedaluwarsa
+ * - Overlay loader saat inisialisasi
+ *
+ * Menggunakan beberapa context provider untuk mengelola state global:
+ * - `SidebarProvider`: Status sidebar (collapsed/mobile)
+ * - `OverlayProvider`: Overlay UI (loader, tooltip, dll.)
+ * - `ModalProvider`: Modal dialog
+ */
+
 import React, { useState, useEffect, useCallback } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -14,6 +29,12 @@ import "../sass/components/Overlays/ExpandingLabel/ExpandingLabel.css";
 import "../sass/components/Overlays/LoaderOverlay/LoaderOverlay.css";
 import "../sass/components/Overlays/EmailTooltip/EmailTooltip.css";
 
+/**
+ * Konten utama layout dashboard.
+ * Mengelola logika sesi, navigasi, dan integrasi antar-komponen.
+ *
+ * @component
+ */
 const LayoutContent = () => {
   const {
     isInitialized,
@@ -28,10 +49,22 @@ const LayoutContent = () => {
   const { collapsed, isMobile } = useSidebarContext();
   const { showOverlay, hideOverlay } = useOverlay();
 
+  /**
+   * Status loading saat memperpanjang sesi.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isExtending, setIsExtending] = useState(false);
+
+  /**
+   * Status loading saat logout.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // Local state untuk user (optional, jika perlu immediate update)
+  /**
+   * Salinan lokal data pengguna untuk update UI instan.
+   * @type {[import("../contexts/AuthContext").User | null, React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [currentUser, setCurrentUser] = useState(user);
 
   // Sync currentUser dengan user dari AuthContext
@@ -44,6 +77,10 @@ const LayoutContent = () => {
   // ======================================================
   // APP INITIALIZATION LOADER
   // ======================================================
+  /**
+   * Menampilkan overlay loader saat aplikasi sedang memeriksa sesi awal.
+   * Disembunyikan setelah `isInitialized === true`.
+   */
   useEffect(() => {
     if (!isInitialized) {
       showOverlay("app-loader", {
@@ -57,14 +94,17 @@ const LayoutContent = () => {
   }, [isInitialized, showOverlay, hideOverlay]);
 
   // ======================================================
-  // ✅ USER UPDATE HANDLER untuk TopBar
+  // USER UPDATE HANDLER untuk TopBar
   // ======================================================
+  /**
+   * Handler untuk memperbarui data pengguna dari TopBar.
+   * Memperbarui state lokal dan context global.
+   *
+   * @param {import("../contexts/AuthContext").User} updatedUser - Data pengguna yang diperbarui
+   */
   const handleUserUpdate = useCallback(
     (updatedUser) => {
-      // Update local state untuk immediate feedback
       setCurrentUser(updatedUser);
-
-      // Update AuthContext jika ada method updateUser
       if (updateUser && typeof updateUser === "function") {
         updateUser(updatedUser);
       }
@@ -75,6 +115,10 @@ const LayoutContent = () => {
   // ======================================================
   // EXTEND SESSION HANDLER
   // ======================================================
+  /**
+   * Memperpanjang sesi pengguna saat modal sesi habis muncul.
+   * Menangani loading state dan error.
+   */
   const handleExtend = async () => {
     setIsExtending(true);
     try {
@@ -89,6 +133,10 @@ const LayoutContent = () => {
   // ======================================================
   // LOGOUT HANDLER
   // ======================================================
+  /**
+   * Melakukan logout dan mengarahkan ke halaman login.
+   * Menangani loading state dan error.
+   */
   const handleGoToLogin = async () => {
     setIsLoggingOut(true);
     try {
@@ -104,6 +152,10 @@ const LayoutContent = () => {
   // ======================================================
   // SIDEBAR CLASSES
   // ======================================================
+  /**
+   * Menentukan kelas CSS untuk area konten utama berdasarkan status sidebar.
+   * @returns {string} String kelas CSS
+   */
   const getMainContentClass = () => {
     let classes = ["main-content"];
     if (!isMobile && collapsed) {
@@ -120,7 +172,7 @@ const LayoutContent = () => {
           <TopBar
             user={currentUser}
             onLogout={handleGoToLogin}
-            onUserUpdate={handleUserUpdate} // ✅ Pass callback ke TopBar
+            onUserUpdate={handleUserUpdate}
           />
           <main className="page-content">
             <div className="content-wrapper">
@@ -130,7 +182,7 @@ const LayoutContent = () => {
         </div>
       </div>
 
-      {/* ✅ SESSION EXPIRED ALERT dengan Grace Period Support */}
+      {/* Modal peringatan sesi kedaluwarsa */}
       <SessionExpiredAlert
         isVisible={sessionExpired}
         onExtend={handleExtend}
@@ -143,6 +195,16 @@ const LayoutContent = () => {
   );
 };
 
+/**
+ * Komponen wrapper Layout yang menyediakan semua context provider yang diperlukan.
+ * Digunakan di dalam rute terlindungi di router.jsx.
+ *
+ * @component
+ * @example
+ * <Route element={<Layout />}>
+ *   <Route path="home" element={<Home />} />
+ * </Route>
+ */
 const Layout = () => {
   return (
     <SidebarProvider>

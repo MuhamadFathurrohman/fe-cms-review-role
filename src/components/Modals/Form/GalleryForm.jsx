@@ -1,4 +1,20 @@
-// components/Forms/GalleryForm.jsx
+/**
+ * @file GalleryForm.jsx
+ * @description Komponen form modal untuk manajemen data galeri gambar.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat entri galeri baru dengan gambar
+ * - **Edit**: Mengganti gambar pada entri galeri yang sudah ada
+ * 
+ * Menyediakan fitur khusus:
+ * - Preview gambar sebelum upload
+ * - Validasi file gambar ketat
+ * - Penanganan error yang informatif
+ * - UX loading dan feedback
+ * 
+ * Setiap entri galeri hanya berisi satu gambar, sesuai dengan kebutuhan bisnis
+ * untuk dokumentasi visual produk/katalog.
+ */
+
 import React, { useState, useRef, useEffect } from "react";
 import { Pencil, X, Upload } from "lucide-react";
 import { galleryService } from "../../../services/galleryService";
@@ -9,15 +25,53 @@ import PulseDots from "../../Loaders/PulseDots";
 import AlertModal from "../../Alerts/AlertModal";
 import "../../../sass/components/Modals/GalleryForm/GalleryForm.css";
 
+/**
+ * Props untuk komponen GalleryForm.
+ * @typedef {Object} GalleryFormProps
+ * @property {Object|null} [item=null] - Data galeri awal untuk mode edit
+ * @property {function(): void} onClose - Callback saat form ditutup
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ */
+
+/**
+ * Komponen form modal untuk manajemen data galeri gambar.
+ * Digunakan dalam konteks modal untuk operasi CRUD galeri.
+ *
+ * @component
+ * @param {GalleryFormProps} props - Props komponen
+ */
 const GalleryForm = ({ item, onClose, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {React.RefObject<HTMLFormElement>} Ref ke form utama */
   const formRef = useRef(null);
+
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input file */
   const fileInputRef = useRef(null);
 
+  /**
+   * File gambar yang dipilih pengguna.
+   * @type {[File|null, React.Dispatch<React.SetStateAction<File|null>>]}
+   */
   const [imageFile, setImageFile] = useState(null);
+
+  /**
+   * URL preview gambar untuk ditampilkan di UI.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [imagePreview, setImagePreview] = useState(null);
+
+  /**
+   * Status loading saat proses upload berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
+
+  /**
+   * Pesan error validasi untuk upload gambar.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [error, setError] = useState("");
 
   // Hapus error saat fokus ke form lain
@@ -50,6 +104,11 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
     }
   }, [item]);
 
+  /**
+   * Handler perubahan file gambar.
+   * Melakukan validasi file sebelum memproses preview.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
+   */
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -73,6 +132,10 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
     }
   };
 
+  /**
+   * Handler penghapusan gambar dari form.
+   * Mengatur ulang state dan membersihkan input file.
+   */
   const handleRemoveImage = () => {
     setImageFile(null);
     setImagePreview(null);
@@ -84,6 +147,9 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
   };
 
   // ✅ Handler untuk ganti gambar saat edit
+  /**
+   * Memicu klik pada input file untuk mengganti gambar saat edit.
+   */
   const handleChangeImage = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
@@ -91,6 +157,11 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
   };
 
   // GalleryForm.jsx → handleSubmit
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update galeri dengan validasi ketat.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -183,13 +254,14 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
             {imagePreview ? (
               <div className="image-preview-container">
                 <div className="image-preview">
-                  <img src={imagePreview} alt="Preview" />
+                  <img src={imagePreview} alt="Preview" aria-label="Image preview" />
                   <div className="image-actions">
                     <button
                       type="button"
                       className="change-image-btn"
                       onClick={handleChangeImage}
                       title="Change image"
+                      aria-label="Change image"
                     >
                       <Pencil size={16} />
                     </button>
@@ -198,6 +270,7 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
                       className="remove-image-btn"
                       onClick={handleRemoveImage}
                       title="Remove image"
+                      aria-label="Remove image"
                     >
                       <X size={16} />
                     </button>
@@ -210,6 +283,7 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
                   onChange={handleImageChange}
                   className="file-input"
                   style={{ display: "none" }}
+                  aria-label="Upload image file"
                 />
               </div>
             ) : (
@@ -223,6 +297,7 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
                   onChange={handleImageChange}
                   className="file-input"
                   required={!item}
+                  aria-label="Upload image file"
                 />
               </label>
             )}
@@ -236,6 +311,7 @@ const GalleryForm = ({ item, onClose, onSuccess }) => {
             className="btn-secondary"
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel form"
           >
             Cancel
           </button>

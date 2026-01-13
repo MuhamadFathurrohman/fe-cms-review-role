@@ -1,10 +1,32 @@
+/**
+ * @file RoleDetail.jsx
+ * @description Komponen modal untuk menampilkan detail lengkap peran dan izin.
+ * Menyediakan tampilan readonly yang komprehensif meliputi:
+ * - Daftar semua pengguna yang ditugaskan ke peran ini
+ * - Breakdown lengkap izin akses per resource (termasuk resource sistem)
+ * - Penjelasan level akses (none/read/manage)
+ * 
+ * Menggunakan super admin mode saat mengambil data izin untuk memastikan
+ * semua resource (termasuk "role") ditampilkan, terlepas dari status pengguna saat ini.
+ */
+
 import React, { useState, useEffect } from "react";
 import { roleService } from "../../../services/roleService";
 import { usersService } from "../../../services/usersService";
 import { formatRoleName, getRoleBadgeClass } from "../../../utils/roleHelper";
 import "../../../sass/components/Modals/RoleDetail/RoleDetail.css";
 
-// Fungsi helper: format resource name (handle underscore/dash)
+/**
+ * Memformat nama resource menjadi format yang ramah pengguna.
+ * Mengubah underscore/dash menjadi spasi dan mengkapitalisasi setiap kata.
+ * 
+ * @param {string} resource - Nama resource dalam format snake_case atau kebab-case
+ * @returns {string} Nama resource yang telah diformat
+ * 
+ * @example
+ * formatResourceName("user_management"); // "User Management"
+ * formatResourceName("audit-log"); // "Audit Log"
+ */
 const formatResourceName = (resource) => {
   if (!resource) return "";
   return resource
@@ -12,7 +34,11 @@ const formatResourceName = (resource) => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-// Komponen Loading Spinner
+/**
+ * Komponen spinner loading untuk indikator proses pengambilan data.
+ * @component
+ * @returns {JSX.Element} Spinner loading dengan pesan teks
+ */
 const LoadingSpinner = () => (
   <div className="role-detail-spinner-container">
     <div className="role-detail-spinner"></div>
@@ -20,12 +46,47 @@ const LoadingSpinner = () => (
   </div>
 );
 
+/**
+ * Props untuk komponen RoleDetail.
+ * @typedef {Object} RoleDetailProps
+ * @property {Object} role - Data peran yang akan ditampilkan detailnya
+ * @property {string|number} role.id - ID peran
+ * @property {string} role.name - Nama peran
+ */
+
+/**
+ * Komponen modal detail peran.
+ * Menampilkan informasi lengkap tentang peran termasuk pengguna yang ditugaskan dan izin akses.
+ *
+ * @component
+ * @param {RoleDetailProps} props - Props komponen
+ */
 const RoleDetail = ({ role }) => {
+  /**
+   * Daftar izin per resource untuk peran ini.
+   * @type {Array<{resource: string, action: string}>}
+   */
   const [permissions, setPermissions] = useState([]);
+
+  /**
+   * Daftar pengguna yang ditugaskan ke peran ini.
+   * @type {Array<{id: string|number, name: string, roleName: string}>}
+   */
   const [users, setUsers] = useState([]);
+
+  /**
+   * Status loading saat mengambil data detail peran.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [error, setError] = useState("");
 
+  // Fetch data detail peran saat komponen dipasang
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -136,6 +197,7 @@ const RoleDetail = ({ role }) => {
                 </span>
                 <span
                   className={`role-detail-permission-access access-${perm.action}`}
+                  aria-label={`${perm.action} access for ${formatResourceName(perm.resource)}`}
                 >
                   {perm.action.charAt(0).toUpperCase() + perm.action.slice(1)}
                 </span>

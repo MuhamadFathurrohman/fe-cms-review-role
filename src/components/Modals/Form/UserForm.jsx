@@ -1,4 +1,18 @@
-// src/components/Modal/UserForm.jsx
+/**
+ * @file UserForm.jsx
+ * @description Komponen form modal untuk manajemen data pengguna.
+ * Mendukung tiga mode operasi:
+ * - **Create**: Membuat pengguna baru (admin only)
+ * - **Update**: Mengedit pengguna lain (admin only)
+ * - **Profile**: Mengedit profil sendiri (semua pengguna terautentikasi)
+ * 
+ * Menyediakan fitur lengkap:
+ * - Upload dan hapus avatar
+ * - Validasi password dan konfirmasi
+ * - Seleksi peran dan status (admin only)
+ * - Validasi file gambar
+ */
+
 import React, { useState, useRef, useEffect } from "react";
 import { usersService } from "../../../services/usersService";
 import { uploadService } from "../../../services/uploadService";
@@ -10,8 +24,26 @@ import defaultAvatar from "../../../assets/images/default-avatar.png";
 import AlertModal from "../../Alerts/AlertModal";
 import PulseDots from "../../Loaders/PulseDots";
 
+/** @constant {string} URL default avatar fallback */
 const DEFAULT_AVATAR = defaultAvatar;
 
+/**
+ * Props untuk komponen UserForm.
+ * @typedef {Object} UserFormProps
+ * @property {function(Object): void} onSuccess - Callback saat operasi berhasil
+ * @property {function(): void} onCancel - Callback saat form dibatalkan
+ * @property {Object|null} [initialData=null] - Data awal untuk edit/update
+ * @property {boolean} [isProfileMode=false] - Apakah ini mode edit profil sendiri
+ * @property {Array<{id: number, name: string}>} [roles=[]] - Daftar peran untuk seleksi
+ */
+
+/**
+ * Komponen form modal untuk manajemen data pengguna.
+ * Digunakan dalam konteks modal untuk operasi CRUD pengguna.
+ *
+ * @component
+ * @param {UserFormProps} props - Props komponen
+ */
 const UserForm = ({
   onSuccess,
   onCancel,
@@ -21,16 +53,42 @@ const UserForm = ({
 }) => {
   const { closeModal, openModal } = useModalContext();
   const { user: currentUser } = useAuth();
+
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input file avatar */
   const fileInputRef = useRef(null);
+
+  /** @type {React.RefObject<HTMLFormElement>} Ref ke form utama */
   const formRef = useRef(null);
+
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke dropdown seleksi peran */
   const roleSelectRef = useRef(null);
+
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke dropdown seleksi status */
   const statusSelectRef = useRef(null);
+
+  /** @type {React.MutableRefObject<string|null>} Ref untuk URL preview avatar */
   const avatarPreviewUrlRef = useRef(null);
 
+  /** @type {string|null} URL avatar asli dari data awal */
   const originalAvatarUrl =
     initialData?.avatarUrl || initialData?.avatar || null;
+
+  /** @type {boolean} Status apakah pengguna memiliki avatar asli */
   const hasOriginalAvatar = !!originalAvatarUrl;
 
+  /**
+   * State form data pengguna.
+   * @type {{
+   *   name: string,
+   *   email: string,
+   *   phone: string,
+   *   roleId: string,
+   *   password: string,
+   *   confirmPassword: string,
+   *   avatar: File|null,
+   *   status: string
+   * }}
+   */
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     email: initialData?.email || "",
@@ -42,30 +100,52 @@ const UserForm = ({
     status: initialData?.status || "ACTIVE",
   });
 
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status toggle password */
   const [showPassword, setShowPassword] = useState(false);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status toggle konfirmasi password */
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} Error validasi password */
   const [passwordError, setPasswordError] = useState("");
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} Error validasi konfirmasi password */
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} URL preview avatar */
   const [avatarPreview, setAvatarPreview] = useState(
     originalAvatarUrl || DEFAULT_AVATAR
   );
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status penghapusan avatar */
   const [isAvatarRemoved, setIsAvatarRemoved] = useState(false);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status loading */
   const [loading, setLoading] = useState(false);
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} Pesan error umum */
   const [error, setError] = useState("");
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status dropdown peran */
   const [isRoleOpen, setIsRoleOpen] = useState(false);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status dropdown status */
   const [isStatusOpen, setIsStatusOpen] = useState(false);
 
+  /** @type {Array<{value: string, label: string}>} Opsi seleksi peran */
   const roleOptions = roles.map((role) => ({
     value: String(role.id),
     label: role.name,
   }));
 
+  /** @type {Array<{value: string, label: string}>} Opsi seleksi status */
   const statusOptions = [
     { value: "ACTIVE", label: "ACTIVE" },
     { value: "INACTIVE", label: "INACTIVE" },
     { value: "SUSPENDED", label: "SUSPENDED" },
   ];
 
+  // Handle klik di luar dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (roleSelectRef.current && !roleSelectRef.current.contains(e.target)) {
@@ -83,6 +163,7 @@ const UserForm = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Handle fokus untuk membersihkan error
   useEffect(() => {
     const handleFocus = (e) => {
       if (formRef.current && formRef.current.contains(e.target)) {
@@ -100,6 +181,7 @@ const UserForm = ({
     return () => document.removeEventListener("focusin", handleFocus);
   }, []);
 
+  // Cleanup URL object saat unmount
   useEffect(() => {
     return () => {
       if (
@@ -111,6 +193,11 @@ const UserForm = ({
     };
   }, []);
 
+  /**
+   * Handler perubahan input form.
+   * Termasuk validasi real-time untuk password.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -136,6 +223,11 @@ const UserForm = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  /**
+   * Handler perubahan file avatar.
+   * Melakukan validasi file dan memperbarui preview.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
+   */
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -162,6 +254,10 @@ const UserForm = ({
     }
   };
 
+  /**
+   * Handler penghapusan avatar.
+   * Mengatur state untuk menghapus avatar dari server.
+   */
   const handleRemoveAvatar = () => {
     setIsAvatarRemoved(true);
     setFormData((prev) => ({ ...prev, avatar: null }));
@@ -179,6 +275,11 @@ const UserForm = ({
     setError("");
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update pengguna.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -347,6 +448,7 @@ const UserForm = ({
     }
   };
 
+  /** @type {boolean} Status apakah tombol remove avatar harus ditampilkan */
   const shouldShowRemoveButton =
     hasOriginalAvatar || formData.avatar instanceof File;
 
@@ -362,6 +464,7 @@ const UserForm = ({
                 alt="Preview"
                 className="avatar-preview clickable-avatar"
                 onClick={() => fileInputRef.current?.click()}
+                aria-label="Click to change avatar"
               />
               <div className="avatar-actions">
                 <input
@@ -372,11 +475,13 @@ const UserForm = ({
                   onChange={handleFileChange}
                   accept="image/*"
                   className="avatar-file-input"
+                  aria-label="Upload avatar image"
                 />
                 <button
                   type="button"
                   className="btn-secondary-choose btn-sm"
                   onClick={() => fileInputRef.current?.click()}
+                  aria-label="Choose avatar image"
                 >
                   Choose Image
                 </button>
@@ -385,6 +490,7 @@ const UserForm = ({
                     type="button"
                     className="btn-secondary-remove btn-sm btn-remove visible"
                     onClick={handleRemoveAvatar}
+                    aria-label="Remove avatar"
                   >
                     Remove
                   </button>
@@ -405,6 +511,7 @@ const UserForm = ({
                 value={formData.name}
                 onChange={handleChange}
                 required
+                aria-required="true"
               />
             </div>
 
@@ -416,6 +523,7 @@ const UserForm = ({
                 value={formData.email}
                 onChange={handleChange}
                 required
+                aria-required="true"
               />
             </div>
 
@@ -427,12 +535,14 @@ const UserForm = ({
                   isRoleOpen ? "custom-select--open" : ""
                 } ${isProfileMode ? "custom-select--disabled" : ""}`}
                 tabIndex={0}
+                aria-label="Select user role"
               >
                 <div
                   className={`custom-select__control ${
                     isProfileMode ? "custom-select__control--disabled" : ""
                   }`}
                   onClick={() => !isProfileMode && setIsRoleOpen(!isRoleOpen)}
+                  aria-disabled={isProfileMode}
                 >
                   <span>
                     {isProfileMode
@@ -448,12 +558,13 @@ const UserForm = ({
                       className={`custom-select__arrow ${
                         isRoleOpen ? "rotated" : ""
                       }`}
+                      aria-hidden="true"
                     />
                   )}
                 </div>
 
                 {!isProfileMode && isRoleOpen && (
-                  <ul className="custom-select__menu">
+                  <ul className="custom-select__menu" role="listbox">
                     {roleOptions.map((option) => (
                       <li
                         key={option.value}
@@ -465,6 +576,8 @@ const UserForm = ({
                           }));
                           setIsRoleOpen(false);
                         }}
+                        role="option"
+                        aria-selected={formData.roleId === option.value}
                       >
                         {option.label}
                       </li>
@@ -483,6 +596,7 @@ const UserForm = ({
                     isStatusOpen ? "custom-select--open" : ""
                   }`}
                   tabIndex={0}
+                  aria-label="Select user status"
                 >
                   <div
                     className="custom-select__control"
@@ -500,11 +614,12 @@ const UserForm = ({
                       className={`custom-select__arrow ${
                         isStatusOpen ? "rotated" : ""
                       }`}
+                      aria-hidden="true"
                     />
                   </div>
 
                   {isStatusOpen && (
-                    <ul className="custom-select__menu">
+                    <ul className="custom-select__menu" role="listbox">
                       {statusOptions.map((option) => (
                         <li
                           key={option.value}
@@ -516,6 +631,8 @@ const UserForm = ({
                             }));
                             setIsStatusOpen(false);
                           }}
+                          role="option"
+                          aria-selected={formData.status === option.value}
                         >
                           {option.label}
                         </li>
@@ -551,6 +668,8 @@ const UserForm = ({
                       className={`password-input ${
                         passwordError ? "input-error" : ""
                       }`}
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? "password-error" : undefined}
                     />
                     <button
                       type="button"
@@ -564,7 +683,7 @@ const UserForm = ({
                     </button>
                   </div>
                   {passwordError && (
-                    <div className="password-error-tooltip">
+                    <div className="password-error-tooltip" id="password-error">
                       {passwordError}
                     </div>
                   )}
@@ -591,6 +710,8 @@ const UserForm = ({
                       className={`password-input ${
                         confirmPasswordError ? "input-error" : ""
                       }`}
+                      aria-invalid={!!confirmPasswordError}
+                      aria-describedby={confirmPasswordError ? "confirm-password-error" : undefined}
                     />
                     <button
                       type="button"
@@ -612,7 +733,7 @@ const UserForm = ({
                     </button>
                   </div>
                   {confirmPasswordError && (
-                    <div className="confirm-password-error-tooltip">
+                    <div className="confirm-password-error-tooltip" id="confirm-password-error">
                       {confirmPasswordError}
                     </div>
                   )}

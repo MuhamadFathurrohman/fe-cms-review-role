@@ -1,9 +1,26 @@
-// /**
-//  * Format tampilan nama role
-//  * Contoh: "super_admin" → "Super Admin"
-//  * @param {string} roleName - Nama role dari database
-//  * @returns {string} - Nama role yang diformat
-//  */
+/**
+ * @file roleHelper.js
+ * @description Utilitas untuk memformat dan mengelola tampilan nama peran (role) pengguna.
+ * Menyediakan dua fungsi utama:
+ * - `formatRoleName`: Mengubah nama peran dari format database ke format tampilan manusiawi
+ * - `getRoleBadgeClass`: Menentukan kelas CSS untuk badge berdasarkan jenis peran
+ * 
+ * Digunakan secara konsisten di seluruh antarmuka pengguna untuk menampilkan informasi peran.
+ */
+
+/**
+ * Memformat nama peran dari format database ke format tampilan yang ramah pengguna.
+ * Mengubah underscore menjadi spasi dan mengkapitalisasi setiap kata.
+ * 
+ * @param {string|null|undefined} roleName - Nama peran dalam format database (misal: "super_admin", "content_editor")
+ * @returns {string} Nama peran yang telah diformat (misal: "Super Admin", "Content Editor")
+ * 
+ * @example
+ * formatRoleName("super_admin"); // "Super Admin"
+ * formatRoleName("content_editor"); // "Content Editor"
+ * formatRoleName(null); // "Unknown"
+ * formatRoleName("unknown"); // "Unknown"
+ */
 export const formatRoleName = (roleName) => {
   if (!roleName || roleName === "unknown") return "Unknown";
   return roleName
@@ -11,14 +28,22 @@ export const formatRoleName = (roleName) => {
     .replace(/\b\w/g, (char) => char.toUpperCase()); // Capitalize setiap kata
 };
 
-// /**
-//  * Tentukan class CSS untuk badge role
-//  * - "super_admin" → "super-admin"
-//  * - "admin" → "admin"
-//  * - Semua role lain → "user" (warna default)
-//  * @param {string} roleName - Nama role dari database
-//  * @returns {string} - Class CSS untuk badge
-//  */
+/**
+ * Menentukan kelas CSS untuk badge peran berdasarkan jenis peran.
+ * Menggunakan sistem klasifikasi tiga tingkat:
+ * - `super-admin`: Untuk super administrator
+ * - `admin`: Untuk administrator biasa  
+ * - `user`: Untuk semua peran lainnya (warna default)
+ * 
+ * @param {string|null|undefined} roleName - Nama peran yang telah diformat (misal: "Super Admin", "Editor")
+ * @returns {string} Kelas CSS yang sesuai untuk styling badge
+ * 
+ * @example
+ * getRoleBadgeClass("Super Admin"); // "super-admin"
+ * getRoleBadgeClass("Admin"); // "admin" 
+ * getRoleBadgeClass("Editor"); // "user"
+ * getRoleBadgeClass(null); // "user"
+ */
 export const getRoleBadgeClass = (roleName) => {
   const normalized = (roleName || "").toLowerCase();
   if (normalized === "super admin") return "super-admin";

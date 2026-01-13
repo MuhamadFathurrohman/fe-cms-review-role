@@ -1,4 +1,13 @@
-// router.jsx
+/**
+ * @file router.jsx
+ * @description Konfigurasi routing aplikasi menggunakan React Router v6.
+ * Mendefinisikan semua rute, termasuk:
+ * - Rute publik (login, forgot password)
+ * - Rute terlindungi (`ProtectedRoute`)
+ * - Rute berbasis peran (`RoleProtectedRoute`)
+ * - Penanganan error (404, unauthorized)
+ */
+
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import Login from "./views/Auth/Login";
 import ForgotPassword from "./views/Auth/ForgotPassword";
@@ -22,11 +31,20 @@ import Brands from "./views/Product/Brands";
 import Items from "./views/Product/Items";
 import Catalogs from "./views/Catalogs";
 
+/**
+ * Instance router utama aplikasi.
+ * Menggunakan `createBrowserRouter` untuk konfigurasi imperative.
+ *
+ * @type {import('react-router-dom').Router}
+ */
 const router = createBrowserRouter([
+  // Redirect root ke halaman login
   {
     path: "/",
     element: <Navigate to="/login" replace />,
   },
+
+  // === RUTE PUBLIK (tidak perlu autentikasi) ===
   {
     path: "/login",
     element: <Login />,
@@ -39,10 +57,14 @@ const router = createBrowserRouter([
     path: "/reset-password",
     element: <ResetPassword />,
   },
+
+  // === HALAMAN ERROR ===
   {
     path: "/unauthorized",
     element: <Unauthorized />,
   },
+
+  // === RUTE DASHBOARD (terlindungi) ===
   {
     path: "/dashboard",
     element: (
@@ -51,6 +73,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
+      // Redirect default ke home
       {
         index: true,
         element: <Navigate to="/dashboard/home" replace />,
@@ -59,6 +82,8 @@ const router = createBrowserRouter([
         path: "home",
         element: <Home />,
       },
+
+      // Rute manajemen pengguna & peran
       {
         path: "users",
         element: (
@@ -75,6 +100,8 @@ const router = createBrowserRouter([
           </RoleProtectedRoute>
         ),
       },
+
+      // Rute klien & katalog
       {
         path: "clients",
         element: (
@@ -91,10 +118,14 @@ const router = createBrowserRouter([
           </RoleProtectedRoute>
         ),
       },
+
+      // Rute analitik (akses umum untuk user terautentikasi)
       {
         path: "analytics",
         element: <Analytics />,
       },
+
+      // === SUB-RUTE: KONTEN ===
       {
         path: "content",
         children: [
@@ -116,6 +147,8 @@ const router = createBrowserRouter([
           },
         ],
       },
+
+      // === SUB-RUTE: PRODUK ===
       {
         path: "products",
         children: [
@@ -149,6 +182,8 @@ const router = createBrowserRouter([
           },
         ],
       },
+
+      // Rute audit log & pengaturan
       {
         path: "auditlog",
         element: (
@@ -167,14 +202,11 @@ const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: "/unauthorized",
-    element: <Unauthorized />,
-  },
-  // UBAH BAGIAN INI - dari Navigate ke NotFound
+
+  // === PENANGANAN RUTE TIDAK DITEMUKAN (404) ===
   {
     path: "*",
-    element: <NotFound />, // Ganti dari <Navigate to="/unauthorized" replace />
+    element: <NotFound />,
   },
 ]);
 

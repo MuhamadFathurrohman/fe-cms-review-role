@@ -1,4 +1,18 @@
-// components/Modals/Form/CategoriesForm.jsx
+/**
+ * @file CategoriesForm.jsx
+ * @description Komponen form modal untuk manajemen data kategori produk.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat kategori baru
+ * - **Edit**: Mengedit kategori yang sudah ada
+ * 
+ * Menyediakan antarmuka pengguna yang sederhana dengan:
+ * - Input nama kategori (wajib)
+ * - Textarea deskripsi (opsional)
+ * - Toggle status aktif/non-aktif
+ * - Validasi input dan penanganan error
+ * - Feedback loading dan sukses/error
+ */
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { categoriesService } from "../../../services/categoriesService";
@@ -7,19 +21,49 @@ import AlertModal from "../../Alerts/AlertModal";
 import PulseDots from "../../Loaders/PulseDots";
 import "../../../sass/components/Modals/CategoriesForm/CategoriesForm.css";
 
+/**
+ * Props untuk komponen CategoriesForm.
+ * @typedef {Object} CategoriesFormProps
+ * @property {Object|null} [item=null] - Data kategori awal untuk mode edit
+ * @property {function(): void} onClose - Callback saat form ditutup
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ */
+
+/**
+ * Komponen form modal untuk manajemen data kategori produk.
+ * Digunakan dalam konteks modal untuk operasi CRUD kategori.
+ *
+ * @component
+ * @param {CategoriesFormProps} props - Props komponen
+ */
 const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
 
+  /**
+   * State form data kategori.
+   * @type {{
+   *   name: string,
+   *   description: string,
+   *   isActive: boolean
+   * }}
+   */
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     isActive: true,
   });
 
+  /**
+   * Status loading saat proses submit berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(false);
 
+  // Inisialisasi form data berdasarkan mode
   useEffect(() => {
     if (isEditing) {
       setFormData({
@@ -30,6 +74,10 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
     }
   }, [item, isEditing]);
 
+  /**
+   * Handler perubahan input form.
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>} e - Event input
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -38,6 +86,10 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler perubahan status aktif/non-aktif.
+   * @param {boolean} status - Status baru
+   */
   const handleStatusChange = (status) => {
     setFormData((prev) => ({
       ...prev,
@@ -45,6 +97,11 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update kategori.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -130,6 +187,8 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
             required
             placeholder="Enter category name"
             className="form-input"
+            aria-label="Category name"
+            aria-required="true"
           />
         </div>
 
@@ -143,6 +202,7 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
             placeholder="Enter description (optional)"
             rows={4}
             className="form-textarea"
+            aria-label="Category description"
           />
         </div>
 
@@ -154,6 +214,7 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.isActive === true ? "active" : ""}
               onClick={() => handleStatusChange(true)}
+              aria-label="Set category status to active"
             >
               Active
             </button>
@@ -161,6 +222,7 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
               type="button"
               className={formData.isActive === false ? "active" : ""}
               onClick={() => handleStatusChange(false)}
+              aria-label="Set category status to inactive"
             >
               Inactive
             </button>
@@ -174,6 +236,7 @@ const CategoriesForm = ({ item = null, onClose, onSuccess }) => {
             className="btn-secondary"
             onClick={onClose}
             disabled={loading}
+            aria-label="Cancel form"
           >
             Cancel
           </button>

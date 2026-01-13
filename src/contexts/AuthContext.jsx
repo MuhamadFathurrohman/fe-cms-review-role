@@ -1,9 +1,15 @@
-// src/contexts/AuthContext.jsx
+/**
+ * @file AuthContext.jsx
+ * @description Menyediakan manajemen autentikasi global menggunakan React Context dan useReducer.
+ * Mengelola status login, sesi pengguna, refresh token otomatis, dan penanganan kedaluwarsa sesi.
+ * Terintegrasi dengan sistem session timer dari `api.js`.
+ */
+
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 import {
   apiClientNoHeaders,
   onSessionExpired,
-  onSessionExpiredTooLong, // ✅ BARU
+  onSessionExpiredTooLong,
   resetSessionExpiredFlag,
   triggerSessionRefreshed,
   setAccessTokenExpiry,
@@ -12,6 +18,29 @@ import {
   getMinutesSinceExpired,
 } from "../services/api";
 
+/**
+ * @typedef {Object} User
+ * @property {number} id - ID pengguna
+ * @property {string} email - Email pengguna
+ * @property {string} name - Nama lengkap
+ * @property {string} roleName - Nama peran (misal: "admin", "editor")
+ * @property {Array<{resource: string, access: string}>} permissions - Daftar izin akses
+ * @property {Object} role - Objek peran asli dari backend
+ */
+
+/**
+ * @typedef {Object} AuthState
+ * @property {User | null} user - Data pengguna saat ini, atau null jika belum login
+ * @property {string | null} token - Token autentikasi (saat ini tidak digunakan karena cookie-based)
+ * @property {boolean} isAuthenticated - Status apakah pengguna sudah diautentikasi
+ * @property {boolean} loading - Status sedang memuat (misal: saat login/check sesi)
+ * @property {string | null} error - Pesan error terakhir, atau null
+ * @property {boolean} isInitialized - Apakah pengecekan sesi awal sudah selesai
+ * @property {boolean} sessionExpired - Apakah sesi telah habis (bisa diperpanjang)
+ * @property {boolean} sessionExpiredTooLong - Apakah sesi habis terlalu lama (>15 menit), tidak bisa diperpanjang
+ */
+
+/** @type {AuthState} */
 const initialState = {
   user: null,
   token: null,
@@ -23,6 +52,10 @@ const initialState = {
   sessionExpiredTooLong: false,
 };
 
+/**
+ * @constant {Object<string, string>} AUTH_ACTIONS
+ * @description Kumpulan tipe aksi untuk reducer autentikasi.
+ */
 const AUTH_ACTIONS = {
   LOGIN_START: "LOGIN_START",
   LOGIN_SUCCESS: "LOGIN_SUCCESS",
@@ -37,6 +70,12 @@ const AUTH_ACTIONS = {
   UPDATE_USER: "UPDATE_USER",
 };
 
+/**
+ * Reducer untuk mengelola perubahan state autentikasi.
+ * @param {AuthState} state - State saat ini
+ * @param {{ type: string, payload?: any }} action - Aksi yang dipicu
+ * @returns {AuthState} State baru setelah aksi diterapkan
+ */
 const authReducer = (state, action) => {
   switch (action.type) {
     case AUTH_ACTIONS.LOGIN_START:
@@ -117,13 +156,42 @@ const authReducer = (state, action) => {
   }
 };
 
+/**
+ * Context React untuk menyediakan state dan fungsi autentikasi ke seluruh aplikasi.
+ * @type {React.Context<AuthContextValue | undefined>}
+ */
 const AuthContext = createContext();
 
+/**
+ * @typedef {Object} AuthContextValue
+ * @property {User | null} user
+ * @property {string | null} token
+ * @property {boolean} isAuthenticated
+ * @property {boolean} loading
+ * @property {string | null} error
+ * @property {boolean} isInitialized
+ * @property {boolean} sessionExpired
+ * @property {boolean} sessionExpiredTooLong
+ * @property {(credentials: {email: string, password: string}) => Promise<{success: boolean, message?: string, data?: {user: User}}>} login
+ * @property {() => Promise<void>} logout
+ * @property {() => void} clearError
+ * @property {() => Promise<void>} extendSession
+ * @property {(updatedData: Partial<User>) => void} updateUser
+ */
+
+/**
+ * Provider komponen untuk membungkus aplikasi dengan konteks autentikasi.
+ * Menginisialisasi sesi, menangani login/logout, dan merespons kedaluwarsa sesi.
+ *
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Komponen anak yang akan menerima konteks
+ * @returns {JSX.Element}
+ */
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // ======================================================
-  // ✅ SIMPLIFIED: Single Event Listener for Expired
+  // Listener: Sesi Habis
   // ======================================================
   useEffect(() => {
     const handleExpired = () => {
@@ -135,7 +203,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ======================================================
-  // ✅ SIMPLIFIED: Single Event Listener for Too Long
+  // Listener: Sesi Habis Terlalu Lama
   // ======================================================
   useEffect(() => {
     const handleTooLong = () => {
@@ -147,7 +215,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ======================================================
-  // ✅ VISIBILITY CHANGE (Backup Only)
+  // Listener: Perubahan Visibilitas Tab (Backup Check)
   // ======================================================
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -169,9 +237,12 @@ export const AuthProvider = ({ children }) => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [state.sessionExpired, state.sessionExpiredTooLong]);
 
-  // ======================================================
-  // EXTEND SESSION
-  // ======================================================
+  /**
+   * Memperpanjang sesi pengguna dengan memanggil endpoint `/auth/refresh` dan `/auth/me`.
+   * Hanya bisa dipanggil jika sesi belum melebihi batas idle (15 menit).
+   * @async
+   * @returns {Promise<void>}
+   */
   const extendSession = async () => {
     try {
       if (!canStillExtendSession(15)) {
@@ -212,7 +283,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ======================================================
-  // INITIAL SESSION RESTORE
+  // Inisialisasi Awal: Cek Sesi Saat Aplikasi Dimuat
   // ======================================================
   useEffect(() => {
     const restoreSession = async () => {
@@ -239,7 +310,7 @@ export const AuthProvider = ({ children }) => {
 
         setAccessTokenExpiry(15 * 60 * 1000);
       } catch (error) {
-        // No active session
+        // No active session — tetap lanjutkan
       } finally {
         dispatch({ type: AUTH_ACTIONS.SET_INITIALIZED });
       }
@@ -248,9 +319,12 @@ export const AuthProvider = ({ children }) => {
     restoreSession();
   }, []);
 
-  // ======================================================
-  // LOGIN
-  // ======================================================
+  /**
+   * Melakukan proses login pengguna.
+   * @async
+   * @param {{ email: string, password: string }} credentials - Kredensial login
+   * @returns {Promise<{ success: boolean, message?: string, data?: { user: User } }>}
+   */
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
@@ -292,9 +366,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ======================================================
-  // LOGOUT
-  // ======================================================
+  /**
+   * Melakukan logout pengguna dan membersihkan sesi.
+   * @async
+   * @returns {Promise<void>}
+   */
   const logout = async () => {
     try {
       await apiClientNoHeaders.post("/auth/logout");
@@ -309,8 +385,15 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: AUTH_ACTIONS.CLEAR_SESSION_EXPIRED });
   };
 
+  /**
+   * Membersihkan pesan error autentikasi saat ini.
+   */
   const clearError = () => dispatch({ type: AUTH_ACTIONS.CLEAR_ERROR });
 
+  /**
+   * Memperbarui data pengguna di state (misal: setelah update profil).
+   * @param {Partial<User>} updatedUserData - Data pengguna yang diperbarui
+   */
   const updateUser = (updatedUserData) => {
     dispatch({
       type: AUTH_ACTIONS.UPDATE_USER,
@@ -318,6 +401,7 @@ export const AuthProvider = ({ children }) => {
     });
   };
 
+  /** @type {AuthContextValue} */
   const value = {
     user: state.user,
     token: state.token,
@@ -337,4 +421,20 @@ export const AuthProvider = ({ children }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+/**
+ * Hook custom untuk mengakses state dan fungsi autentikasi dari AuthContext.
+ * Harus digunakan di dalam komponen yang dibungkus oleh `<AuthProvider>`.
+ *
+ * @returns {AuthContextValue} Objek berisi state dan fungsi autentikasi
+ * @throws {Error} Jika digunakan di luar AuthProvider
+ *
+ * @example
+ * const { user, login, isAuthenticated } = useAuth();
+ */
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

@@ -1,8 +1,43 @@
-// src/services/galleryService.js
+/**
+ * @file galleryService.js
+ * @description Layanan terpusat untuk mengelola operasi data galeri gambar.
+ * Menyediakan abstraksi di atas `dataService.gallery` dengan fitur tambahan:
+ * - Transformasi URL gambar lengkap
+ * - Formatting tanggal untuk tampilan UI
+ * - Validasi input ketat untuk operasi CRUD
+ * - Dukungan pagination dengan cache control
+ * 
+ * Setiap entri galeri berisi satu gambar yang diupload melalui form,
+ * dengan validasi bahwa hanya file gambar yang diterima.
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan galeri terpusat.
+ * Mengelola semua operasi CRUD dan transformasi terkait data galeri.
+ * 
+ * @namespace galleryService
+ */
 export const galleryService = {
+  /**
+   * Menghasilkan URL lengkap untuk gambar galeri.
+   * Mendeteksi apakah path sudah merupakan URL lengkap atau perlu digabungkan dengan base URL.
+   * 
+   * @param {string|null|undefined} imagePath - Path gambar dari backend
+   * @returns {string|null} URL lengkap gambar atau null jika path tidak valid
+   * 
+   * @example
+   * // Path relatif
+   * galleryService._getFullImageUrl("galleries/image123.jpg");
+   * // → "https://api.example.com/galleries/image123.jpg"
+   * 
+   * @example
+   * // URL lengkap
+   * galleryService._getFullImageUrl("https://external.com/image.jpg");
+   * // → "https://external.com/image.jpg"
+   */
   _getFullImageUrl: (imagePath) => {
     if (!imagePath) return null;
 
@@ -16,18 +51,33 @@ export const galleryService = {
     return `${apiBaseUrl}${cleanPath}`;
   },
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // parameter bypassCache
+  /**
+   * Mendapatkan daftar galeri dengan pagination.
+   * Mendukung kontrol cache untuk data segar setelah operasi CRUD.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=10] - Jumlah galeri per halaman
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar galeri yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 10,
-    bypassCache = false // ← Tambah parameter
+    bypassCache = false
   ) => {
     try {
       const params = {
         page,
         limit,
         deletedAt: null,
-        bypassCache, // ← Pass ke dataService
+        bypassCache,
       };
 
       const result = await dataService.gallery.getAll(params);
@@ -59,6 +109,17 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Mendapatkan semua galeri tanpa pagination.
+   * Digunakan untuk dropdown seleksi atau komponen yang membutuhkan data lengkap.
+   * 
+   * @async
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   message?: string
+   * }} Respons dengan daftar galeri yang diproses
+   */
   getAll: async () => {
     try {
       const result = await dataService.gallery.getAll();
@@ -75,7 +136,7 @@ export const galleryService = {
 
       return {
         success: true,
-        data,
+        data: data,
       };
     } catch (error) {
       console.error("Error in galleryService.getAll:", error);
@@ -86,6 +147,18 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Mendapatkan detail galeri berdasarkan ID.
+   * Secara otomatis memproses URL gambar dan formatting tanggal.
+   * 
+   * @async
+   * @param {string|number} id - ID galeri yang diminta
+   * @returns {{
+   *   success: boolean,
+   *   data?: Object,
+   *   message?: string
+   * }} Respons dengan data galeri yang diproses
+   */
   getById: async (id) => {
     try {
       const result = await dataService.gallery.getById(id);
@@ -114,6 +187,15 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Membuat entri galeri baru dengan gambar.
+   * Melakukan validasi ketat bahwa input adalah instance File.
+   * 
+   * @async
+   * @param {Object} galleryData - Data galeri yang akan dibuat
+   * @param {File} galleryData.image - File gambar yang diupload
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data galeri yang dibuat
+   */
   create: async (galleryData) => {
     try {
       if (!galleryData.image || !(galleryData.image instanceof File)) {
@@ -133,6 +215,16 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Memperbarui entri galeri yang sudah ada dengan gambar baru.
+   * Melakukan validasi ketat bahwa input adalah instance File.
+   * 
+   * @async
+   * @param {string|number} id - ID galeri yang akan diperbarui
+   * @param {Object} galleryData - Data pembaruan
+   * @param {File} galleryData.image - File gambar baru
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data galeri yang diperbarui
+   */
   update: async (id, galleryData) => {
     try {
       if (!galleryData.image || !(galleryData.image instanceof File)) {
@@ -152,6 +244,13 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Melakukan soft delete galeri (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID galeri yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       return await dataService.gallery.softDelete(id);
@@ -164,6 +263,13 @@ export const galleryService = {
     }
   },
 
+  /**
+   * Melakukan hard delete galeri (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID galeri yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       return await dataService.gallery.hardDelete(id);

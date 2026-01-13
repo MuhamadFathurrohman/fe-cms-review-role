@@ -1,4 +1,16 @@
-// src/components/modals/ClientForm.jsx
+/**
+ * @file ClientForm.jsx
+ * @description Komponen form modal untuk manajemen data klien dari company profile.
+ * Mendukung dua mode operasi:
+ * - **Create**: Membuat inquiry klien baru (biasanya dari form company profile)
+ * - **Edit**: Mengedit inquiry klien yang sudah ada dan menandai sebagai "replied"
+ * 
+ * Menyediakan fitur khusus:
+ * - Validasi input sesuai persyaratan backend
+ * - Checkbox "Mark as Replied" dengan logika one-way (hanya bisa diubah dari false → true)
+ * - Informasi readonly tambahan di mode edit (IP, timestamp, dll.)
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import { clientService } from "../../../services/clientService";
 import { useModalContext } from "../../../contexts/ModalContext";
@@ -7,11 +19,41 @@ import { Check, ChevronDown } from "lucide-react";
 import PulseDots from "../../Loaders/PulseDots";
 import "../../../sass/components/Modals/ClientForm/ClientForm.css";
 
+/**
+ * Props untuk komponen ClientForm.
+ * @typedef {Object} ClientFormProps
+ * @property {function(): void} onSuccess - Callback saat operasi berhasil
+ * @property {Object|null} [initialData=null] - Data awal untuk mode edit
+ */
+
+/**
+ * Komponen form modal untuk manajemen data klien.
+ * Digunakan dalam konteks modal untuk operasi CRUD klien.
+ *
+ * @component
+ * @param {ClientFormProps} props - Props komponen
+ */
 const ClientForm = ({ onSuccess, initialData = null }) => {
   const { closeModal, openModal } = useModalContext();
 
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke dropdown seleksi tipe form */
   const formTypeSelectRef = useRef(null);
 
+  /**
+   * State form data klien.
+   * @type {{
+   *   company: string,
+   *   address: string,
+   *   country: string,
+   *   name: string,
+   *   phone: string,
+   *   email: string,
+   *   fax: string,
+   *   message: string,
+   *   formType: 'CATALOG'|'CONTACT',
+   *   isReplied: boolean
+   * }}
+   */
   const [formData, setFormData] = useState({
     company: "",
     address: "",
@@ -25,15 +67,27 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
     isReplied: false,
   });
 
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status loading */
   const [loading, setLoading] = useState(false);
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} Pesan error validasi */
   const [error, setError] = useState("");
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} Status dropdown tipe form */
   const [isFormTypeOpen, setIsFormTypeOpen] = useState(false);
 
-  // ✅ Track initial isReplied state untuk detect perubahan
+  // Track initial isReplied state untuk detect perubahan
+  /**
+   * Status awal `isReplied` untuk mendeteksi perubahan dari false → true.
+   * Digunakan untuk menentukan apakah perlu memanggil endpoint reply.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [initialIsReplied, setInitialIsReplied] = useState(false);
 
+  /** @type {boolean} Status apakah ini mode edit atau create */
   const isEditMode = initialData && Object.keys(initialData).length > 0;
 
+  // Inisialisasi form data berdasarkan mode
   useEffect(() => {
     if (isEditMode) {
       const isRepliedValue = initialData.isReplied || false;
@@ -51,7 +105,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
         isReplied: isRepliedValue,
       });
 
-      // ✅ Simpan initial state
+      // Simpan initial state
       setInitialIsReplied(isRepliedValue);
     } else {
       setFormData({
@@ -70,6 +124,11 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
     }
   }, [initialData, isEditMode]);
 
+  /**
+   * Handler perubahan input form.
+   * Mendukung input teks dan checkbox.
+   * @param {React.ChangeEvent<HTMLInputElement|HTMLTextAreaElement>} e - Event input
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
@@ -78,11 +137,16 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
     }));
   };
 
+  /**
+   * Handler submit form utama.
+   * Mengelola logika bisnis untuk create/update klien dengan penanganan khusus untuk status replied.
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    // ✅ Validasi sesuai backend
+    // Validasi sesuai backend
     if (!formData.name.trim()) {
       setError("Contact name is required");
       return;
@@ -110,11 +174,11 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
       let result;
 
       if (isEditMode) {
-        // ✅ LOGIKA BARU: Cek apakah isReplied berubah dari false → true
-        const isRepliedChanged = !initialIsReplied && formData.isReplied;
+        // mengecek apakah isReplied berubah dari false → true
+        const isRepliedChanged = !initialIsRepired && formData.isReplied;
 
         if (isRepliedChanged) {
-          // ✅ Hit endpoint POST /clients/:id/reply
+          // Hit endpoint POST /clients/:id/reply
           result = await clientService.reply(initialData.id);
 
           if (!result.success) {
@@ -122,7 +186,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
           }
         }
 
-        // ✅ Kemudian update data lainnya (tanpa isReplied)
+        // update data lainnya (tanpa isReplied)
         const updateData = {
           company: formData.company,
           address: formData.address,
@@ -137,7 +201,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
 
         result = await clientService.update(initialData.id, updateData);
       } else {
-        // ✅ Untuk create, kirim semua data
+        // Untuk create, kirim semua data
         const createData = {
           company: formData.company,
           address: formData.address,
@@ -195,11 +259,16 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
     }
   };
 
+  /**
+   * Handler pembatalan form.
+   * Menutup modal dengan nama yang sesuai berdasarkan mode.
+   */
   const handleCancel = () => {
     const modalName = isEditMode ? "clientEditModal" : "clientFormModal";
     closeModal(modalName);
   };
 
+  // Handle klik di luar dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -227,6 +296,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               name="company"
               value={formData.company}
               onChange={handleChange}
+              aria-label="Company name"
             />
           </div>
 
@@ -237,6 +307,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               value={formData.address}
               onChange={handleChange}
               rows="5"
+              aria-label="Company address"
             />
           </div>
 
@@ -247,6 +318,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               name="country"
               value={formData.country}
               onChange={handleChange}
+              aria-label="Country"
             />
           </div>
 
@@ -258,6 +330,8 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               value={formData.name}
               onChange={handleChange}
               required
+              aria-required="true"
+              aria-label="Contact person name"
             />
           </div>
 
@@ -269,6 +343,8 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               value={formData.email}
               onChange={handleChange}
               required
+              aria-required="true"
+              aria-label="Contact email"
             />
           </div>
 
@@ -279,6 +355,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
+              aria-label="Phone number"
             />
           </div>
 
@@ -289,6 +366,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               name="fax"
               value={formData.fax}
               onChange={handleChange}
+              aria-label="Fax number"
             />
           </div>
         </div>
@@ -302,6 +380,8 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               onChange={handleChange}
               rows="5"
               required
+              aria-required="true"
+              aria-label="Message content"
             />
           </div>
 
@@ -314,6 +394,9 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
               }`}
               tabIndex={0}
               onClick={() => setIsFormTypeOpen(!isFormTypeOpen)}
+              aria-label="Select form type"
+              role="combobox"
+              aria-expanded={isFormTypeOpen}
             >
               <div className="client-custom-select__control">
                 <span>
@@ -324,11 +407,12 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
                   className={`client-custom-select__arrow ${
                     isFormTypeOpen ? "rotated" : ""
                   }`}
+                  aria-hidden="true"
                 />
               </div>
 
               {isFormTypeOpen && (
-                <ul className="client-custom-select__menu">
+                <ul className="client-custom-select__menu" role="listbox">
                   <li
                     className="client-custom-select__option"
                     onClick={() => {
@@ -338,6 +422,8 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
                       }));
                       setIsFormTypeOpen(false);
                     }}
+                    role="option"
+                    aria-selected={formData.formType === "CATALOG"}
                   >
                     Catalog
                   </li>
@@ -350,6 +436,8 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
                       }));
                       setIsFormTypeOpen(false);
                     }}
+                    role="option"
+                    aria-selected={formData.formType === "CONTACT"}
                   >
                     Contact
                   </li>
@@ -358,7 +446,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
             </div>
           </div>
 
-          {/* ✅ Checkbox isReplied - hanya tampil di Edit Mode */}
+          {/* Checkbox isReplied - hanya tampil di Edit Mode */}
           {isEditMode && (
             <div className="client-form-group">
               <label>Status</label>
@@ -369,8 +457,13 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
                     name="isReplied"
                     checked={formData.isReplied}
                     onChange={handleChange}
-                    // ✅ Disable jika sudah replied (one-way action)
+                    // Disable jika sudah replied (one-way action)
                     disabled={initialIsReplied}
+                    aria-label={
+                      initialIsReplied
+                        ? "Already replied"
+                        : "Mark as replied"
+                    }
                   />
                   <span className="client-checkmark">
                     {formData.isReplied && <Check size={14} strokeWidth={3} />}
@@ -387,6 +480,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
                     marginTop: "4px",
                     display: "block",
                   }}
+                  aria-live="polite"
                 >
                   This client has already been marked as replied
                 </small>
@@ -435,6 +529,7 @@ const ClientForm = ({ onSuccess, initialData = null }) => {
           type="button"
           className="client-btn-secondary"
           onClick={handleCancel}
+          aria-label="Cancel form"
         >
           Cancel
         </button>

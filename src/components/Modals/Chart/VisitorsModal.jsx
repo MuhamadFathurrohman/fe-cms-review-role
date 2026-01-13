@@ -1,3 +1,17 @@
+/**
+ * @file VisitorsModal.jsx
+ * @description Komponen modal untuk menampilkan insight detail pengunjung website.
+ * Menyediakan tiga tab utama:
+ * - **Trend**: Grafik garis tren pengunjung baru vs returning
+ * - **Countries**: Distribusi pengunjung berdasarkan negara asal
+ * - **Technology**: Breakdown teknologi (device, browser, OS)
+ * 
+ * Menggunakan Recharts untuk visualisasi data dengan:
+ * - Tooltip kustom yang informatif
+ * - Responsivitas untuk mobile/desktop
+ * - Penanganan data kosong yang elegan
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   Globe,
@@ -21,17 +35,65 @@ import {
 } from "recharts";
 import "../../../sass/components/Modals/VisitorsModal/VisitorsModal.scss";
 
+/**
+ * Props untuk komponen VisitorsModal.
+ * @typedef {Object} VisitorsModalProps
+ * @property {string} startDate - Tanggal mulai filter (YYYY-MM-DD)
+ * @property {string} endDate - Tanggal akhir filter (YYYY-MM-DD)
+ * @property {function(): void} onClose - Handler saat modal ditutup
+ */
+
+/**
+ * Komponen modal insight pengunjung.
+ * Menampilkan visualisasi data analitik pengunjung dalam format yang mudah dipahami.
+ *
+ * @component
+ * @param {VisitorsModalProps} props - Props komponen
+ */
 const VisitorsModal = ({ startDate, endDate, onClose }) => {
+  /**
+   * Tab chart aktif di tingkat atas.
+   * @type {['trend'|'countries'|'device', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activeChart, setActiveChart] = useState("trend");
+
+  /**
+   * Sub-tab chart aktif untuk tab technology.
+   * @type {['device'|'browser'|'os', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activeDeviceChart, setActiveDeviceChart] = useState("device");
+
+  /**
+   * Status loading saat mengambil data insight.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Data insight pengunjung dari service.
+   * @type {Object|null}
+   */
   const [data, setData] = useState(null);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
+
+  /**
+   * Status deteksi perangkat mobile.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isMobile, setIsMobile] = useState(false);
 
   // ===========================
   //  Fetch Visitor Insights
   // ===========================
+  /**
+   * Mengambil data insight pengunjung dari analytics service.
+   * Dipanggil saat rentang tanggal berubah.
+   */
   useEffect(() => {
     const fetchData = async () => {
       if (!startDate || !endDate) return;
@@ -61,6 +123,7 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
     fetchData();
   }, [startDate, endDate]);
 
+  // Deteksi perangkat mobile untuk optimasi UI
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 480);
@@ -74,6 +137,16 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
   //  Custom Tooltips
   // ===========================
 
+  /**
+   * Tooltip kustom untuk chart garis tren pengunjung.
+   * Menampilkan jumlah pengunjung baru dan returning.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @param {string} props.label - Label sumbu X
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomLineTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
 
@@ -96,11 +169,19 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
     );
   };
 
+  /**
+   * Tooltip kustom untuk chart pie breakdown.
+   * Menampilkan nama kategori, jumlah kunjungan, dan persentase.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomPieTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
 
     const item = payload[0].payload;
-    // Gunakan field yang sesuai berdasarkan chart
     const name =
       item.country || item.device || item.browser || item.os || "Unknown";
 
@@ -117,6 +198,14 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data untuk tab tertentu.
+   * Menyesuaikan ikon dan pesan berdasarkan jenis tab.
+   * 
+   * @param {'trend'|'countries'|'device'} tab - Jenis tab yang tidak memiliki data
+   * @param {'device'|'browser'|'os'} [subTab=null] - Sub-tab untuk tab technology
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = (tab, subTab = null) => {
     const messages = {
       trend: {
@@ -133,7 +222,7 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
       },
       device: {
         icon: <Smartphone size={48} />,
-        title: `No ${
+        title: `${
           subTab === "browser"
             ? "Browser"
             : subTab === "os"
@@ -164,18 +253,21 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeChart === "trend" ? "active" : ""}
             onClick={() => setActiveChart("trend")}
+            aria-label="Show visitor trend chart"
           >
             <TrendingUp size={16} /> Trend
           </button>
           <button
             className={activeChart === "countries" ? "active" : ""}
             onClick={() => setActiveChart("countries")}
+            aria-label="Show visitor countries chart"
           >
             <Globe size={16} /> Countries
           </button>
           <button
             className={activeChart === "device" ? "active" : ""}
             onClick={() => setActiveChart("device")}
+            aria-label="Show visitor technology chart"
           >
             <Smartphone size={16} /> Technology
           </button>
@@ -389,18 +481,21 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
                   <button
                     className={activeDeviceChart === "device" ? "active" : ""}
                     onClick={() => setActiveDeviceChart("device")}
+                    aria-label="Show device breakdown"
                   >
                     Device
                   </button>
                   <button
                     className={activeDeviceChart === "browser" ? "active" : ""}
                     onClick={() => setActiveDeviceChart("browser")}
+                    aria-label="Show browser breakdown"
                   >
                     Browser
                   </button>
                   <button
                     className={activeDeviceChart === "os" ? "active" : ""}
                     onClick={() => setActiveDeviceChart("os")}
+                    aria-label="Show operating system breakdown"
                   >
                     OS
                   </button>
@@ -433,7 +528,7 @@ const VisitorsModal = ({ startDate, endDate, onClose }) => {
                             labelLine={false}
                             outerRadius={80}
                             fill="#3b82f6"
-                            dataKey="views" // ✅ Gunakan 'views', bukan 'percentage'
+                            dataKey="views"
                             nameKey={
                               activeDeviceChart === "device"
                                 ? "device"

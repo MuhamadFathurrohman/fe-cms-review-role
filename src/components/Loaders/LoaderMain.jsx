@@ -1,12 +1,44 @@
-// src/components/Loader/LoaderMain.jsx
+/**
+ * @file LoaderMain.jsx
+ * @description Komponen loader animasi SVG untuk menampilkan indikator loading.
+ * Menggunakan animasi SVG dengan empat lingkaran yang berputar secara sinkron.
+ * Dirancang untuk dua konteks utama:
+ * - `default`: Untuk loading awal aplikasi (warna gelap)
+ * - `light`: Untuk loading di halaman utama (warna terang)
+ * 
+ * Ukuran loader dapat dikonfigurasi dan responsif terhadap kontainer parent.
+ */
+
 import React from "react";
 import PropTypes from "prop-types";
 import "../../sass/components/Loader/LoaderMain/LoaderMain.css";
 
-const LoaderMain = ({ variant = "default", size = 180 }) => {
-  // Hanya 2 variants sesuai kebutuhan
-  // Warna di-handle oleh CSS classes, bukan inline styles
+/**
+ * Props untuk komponen LoaderMain.
+ * @typedef {Object} LoaderMainProps
+ * @property {'default'|'light'} [variant='default'] - Variasi warna loader
+ *   - `default`: Warna gelap (#2d4c52) untuk loading inisialisasi
+ *   - `light`: Warna terang (#DDE4F3) untuk loading di halaman utama
+ * @property {number} [size=180] - Ukuran loader dalam piksel (width dan height)
+ */
 
+/**
+ * Komponen loader animasi SVG dengan empat lingkaran berputar.
+ * Digunakan untuk menampilkan indikator loading saat data sedang dimuat.
+ *
+ * @component
+ * @param {LoaderMainProps} props - Props komponen
+ * @returns {JSX.Element} Loader SVG animasi
+ *
+ * @example
+ * // Loader inisialisasi aplikasi
+ * <LoaderMain variant="default" size={180} />
+ * 
+ * @example
+ * // Loader di halaman utama
+ * <LoaderMain variant="light" size={120} />
+ */
+const LoaderMain = ({ variant = "default", size = 180 }) => {
   return (
     <div className="loader-main">
       <svg
@@ -15,6 +47,8 @@ const LoaderMain = ({ variant = "default", size = 180 }) => {
         width={size}
         className="loader-main__svg"
         preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label="Loading"
       >
         {/* Group semua lingkaran dan geser ke tengah */}
         <g transform="translate(120, 120)">
@@ -66,11 +100,20 @@ const LoaderMain = ({ variant = "default", size = 180 }) => {
   );
 };
 
+// Prop validation menggunakan PropTypes
 LoaderMain.propTypes = {
+  /**
+   * Variasi warna loader sesuai konteks penggunaan.
+   * @type {'default'|'light'}
+   */
   variant: PropTypes.oneOf([
     "default", // #2d4c52 - For initialize loading
     "light", // #DDE4F3 - For main page loading
   ]),
+  /**
+   * Ukuran loader dalam piksel.
+   * @type {number}
+   */
   size: PropTypes.number,
 };
 

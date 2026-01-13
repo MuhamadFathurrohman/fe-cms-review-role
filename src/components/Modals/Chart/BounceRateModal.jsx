@@ -1,4 +1,18 @@
-// src/components/Modals/Chart/BounceRateModal.jsx
+/**
+ * @file BounceRateModal.jsx
+ * @description Komponen modal untuk menampilkan insight detail bounce rate website.
+ * Menyediakan tiga tab utama:
+ * - **Trend**: Grafik garis tren bounce rate harian
+ * - **High Bounce Pages**: Halaman dengan bounce rate tertinggi
+ * - **Referrer Impact**: Distribusi bounce rate berdasarkan sumber traffic
+ * 
+ * Menggunakan Recharts untuk visualisasi data dengan:
+ * - Reference area berwarna untuk threshold bounce rate
+ * - Tooltip kustom yang informatif
+ * - Responsivitas untuk mobile/desktop
+ * - Penanganan data kosong yang elegan
+ */
+
 import React, { useState, useEffect } from "react";
 import {
   LineChart,
@@ -19,14 +33,50 @@ import { analyticsService } from "../../../services/analyticsService";
 import { baseService } from "../../../services/baseService";
 import "../../../sass/components/Modals/BounceRateModal/BounceRateModal.scss";
 
+/**
+ * Props untuk komponen BounceRateModal.
+ * @typedef {Object} BounceRateModalProps
+ * @property {string} startDate - Tanggal mulai filter (YYYY-MM-DD)
+ * @property {string} endDate - Tanggal akhir filter (YYYY-MM-DD)
+ * @property {function(): void} onClose - Handler saat modal ditutup
+ */
+
+/**
+ * Komponen modal insight bounce rate.
+ * Menampilkan visualisasi data analitik bounce rate dalam format yang mudah dipahami.
+ *
+ * @component
+ * @param {BounceRateModalProps} props - Props komponen
+ */
 const BounceRateModal = ({ startDate, endDate, onClose }) => {
+  /**
+   * Tab aktif di modal insight bounce rate.
+   * @type {['trend'|'pages'|'referrer', React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [activeTab, setActiveTab] = useState("trend");
+
+  /**
+   * Status loading saat mengambil data insight.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Data insight bounce rate dari service.
+   * @type {Object|null}
+   */
   const [data, setData] = useState(null);
+
+  /**
+   * Pesan error jika gagal mengambil data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
 
+  /** @type {boolean} Status deteksi perangkat mobile */
   const isMobile = window.innerWidth < 768;
 
+  /** @type {string} Rentang tanggal terformat untuk ditampilkan di UI */
   const formattedRange =
     startDate && endDate
       ? `${baseService.formatDate(startDate)} – ${baseService.formatDate(
@@ -34,6 +84,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
         )}`
       : "";
 
+  // Fetch data insight bounce rate
   useEffect(() => {
     const fetchData = async () => {
       if (!startDate || !endDate) {
@@ -66,16 +117,33 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
     fetchData();
   }, [startDate, endDate]);
 
+  /**
+   * Mendapatkan warna berdasarkan tingkat bounce rate.
+   * - Hijau: < 40% (rendah)
+   * - Kuning: 40-60% (sedang)
+   * - Merah: > 60% (tinggi)
+   * 
+   * @param {number} rate - Persentase bounce rate
+   * @returns {string} Kode warna hex
+   */
   const getBounceRateColor = (rate) => {
     if (rate < 40) return "#10b981";
     if (rate <= 60) return "#f59e0b";
     return "#dc2626";
   };
 
+  /**
+   * Mendapatkan warna teks untuk badge bounce rate.
+   * Saat ini selalu mengembalikan warna putih untuk kontras yang baik.
+   * 
+   * @param {number} rate - Persentase bounce rate
+   * @returns {string} Warna teks
+   */
   const getBounceRateTextColor = (rate) => {
     return "white";
   };
 
+  /** @type {{ low: string, medium: string, high: string }} Label threshold bounce rate */
   const ThresholdLabels = {
     low: "Low (under 40%)",
     medium: "Medium (40–60%)",
@@ -83,6 +151,16 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
   };
 
   // === Custom Tooltips ===
+  /**
+   * Tooltip kustom untuk chart garis tren bounce rate.
+   * Menampilkan tanggal dan persentase bounce rate.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @param {string} props.label - Label sumbu X (tanggal)
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomLineTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       return (
@@ -97,6 +175,15 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
+  /**
+   * Tooltip kustom untuk chart bar halaman dengan bounce rate tinggi.
+   * Menampilkan judul halaman, bounce rate, dan jumlah kunjungan.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomBarTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -117,7 +204,15 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
     return null;
   };
 
-  // ✅ Tooltip baru untuk Bar Chart Referrer
+  /**
+   * Tooltip kustom untuk chart bar distribusi referrer.
+   * Menampilkan sumber traffic, bounce rate, dan jumlah sesi.
+   * 
+   * @param {Object} props - Props tooltip
+   * @param {boolean} props.active - Status aktif tooltip
+   * @param {Array} props.payload - Data yang ditampilkan
+   * @returns {JSX.Element|null} Tooltip kustom atau null jika tidak aktif
+   */
   const CustomReferrerTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -137,6 +232,14 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
   };
 
   // === Komponen Pesan "No Data" ===
+  /**
+   * Merender pesan ketika tidak ada data untuk tab tertentu.
+   * Menyesuaikan ikon dan pesan berdasarkan jenis tab.
+   * 
+   * @param {'trend'|'pages'|'referrer'} tab - Jenis tab yang tidak memiliki data
+   * @param {string} [customMessage=null] - Pesan kustom opsional
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = (tab, customMessage = null) => {
     const messages = {
       trend:
@@ -175,6 +278,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeTab === "trend" ? "active" : ""}
             onClick={() => setActiveTab("trend")}
+            aria-label="Show bounce rate trend chart"
           >
             <TrendingUp size={16} /> Trend
           </button>
@@ -182,6 +286,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeTab === "pages" ? "active" : ""}
             onClick={() => setActiveTab("pages")}
+            aria-label="Show high bounce pages chart"
           >
             <FileText size={16} /> High Bounce Pages
           </button>
@@ -189,6 +294,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
           <button
             className={activeTab === "referrer" ? "active" : ""}
             onClick={() => setActiveTab("referrer")}
+            aria-label="Show referrer impact chart"
           >
             <BarChart3 size={16} /> Referrer Impact
           </button>
@@ -222,7 +328,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
                     </p>
                   </div>
 
-                  {/* ✅ Date range di sisi kanan header */}
+                  {/* Date range di sisi kanan header */}
                   {formattedRange && (
                     <div className="bounce-rate-modal__date-range">
                       {formattedRange}
@@ -353,7 +459,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
                   </p>
                 </div>
 
-                {/* ✅ Tambahkan disclaimer */}
+                {/* Tambahkan disclaimer */}
                 <div className="bounce-rate-modal__disclaimer">
                   <Info size={16} />
                   <span>
@@ -565,7 +671,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
                   </p>
                 </div>
 
-                {/* ✅ Tambahkan disclaimer */}
+                {/* Tambahkan disclaimer */}
                 <div className="bounce-rate-modal__disclaimer">
                   <Info size={16} />
                   <span>
@@ -621,7 +727,7 @@ const BounceRateModal = ({ startDate, endDate, onClose }) => {
                             {data.referrerData.map((entry, index) => (
                               <Cell
                                 key={`cell-${index}`}
-                                fill={getBounceRateColor(entry.bounceRate)} // ✅ Ini akan mengisi warna bar
+                                fill={getBounceRateColor(entry.bounceRate)}
                               />
                             ))}
                           </Bar>

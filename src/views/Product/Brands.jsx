@@ -1,4 +1,19 @@
-// src/views/Brands/Brands.jsx
+/**
+ * @file Brands.jsx
+ * @description Komponen halaman manajemen brand dan client.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar brand dan client dalam satu tampilan
+ * - Membuat, mengedit, dan menghapus brand/client
+ * - Pencarian berdasarkan nama
+ * - Ekspor data berdasarkan periode
+ * - Pagination responsif
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage brand": Akses CRUD
+ * - Pengguna dengan izin "export brand": Akses ekspor
+ */
+
 import React, { useRef } from "react";
 import {
   Search,
@@ -22,12 +37,24 @@ import { canManage, canExport, isSuperAdmin } from "../../utils/permissions";
 import ExportDropdown from "../../components/ExportDropdown";
 import "../../sass/views/Brands/Brands.scss";
 
+/**
+ * Komponen halaman manajemen brand & client utama.
+ * Menampilkan tabel brand/client dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Brands = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input pencarian */
   const searchInputRef = useRef(null);
 
   // UPDATE: Tambah parameter bypassCache
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data brand.
+   * Mendukung pencarian teks bebas berdasarkan nama brand/client.
+   */
   const {
     searchTerm,
     setSearchTerm,
@@ -40,13 +67,12 @@ const Brands = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       return await brandService.getPaginated(
         page,
         limit,
         search,
         {}, // filters
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
     },
     1,
@@ -55,13 +81,32 @@ const Brands = () => {
   );
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola brand.
+   * @type {boolean}
+   */
   const canManageBrands =
     isSuper || canManage(currentUser?.permissions, "brand");
+
+  /**
+   * Status apakah pengguna memiliki izin mengekspor data brand.
+   * @type {boolean}
+   */
   const canExportBrands =
     isSuper || canExport(currentUser?.permissions, "brand");
 
   // TAMBAH: refreshWithPageValidation
+  /**
+   * Memperbarui data brand dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await brandService.getPaginated(
@@ -90,9 +135,13 @@ const Brands = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data brand secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Brands.jsx: Auto-refetch failed:", error);
@@ -101,6 +150,9 @@ const Brands = () => {
 
   useAutoRefetch(handleAutoRefetch);
 
+  /**
+   * Membuka modal tambah brand/client baru.
+   */
   const handleAddBrand = () => {
     if (!canManageBrands) return;
     openModal(
@@ -123,6 +175,10 @@ const Brands = () => {
   };
 
   // UPDATE: handleEditBrand dengan refreshWithPageValidation
+  /**
+   * Membuka modal edit brand/client.
+   * @param {Object} item - Data brand yang akan diedit
+   */
   const handleEditBrand = async (item) => {
     if (!canManageBrands) return;
 
@@ -176,6 +232,11 @@ const Brands = () => {
     }
   };
 
+  /**
+   * Membuka modal konfirmasi hapus brand/client.
+   * Menyesuaikan pesan berdasarkan tipe (brand vs client).
+   * @param {Object} item - Data brand yang akan dihapus
+   */
   const handleDeleteBrand = (item) => {
     if (!canManageBrands) return;
 
@@ -260,11 +321,22 @@ const Brands = () => {
     );
   };
 
+  /**
+   * Memformat tipe brand untuk ditampilkan di UI.
+   * Mengubah huruf pertama menjadi kapital dan sisanya lowercase.
+   * @param {string} type - Tipe brand dari backend
+   * @returns {string} Tipe yang telah diformat
+   */
   const formatType = (type) => {
     if (!type) return "—";
     return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
   };
 
+  /**
+   * Merender pesan ketika tidak ada data brand/client.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -295,7 +367,10 @@ const Brands = () => {
     }
   };
 
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
+
+  /** @type {number} Indeks awal untuk penomoran tabel */
   const startIndex = (currentPage - 1) * 8;
 
   return (
@@ -328,6 +403,7 @@ const Brands = () => {
             stroke="currentColor"
             className="search-icon"
             onClick={() => searchInputRef.current?.focus()}
+            aria-label="Focus search input"
           />
           <input
             ref={searchInputRef}
@@ -336,6 +412,7 @@ const Brands = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
+            aria-label="Search brands and clients"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -346,7 +423,7 @@ const Brands = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             Retry
           </button>
         </div>
@@ -387,6 +464,7 @@ const Brands = () => {
                       className={`badge status ${
                         item.isActive ? "ACTIVE" : "INACTIVE"
                       }`}
+                      aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
                     >
                       {item.isActive ? "Active" : "Inactive"}
                     </span>
@@ -399,7 +477,7 @@ const Brands = () => {
                           className="btn-edit"
                           title="Edit brand"
                           onClick={() => handleEditBrand(item)}
-                          aria-label="Edit brand"
+                          aria-label={`Edit ${item.name}`}
                         >
                           <Edit2 size={18} />
                         </button>
@@ -407,7 +485,7 @@ const Brands = () => {
                           className="btn-delete"
                           title="Delete brand"
                           onClick={() => handleDeleteBrand(item)}
-                          aria-label="Delete brand"
+                          aria-label={`Delete ${item.name}`}
                         >
                           <Trash2 size={18} />
                         </button>

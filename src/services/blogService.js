@@ -1,8 +1,45 @@
-// src/services/blogService.js
+/**
+ * @file blogService.js
+ * @description Layanan terpusat untuk mengelola operasi data blog dengan dukungan multi-bahasa.
+ * Menyediakan abstraksi di atas `dataService.blogs` dengan fitur tambahan:
+ * - Dukungan terjemahan bilingual (English/Indonesian)
+ * - Transformasi URL gambar lengkap
+ * - Validasi input bilingual yang ketat
+ * - Formatting tanggal untuk tampilan UI
+ * - Fallback bahasa yang cerdas
+ * 
+ * Setiap entri blog mendukung konten dalam dua bahasa dengan struktur:
+ * - English (wajib): Judul, konten, meta tags
+ * - Indonesian (opsional): Harus lengkap jika disediakan
+ */
+
 import { dataService } from "./dataService";
 import { baseService } from "./baseService";
 
+/**
+ * Layanan blog terpusat.
+ * Mengelola semua operasi CRUD dan transformasi terkait data blog bilingual.
+ * 
+ * @namespace blogService
+ */
 export const blogService = {
+  /**
+   * Menghasilkan URL lengkap untuk gambar blog.
+   * Mendeteksi apakah path sudah merupakan URL lengkap atau perlu digabungkan dengan base URL.
+   * 
+   * @param {string|null|undefined} imagePath - Path gambar dari backend
+   * @returns {string|null} URL lengkap gambar atau null jika path tidak valid
+   * 
+   * @example
+   * // Path relatif
+   * blogService._getFullImageUrl("blogs/image123.jpg");
+   * // → "https://api.example.com/blogs/image123.jpg"
+   * 
+   * @example
+   * // URL lengkap
+   * blogService._getFullImageUrl("https://external.com/image.jpg");
+   * // → "https://external.com/image.jpg"
+   */
   _getFullImageUrl: (imagePath) => {
     if (!imagePath) return null;
 
@@ -16,6 +53,21 @@ export const blogService = {
     return `${apiBaseUrl}${cleanPath}`;
   },
 
+  /**
+   * Memvalidasi data blog sebelum operasi create/update.
+   * Menerapkan aturan bilingual yang ketat:
+   * - English selalu wajib
+   * - Indonesian opsional tapi harus lengkap jika disediakan
+   * - Gambar wajib hanya saat create
+   * 
+   * @param {Array<{language: string, title: string, content: string}>} translations - Daftar terjemahan
+   * @param {boolean} [isUpdate=false] - Apakah ini operasi update
+   * @param {boolean} [hasImage=false] - Apakah ada gambar yang disediakan
+   * @returns {{
+   *   isValid: boolean,
+   *   errors: string[]
+   * }} Hasil validasi dengan daftar error jika tidak valid
+   */
   validateBlogData: (translations, isUpdate = false, hasImage = false) => {
     const errors = [];
 
@@ -59,6 +111,24 @@ export const blogService = {
     };
   },
 
+  /**
+   * Mendapatkan daftar blog dengan pagination, pencarian, dan filter.
+   * Mendukung seleksi bahasa untuk menampilkan konten dalam bahasa tertentu.
+   * 
+   * @async
+   * @param {number} [page=1] - Halaman yang diminta
+   * @param {number} [limit=8] - Jumlah blog per halaman
+   * @param {string} [search=""] - String pencarian (judul, konten)
+   * @param {Object} [filters={}] - Filter tambahan
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa untuk ditampilkan
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * @returns {{
+   *   success: boolean,
+   *    Array<Object>,
+   *   pagination: Object,
+   *   message?: string
+   * }} Respons dengan daftar blog yang diproses dan metadata pagination
+   */
   getPaginated: async (
     page = 1,
     limit = 8,
@@ -74,7 +144,7 @@ export const blogService = {
         search,
         deletedAt: null,
         ...filters,
-        bypassCache, // ✅ Pass ke dataService → generalApiService
+        bypassCache,
       });
 
       if (!result.success) {
@@ -115,7 +185,21 @@ export const blogService = {
     }
   },
 
-  // ✅ UPDATED: Support language parameter like itemService
+  
+  /**
+   * Mendapatkan detail blog berdasarkan ID dengan dukungan multi-bahasa.
+   * Menyediakan fallback ke English jika bahasa yang diminta tidak tersedia.
+   * Mengembalikan struktur data yang dioptimalkan untuk form edit.
+   * 
+   * @async
+   * @param {string|number} id - ID blog yang diminta
+   * @param {'EN'|'ID'} [language='EN'] - Bahasa utama untuk ditampilkan
+   * @returns {{
+   *   success: boolean,
+   *   data?: Object,
+   *   message?: string
+   * }} Respons dengan data blog yang diproses
+   */
   getById: async (id, language = "EN") => {
     try {
       if (!id) {
@@ -130,12 +214,11 @@ export const blogService = {
 
       const blog = result.data;
 
-      // ✅ Get translation for requested language
       const translation = blog.translations?.find(
         (t) => t.language === language
       );
 
-      // ✅ Fallback to EN if requested language not found
+      
       const enTranslation = blog.translations?.find((t) => t.language === "EN");
       const fallback = translation || enTranslation || {};
 
@@ -149,7 +232,7 @@ export const blogService = {
           isFeatured: blog.isFeatured,
           viewCount: blog.viewCount || 0,
 
-          // ✅ Dynamic translation based on language
+          
           title: fallback.title || "",
           excerpt: fallback.excerpt || "",
           content: fallback.content || "",
@@ -158,10 +241,10 @@ export const blogService = {
           metaKeywords: fallback.metaKeywords || "",
           tags: Array.isArray(fallback.tags) ? fallback.tags : [],
 
-          // ✅ Include all translations for edit form
+          
           translations: blog.translations || [],
 
-          // ✅ For edit form - separate EN and ID
+          
           titleEn:
             blog.translations?.find((t) => t.language === "EN")?.title || "",
           contentEn:
@@ -198,7 +281,7 @@ export const blogService = {
           tagsId:
             blog.translations?.find((t) => t.language === "ID")?.tags || [],
 
-          // ✅ Formatted dates
+          
           createdAtFormatted: blog.createdAt
             ? baseService.formatDateTime(blog.createdAt)
             : "N/A",
@@ -218,6 +301,15 @@ export const blogService = {
     }
   },
 
+  /**
+   * Membuat entri blog baru dengan dukungan multi-bahasa.
+   * Melakukan validasi ketat sesuai aturan bilingual.
+   * 
+   * @async
+   * @param {Object} blogData - Data blog yang akan dibuat
+   * @param {string|number} currentUserId - ID pengguna yang membuat
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data blog yang dibuat
+   */
   create: async (blogData, currentUserId) => {
     try {
       if (!currentUserId) {
@@ -247,6 +339,15 @@ export const blogService = {
     }
   },
 
+  /**
+   * Memperbarui entri blog yang sudah ada dengan dukungan multi-bahasa.
+   * Melakukan validasi ketat sesuai aturan bilingual.
+   * 
+   * @async
+   * @param {string|number} id - ID blog yang akan diperbarui
+   * @param {Object} blogData - Data pembaruan
+   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data blog yang diperbarui
+   */
   update: async (id, blogData) => {
     try {
       if (!id) {
@@ -276,6 +377,13 @@ export const blogService = {
     }
   },
 
+  /**
+   * Melakukan soft delete blog (set deletedAt).
+   * 
+   * @async
+   * @param {string|number} id - ID blog yang akan dihapus
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   */
   softDelete: async (id) => {
     try {
       return await dataService.blogs.softDelete(id);
@@ -288,6 +396,13 @@ export const blogService = {
     }
   },
 
+  /**
+   * Melakukan hard delete blog (hapus permanen dari database).
+   * 
+   * @async
+   * @param {string|number} id - ID blog yang akan dihapus permanen
+   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   */
   hardDelete: async (id) => {
     try {
       return await dataService.blogs.hardDelete(id);

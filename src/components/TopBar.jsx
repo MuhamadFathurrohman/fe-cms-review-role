@@ -1,4 +1,18 @@
-// src/components/TopBar.jsx
+/**
+ * @file TopBar.jsx
+ * @description Komponen header dashboard yang menampilkan:
+ * - Tombol toggle sidebar
+ * - Jam dan tanggal real-time
+ * - Notifikasi dengan badge unread count
+ * - Menu pengguna dengan avatar dan profil
+ *
+ * Mengintegrasikan berbagai layanan dan context:
+ * - AuthContext (melalui props `user`)
+ * - ModalContext (untuk form profil dan notifikasi)
+ * - OverlayContext (untuk tooltip email)
+ * - Auto-refetch data setiap 30 detik
+ */
+
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Bell, Menu, User, LogOut, ChevronDown } from "lucide-react";
 import { useSidebarContext } from "../contexts/SidebarContext";
@@ -16,11 +30,50 @@ import NotificationsModal from "./Modals/view/NotificationsModal";
 import defaultAvatar from "../assets/images/default-avatar.png";
 import "../sass/components/Topbar/Topbar.css";
 
+/**
+ * Props untuk komponen TopBar.
+ * @typedef {Object} TopBarProps
+ * @property {import("../contexts/AuthContext").User} user - Data pengguna saat ini
+ * @property {function(): Promise<void>} onLogout - Handler logout
+ * @property {function(import("../contexts/AuthContext").User): void} onUserUpdate - Callback saat data pengguna diperbarui
+ */
+
+/**
+ * Komponen header dashboard utama.
+ * Menyediakan navigasi, informasi waktu, notifikasi, dan akses profil pengguna.
+ *
+ * @component
+ * @param {TopBarProps} props - Props komponen
+ */
 const TopBar = ({ user, onLogout, onUserUpdate }) => {
+  /**
+   * Status tampilan dropdown menu pengguna.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [showUserMenu, setShowUserMenu] = useState(false);
+
+  /**
+   * Status tampilan dropdown notifikasi.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [showNotifications, setShowNotifications] = useState(false);
+
+  /**
+   * Waktu saat ini untuk display jam real-time.
+   * @type {[Date, React.Dispatch<React.SetStateAction<Date>>]}
+   */
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  /**
+   * Daftar notifikasi terbaru (5 item).
+   * @type {[Array<Object>, React.Dispatch<React.SetStateAction<Array<Object>>>]}
+   */
   const [notifications, setNotifications] = useState([]);
+
+  /**
+   * Jumlah notifikasi belum dibaca.
+   * @type {[number, React.Dispatch<React.SetStateAction<number>>]}
+   */
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { openModal, closeModal } = useModalContext();
@@ -29,11 +82,26 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   const notificationRef = useRef(null);
   const { toggleSidebar, collapsed, mobileOpen, isMobile } =
     useSidebarContext();
+
+  /**
+   * Status error loading avatar per ukuran/resolusi.
+   * @type {{[key: string]: boolean}}
+   */
   const [avatarError, setAvatarError] = useState({});
+
+  /**
+   * Status loading saat proses logout berlangsung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
+  /**
+   * Salinan lokal data pengguna untuk update UI instan.
+   * @type {[import("../contexts/AuthContext").User | null, React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [currentUser, setCurrentUser] = useState(user);
 
+  // Sinkronisasi currentUser dengan props user
   useEffect(() => {
     if (user) {
       setCurrentUser(user);
@@ -45,11 +113,21 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   const displayRole = formatRoleName(currentUser?.roleName);
   const badgeClass = getRoleBadgeClass(displayRole);
 
-  // Avatar Handling - disederhanakan
+  /**
+   * Menangani error loading avatar dan fallback ke inisial.
+   * @param {string} key - Kunci unik berdasarkan ukuran dan ID pengguna
+   */
   const handleAvatarError = (key) => {
     setAvatarError((prev) => ({ ...prev, [key]: true }));
   };
 
+  /**
+   * Merender avatar pengguna dengan fallback yang sesuai.
+   * 
+   * @param {import("../contexts/AuthContext").User | null} userData - Data pengguna
+   * @param {'small'|'medium'} [size='small'] - Ukuran avatar
+   * @returns {JSX.Element} Elemen avatar atau inisial
+   */
   const renderAvatar = (userData, size = "small") => {
     const key = `${size}-${userData?.id || "unknown"}`;
     const hasAvatarPath = !!userData?.avatar;
@@ -83,6 +161,9 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   };
 
   // Time Updates
+  /**
+   * Memperbarui jam real-time setiap detik.
+   */
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -91,6 +172,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   }, []);
 
   // Notifications
+  /**
+   * Memuat daftar notifikasi terbaru (5 item).
+   * @async
+   */
   const loadNotifications = useCallback(async () => {
     if (!currentUser?.id) return;
     const result = await notificationService.getNotifications(1, 5);
@@ -101,13 +186,22 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     }
   }, [currentUser?.id]);
 
+  /**
+   * Memuat jumlah notifikasi belum dibaca.
+   * @async
+   */
   const loadUnreadCount = useCallback(async () => {
     if (!currentUser?.id) return;
     const result = await notificationService.getUnreadCount();
     setUnreadCount(result.success ? result.count || 0 : 0);
   }, [currentUser?.id]);
 
-  // Refresh user data - disederhanakan
+  // Refresh user data
+  /**
+   * Memperbarui data pengguna dari server.
+   * Digunakan untuk sinkronisasi avatar dan profil setelah update.
+   * @async
+   */
   const refreshUserData = useCallback(async () => {
     if (!currentUser?.id) return;
     try {
@@ -124,6 +218,11 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     }
   }, [currentUser?.id, onUserUpdate]);
 
+  /**
+   * Fungsi refetch otomatis yang dipanggil setiap 30 detik.
+   * Memperbarui notifikasi, unread count, dan data pengguna.
+   * @async
+   */
   const handleAutoRefetch = useCallback(async () => {
     try {
       await Promise.all([
@@ -138,12 +237,16 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
 
   useAutoRefetch(handleAutoRefetch);
 
+  // Load initial data
   useEffect(() => {
     loadNotifications();
     loadUnreadCount();
   }, [loadNotifications, loadUnreadCount]);
 
   // Close Dropdowns
+  /**
+   * Menutup dropdown saat klik di luar area.
+   */
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
@@ -160,6 +263,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  /**
+   * Membuka dropdown notifikasi dan menandai semua sebagai sudah dibaca.
+   * @async
+   */
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
     const allResult = await notificationService.getNotifications(1, 100);
@@ -176,6 +283,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   };
 
   // Date & Time Formatting
+  /**
+   * Mendapatkan string tanggal dalam format: "DayName, DD MMM YYYY".
+   * @returns {string} Tanggal terformat
+   */
   const getCurrentDate = () => {
     const months = [
       "Jan",
@@ -207,6 +318,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     return `${dayName}, ${day} ${month} ${year}`;
   };
 
+  /**
+   * Mendapatkan string waktu dalam format: "HH:MM:SS".
+   * @returns {string} Waktu terformat
+   */
   const getCurrentTime = () => {
     const hours = String(currentTime.getHours()).padStart(2, "0");
     const minutes = String(currentTime.getMinutes()).padStart(2, "0");
@@ -215,6 +330,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
   };
 
   // Email Tooltip Handlers
+  /**
+   * Memperbarui posisi kursor untuk efek ripple pada tooltip email.
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const updateCursorPosition = (e) => {
     const rect = e.target.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -223,6 +342,10 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     e.target.style.setProperty("--cursor-y", `${y}px`);
   };
 
+  /**
+   * Menampilkan tooltip email saat hover.
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const handleEmailHover = (e) => {
     if (!currentUser?.email) return;
     updateCursorPosition(e);
@@ -233,16 +356,27 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     });
   };
 
+  /**
+   * Memperbarui posisi tooltip saat mouse bergerak.
+   * @param {React.MouseEvent} e - Event mouse
+   */
   const handleEmailMouseMove = (e) => {
     if (document.querySelector('[data-overlay-id="email-tooltip"]')) {
       updateCursorPosition(e);
     }
   };
 
+  /**
+   * Menyembunyikan tooltip email.
+   */
   const handleEmailLeave = () => {
     hideOverlay("email-tooltip");
   };
 
+  /**
+   * Melakukan proses logout.
+   * @async
+   */
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -254,15 +388,18 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     }
   };
 
-  // HANDLE PROFILE - DIPERBAIKI UNTUK ARSITEKTUR BARU
+  // HANDLE PROFILE
+  /**
+   * Membuka modal profil pengguna.
+   * Mengirimkan data yang telah diformat ke UserForm.
+   */
   const handleProfile = () => {
-    // Hanya kirim data yang benar-benar dibutuhkan
     const profileData = {
       id: currentUser.id,
       name: currentUser.name,
       email: currentUser.email,
       phone: currentUser.phone || "",
-      avatar: currentUser.avatar, // path original
+      avatar: currentUser.avatar,
       avatarUrl: usersService.getFullAvatarUrl(currentUser.avatar),
       roleName: currentUser.roleName || currentUser.role?.name || "User",
       roleId: currentUser.role?.id ? String(currentUser.role.id) : "",
@@ -284,14 +421,12 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
           onSuccess={(updatedUser) => {
             closeModal("profileUserModal");
             if (updatedUser) {
-              // Data sudah fresh dari UserForm (termasuk avatar terbaru)
               setCurrentUser(updatedUser);
               if (onUserUpdate) {
                 onUserUpdate(updatedUser);
               }
               setAvatarError({});
             } else {
-              // Fallback: refresh dari server
               refreshUserData();
             }
           }}
@@ -301,6 +436,9 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     );
   };
 
+  /**
+   * Membuka modal notifikasi lengkap.
+   */
   const handleViewAllNotifications = () => {
     setShowNotifications(false);
     openModal(
@@ -458,6 +596,7 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
                   className="dropdown-item logout"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
+                  aria-disabled={isLoggingOut}
                 >
                   {isLoggingOut ? (
                     <PulseDots

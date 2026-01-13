@@ -1,4 +1,19 @@
-// src/components/Modals/view/AuditLogDetailModal.jsx
+/**
+ * @file AuditLogDetailModal.jsx
+ * @description Komponen modal untuk menampilkan detail lengkap entri audit log.
+ * Menyediakan tampilan komprehensif dari aktivitas sistem dengan:
+ * - Informasi dasar (tanggal, user, tindakan, tabel)
+ * - Ringkasan perubahan dalam format sebelum/sesudah
+ * - Nilai detail lama dan baru dalam format yang dapat dibaca
+ * - Resolusi otomatis ID referensi menjadi nama yang bermakna
+ * 
+ * Fitur khusus:
+ * - Mengubah ID seperti roleId, categoryId menjadi nama yang dapat dibaca
+ * - Menangani entri yang mengacu pada record yang telah dihapus
+ * - Humanisasi field name untuk keterbacaan yang lebih baik
+ * - Penanganan aman untuk nilai sensitif (password, token, dll.)
+ */
+
 import React, { useEffect, useState } from "react";
 import { auditLogService } from "../../../services/auditLogService";
 import {
@@ -8,8 +23,30 @@ import {
 import { dataService } from "../../../services/dataService";
 import "../../../sass/components/Modals/AuditLogDetailModal/AuditLogDetailModal.css";
 
+/**
+ * Props untuk komponen AuditLogDetailModal.
+ * @typedef {Object} AuditLogDetailModalProps
+ * @property {Object} log - Data audit log yang akan ditampilkan
+ */
+
+/**
+ * Komponen modal detail audit log.
+ * Menampilkan informasi lengkap tentang entri audit log dengan resolusi referensi.
+ *
+ * @component
+ * @param {AuditLogDetailModalProps} props - Props komponen
+ */
 const AuditLogDetailModal = ({ log }) => {
+  /**
+   * Data log yang telah diperkaya dengan resolusi referensi.
+   * @type {Object|null}
+   */
   const [enrichedLog, setEnrichedLog] = useState(null);
+
+  /**
+   * Status loading saat memproses data log.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,6 +103,14 @@ const AuditLogDetailModal = ({ log }) => {
     enrichLog();
   }, [log]);
 
+  /**
+   * Menyelesaikan ID referensi menjadi nama yang dapat dibaca.
+   * Mengubah ID seperti roleId, categoryId menjadi nama entitas yang sesuai.
+   * 
+   * @async
+   * @param {Object} values - Objek nilai yang berisi ID referensi
+   * @returns {Object} Objek dengan ID referensi yang telah diselesaikan menjadi nama
+   */
   const resolveReferenceIds = async (values) => {
     if (!values || typeof values !== "object") return values;
 
@@ -108,7 +153,7 @@ const AuditLogDetailModal = ({ log }) => {
     return resolved;
   };
 
-  // ✅ RENDER DENGAN STRUKTUR TUNGGAL
+  // RENDER DENGAN STRUKTUR TUNGGAL
   if (loading) {
     return (
       <div className="audit-log-detail-modal">
@@ -130,9 +175,14 @@ const AuditLogDetailModal = ({ log }) => {
     );
   }
 
+  /** @type {boolean} Status apakah log memiliki perubahan yang tercatat */
   const hasChanges = enrichedLog.changes && enrichedLog.changes.length > 0;
+
+  /** @type {boolean} Status apakah log memiliki nilai lama */
   const hasOldValues =
     enrichedLog.oldValues && Object.keys(enrichedLog.oldValues).length > 0;
+
+  /** @type {boolean} Status apakah log memiliki nilai baru */
   const hasNewValues =
     enrichedLog.newValues && Object.keys(enrichedLog.newValues).length > 0;
 
@@ -160,6 +210,7 @@ const AuditLogDetailModal = ({ log }) => {
               className={`badge action ${getActionBadgeClass(
                 enrichedLog.action
               )}`}
+              aria-label={`Action: ${formatActionName(enrichedLog.action) || "Unknown"}`}
             >
               {formatActionName(enrichedLog.action) || "—"}
             </span>

@@ -1,4 +1,21 @@
-// src/views/Home/Home.jsx
+/**
+ * @file Home.jsx
+ * @description Komponen halaman utama dashboard yang menampilkan ringkasan data aplikasi.
+ * Menyediakan:
+ * - Kartu statistik (pengguna, klien)
+ * - Chart tren analitik 30 hari terakhir
+ * - Log aktivitas pengunjung terbaru
+ * 
+ * Mengimplementasikan optimasi performa berbasis:
+ * - Preferensi gerakan pengguna (`prefers-reduced-motion`)
+ * - Kemampuan perangkat (`deviceMemory`, `hardwareConcurrency`)
+ * 
+ * Menggunakan sistem loading hybrid:
+ * - Skeleton untuk loading awal
+ * - Animasi angka untuk data yang dimuat
+ * - Auto-refetch data setiap 30 detik
+ */
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -10,33 +27,93 @@ import { AnimatedNumber } from "../components/Animations";
 import AnalyticsChart from "../components/AnalyticsChart";
 import "../sass/views/Home/Home.css";
 
+/**
+ * Komponen halaman utama dashboard.
+ * Menampilkan ringkasan data aplikasi dengan UX yang responsif dan performan.
+ *
+ * @component
+ */
 const Home = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  /**
+   * Status loading untuk data ringkasan dashboard.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [loading, setLoading] = useState(true);
+
+  /**
+   * Pesan error jika gagal memuat data.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
   const [error, setError] = useState(null);
+
+  /**
+   * Data ringkasan dashboard utama.
+   * @type {{ users: { total: number }, clients: { total: number }, analytics: Object } | null}
+   */
   const [dashboardData, setDashboardData] = useState(null);
 
   // Untuk visitor activity — terpisah dari dashboard stats
+  /**
+   * Daftar aktivitas pengunjung terbaru.
+   * @type {[Array<Object>, React.Dispatch<React.SetStateAction<Array<Object>>>]}
+   */
   const [visitorActivity, setVisitorActivity] = useState([]);
+
+  /**
+   * Status loading untuk aktivitas pengunjung.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [activityLoading, setActivityLoading] = useState(true);
+
+  /**
+   * Status apakah ini adalah pemuatan awal halaman.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  /**
+   * Status apakah sedang melakukan refetch aktivitas (auto-refetch).
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isRefetchingActivity, setIsRefetchingActivity] = useState(false);
+
+  /** @type {React.RefObject<HTMLDivElement>} Ref ke daftar aktivitas untuk animasi */
   const activityListRef = useRef(null);
+
+  /** @type {React.MutableRefObject<boolean>} Flag untuk mencegah animasi berulang */
   const hasAnimatedActivity = useRef(false);
 
   // Deteksi preferensi pengguna & perangkat lambat
+  /**
+   * Apakah pengguna memilih mengurangi gerakan animasi.
+   * @type {boolean}
+   */
   const prefersReducedMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
+  /**
+   * Apakah perangkat dianggap low-end berdasarkan spesifikasi hardware.
+   * @type {boolean}
+   */
   const isLowEndDevice =
     ("deviceMemory" in navigator && navigator.deviceMemory < 2) ||
     ("hardwareConcurrency" in navigator && navigator.hardwareConcurrency <= 2);
 
+  /**
+   * Apakah animasi boleh dijalankan berdasarkan preferensi dan kemampuan perangkat.
+   * @type {boolean}
+   */
   const shouldAnimate = !prefersReducedMotion && !isLowEndDevice;
 
   // === Fetch Dashboard Summary (stats & trend only) ===
+  /**
+   * Memuat data ringkasan dashboard utama.
+   * @async
+   */
   const loadDashboardData = async () => {
     try {
       setLoading(true);
@@ -55,6 +132,12 @@ const Home = () => {
     }
   };
 
+  /**
+   * Memuat daftar pengunjung terbaru.
+   * @async
+   * @param {{ isRefetch?: boolean }} [options={}] - Opsi pemanggilan
+   * @param {boolean} [options.isRefetch=false] - Apakah ini pemanggilan auto-refetch
+   */
   const fetchRecentVisitors = async ({ isRefetch = false } = {}) => {
     if (isRefetch) {
       setIsRefetchingActivity(true);
@@ -63,7 +146,7 @@ const Home = () => {
     }
 
     try {
-      const result = await dashboardService.getRecentVisitors(20); // limit 20
+      const result = await dashboardService.getRecentVisitors(20);
       if (result.success && Array.isArray(result.data)) {
         setVisitorActivity([...result.data]);
         hasAnimatedActivity.current = false;
@@ -82,6 +165,9 @@ const Home = () => {
   };
 
   // === Animasi saat data pertama kali muncul ===
+  /**
+   * Menjalankan animasi slide-in untuk item aktivitas saat data pertama kali dimuat.
+   */
   useEffect(() => {
     if (
       visitorActivity.length > 0 &&
@@ -104,12 +190,19 @@ const Home = () => {
   }, [visitorActivity, activityLoading, shouldAnimate, isInitialLoad]);
 
   // === Load initial data ===
+  /**
+   * Memuat data awal saat komponen dipasang.
+   */
   useEffect(() => {
     loadDashboardData();
     fetchRecentVisitors();
   }, []);
 
   // === Auto-refetch hanya stats & recent visitors ===
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
       await loadDashboardData();
@@ -122,9 +215,24 @@ const Home = () => {
   useAutoRefetch(handleAutoRefetch);
 
   // Navigation handlers
+  /**
+   * Navigasi ke halaman pengguna.
+   */
   const handleUsersCardClick = () => navigate("/dashboard/users");
+
+  /**
+   * Navigasi ke halaman klien.
+   */
   const handleClientCardClick = () => navigate("/dashboard/clients");
+
+  /**
+   * Navigasi ke halaman analitik.
+   */
   const handleAnalyticsCardClick = () => navigate("/dashboard/analytics");
+
+  /**
+   * Navigasi ke halaman page views.
+   */
   const handlePageViewsCardClick = () => navigate("/dashboard/analytics");
 
   const analyticsSnapshot = dashboardData?.analytics?.snapshot;
@@ -235,6 +343,9 @@ const Home = () => {
                 className="home-dashboard-card home-stat-card home-admin-card"
                 onClick={handleUsersCardClick}
                 style={{ cursor: "pointer" }}
+                role="button"
+                tabIndex={0}
+                aria-label="Go to Users page"
               >
                 <div className="home-card-content-wrapper">
                   <h3 className="home-stat-title">Users</h3>
@@ -265,6 +376,9 @@ const Home = () => {
                 className="home-dashboard-card home-stat-card home-client-card"
                 onClick={handleClientCardClick}
                 style={{ cursor: "pointer" }}
+                role="button"
+                tabIndex={0}
+                aria-label="Go to Clients page"
               >
                 <div className="home-card-content-wrapper">
                   <h3 className="home-stat-title">Clients</h3>
@@ -395,6 +509,9 @@ const Home = () => {
               className="home-dashboard-card home-stat-card home-activity-card"
               onClick={handlePageViewsCardClick}
               style={{ cursor: "pointer" }}
+              role="button"
+              tabIndex={0}
+              aria-label="Go to Analytics page"
             >
               <div className="home-stat-content">
                 <div className="home-stat-header">

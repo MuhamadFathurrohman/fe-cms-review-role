@@ -1,7 +1,52 @@
-// services/generalApiService.js
+/**
+ * @file generalApiService.js
+ * @description Layanan API generik untuk berinteraksi dengan backend.
+ * Menyediakan wrapper seragam di atas Axios dengan penanganan error,
+ * format respons konsisten, dan fitur tambahan seperti:
+ * - Ekspor data (PDF/Excel)
+ * - Download file dengan ekstraksi nama otomatis
+ * - Dukungan pagination (untuk `getAll`)
+ *
+ * Semua metode mengembalikan objek dengan struktur:
+ * ```js
+ * { success: boolean, data?: any, message?: string, meta?: object }
+ * ```
+ */
+
 import apiClient from "./api";
 
+/**
+ * @typedef {Object} ApiResponseSuccess
+ * @property {true} success - Indikator keberhasilan
+ * @property {any} data - Data respons dari server
+ * @property {Object} [meta] - Metadata tambahan (misal: pagination)
+ */
+
+/**
+ * @typedef {Object} ApiResponseFailure
+ * @property {false} success - Indikator kegagalan
+ * @property {string} message - Pesan error yang ramah pengguna
+ * @property {string} [error] - Detail error teknis (opsional)
+ */
+
+/**
+ * @typedef {ApiResponseSuccess | ApiResponseFailure} ApiResponse
+ */
+
+/**
+ * Layanan API generik untuk operasi CRUD dan utilitas.
+ * Menggunakan instance `apiClient` yang telah dikonfigurasi dengan interceptor sesi.
+ *
+ * @namespace generalApiService
+ */
 const generalApiService = {
+  /**
+   * Melakukan GET request ke endpoint tertentu.
+   * Digunakan untuk mengambil data tunggal (non-paginated).
+   *
+   * @param {string} url - URL relatif ke endpoint API (misal: `/users/123`)
+   * @returns {Promise<ApiResponse>} Respons dengan `data` jika sukses, atau `message` jika gagal
+   */
   get: async (url) => {
     try {
       const response = await apiClient.get(url);
@@ -15,6 +60,18 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Mengambil daftar data dari endpoint dengan dukungan pagination.
+   * Mendeteksi otomatis format respons:
+   * - Format paginated: `{ data: [...], meta: {...} }`
+   * - Format array langsung: `[...]`
+   * - Format objek tunggal: `{ ... }`
+   *
+   * @param {string} endpoint - Endpoint API (misal: `/users`)
+   * @param {Object} [params={}] - Parameter query string
+   * @param {boolean} [params.bypassCache=false] - Jika true, tambahkan `_t=timestamp` untuk bypass cache
+   * @returns {Promise<ApiResponse & { meta?: Object }>} Respons dengan `data` dan opsional `meta`
+   */
   getAll: async (endpoint, params = {}) => {
     try {
       const { bypassCache, ...queryParams } = params;
@@ -61,6 +118,13 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Membuat resource baru melalui POST request.
+   *
+   * @param {string} endpoint - Endpoint API (misal: `/users`)
+   * @param {Object} data - Data yang akan dikirim dalam body request
+   * @returns {Promise<ApiResponse>} Respons dengan `data` jika sukses
+   */
   create: async (endpoint, data) => {
     try {
       const response = await apiClient.post(endpoint, data);
@@ -75,6 +139,18 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Memperbarui resource yang ada melalui PUT request.
+   * Mendukung dua gaya pemanggilan:
+   * 1. `update('/users', { id: 123, name: 'John' })`
+   * 2. `update('/users', 123, { name: 'John' })`
+   *
+   * @param {string} urlOrEndpoint - URL lengkap atau base endpoint
+   * @param {string|number|Object} idOrData - ID resource atau objek data lengkap
+   * @param {Object} [data] - Data pembaruan (hanya digunakan pada gaya pemanggilan #2)
+   * @returns {Promise<ApiResponse>} Respons dengan `data` jika sukses
+   * @throws {Error} Jika parameter tidak valid
+   */
   update: async (urlOrEndpoint, idOrData, data) => {
     try {
       let url, payload;
@@ -101,6 +177,16 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Menghapus resource melalui DELETE request.
+   * Mendukung dua gaya:
+   * 1. `delete('/users/123')`
+   * 2. `delete('/users', 123)`
+   *
+   * @param {string} urlOrEndpoint - URL lengkap atau base endpoint
+   * @param {string|number} [id] - ID resource (opsional, jika URL belum lengkap)
+   * @returns {Promise<ApiResponse>} Respons sukses tanpa data
+   */
   delete: async (urlOrEndpoint, id) => {
     try {
       const url =
@@ -116,6 +202,13 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Melakukan partial update melalui PATCH request.
+   *
+   * @param {string} endpoint - Endpoint API lengkap (misal: `/users/123/avatar`)
+   * @param {Object} [data={}] - Data parsial yang akan diperbarui
+   * @returns {Promise<ApiResponse>} Respons dengan `data` jika sukses
+   */
   patch: async (endpoint, data = {}) => {
     try {
       const response = await apiClient.patch(endpoint, data);
@@ -128,9 +221,18 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Mengekspor data entitas ke format file (PDF/Excel).
+   * Mengunduh file secara otomatis dan mengekstrak nama file dari header respons.
+   *
+   * @param {string} entity - Nama entitas (misal: `'users'`, `'brand'`, `'product'`)
+   * @param {'pdf'|'excel'} format - Format ekspor yang diinginkan
+   * @returns {Promise<ApiResponse & { fileName?: string }>} Respons dengan `fileName` jika sukses
+   * @throws {Error} Jika entitas atau format tidak valid
+   */
   exportData: async (entity, format) => {
     try {
-      // ✅ Tambahkan mapping untuk entitas yang menggunakan bentuk plural di backend
+      // Tambahkan mapping untuk entitas yang menggunakan bentuk plural di backend
       const entityMap = {
         brand: "brands",
         product: "products",
@@ -138,7 +240,7 @@ const generalApiService = {
       };
       const routeEntity = entityMap[entity] || entity;
 
-      // ✅ Validasi berdasarkan routeEntity (bentuk yang benar)
+      // Validasi berdasarkan routeEntity (bentuk yang benar)
       const validEntities = ["users", "brands", "products"]; // sesuaikan dengan route backend
       const validFormats = ["pdf", "excel"];
 
@@ -149,7 +251,7 @@ const generalApiService = {
         throw new Error(`Invalid format: ${format}`);
       }
 
-      // ✅ Gunakan routeEntity di URL
+      // Gunakan routeEntity di URL
       const response = await apiClient.get(`/${routeEntity}/export/${format}`, {
         responseType: "blob",
       });
@@ -193,6 +295,15 @@ const generalApiService = {
     }
   },
 
+  /**
+   * Mengunduh file dari URL tertentu dengan ekstraksi nama file otomatis.
+   * Digunakan untuk download file generik (misal: avatar, dokumen).
+   *
+   * @param {string} url - URL lengkap ke file
+   * @param {Object} [params={}] - Parameter query string (opsional)
+   * @param {string} [fallbackFilename="download"] - Nama file cadangan jika header tidak menyediakan
+   * @returns {Promise<ApiResponse & { fileName?: string }>} Respons dengan `fileName` jika sukses
+   */
   downloadFile: async (url, params = {}, fallbackFilename = "download") => {
     try {
       const response = await apiClient.get(url, {

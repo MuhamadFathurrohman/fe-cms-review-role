@@ -1,4 +1,18 @@
-// src/views/Categories/Categories.jsx
+/**
+ * @file Categories.jsx
+ * @description Komponen halaman manajemen kategori produk.
+ * Menyediakan antarmuka lengkap untuk:
+ * - Melihat daftar kategori produk
+ * - Membuat, mengedit, dan menghapus kategori
+ * - Pencarian berdasarkan nama kategori
+ * - Pagination responsif
+ * 
+ * Mengimplementasikan kontrol akses berbasis izin:
+ * - Super admin: Akses penuh ke semua fitur
+ * - Pengguna dengan izin "manage category": Akses CRUD
+ * - Pengguna tanpa izin: Hanya bisa melihat (jika diizinkan oleh rute)
+ */
+
 import React, { useRef } from "react";
 import {
   Search,
@@ -21,12 +35,24 @@ import { generatePageNumbers } from "../../utils/pagination";
 import { canManage, isSuperAdmin } from "../../utils/permissions";
 import "../../sass/views/Categories/Categories.scss";
 
+/**
+ * Komponen halaman manajemen kategori utama.
+ * Menampilkan tabel kategori dengan fitur pencarian, pagination, dan aksi CRUD.
+ *
+ * @component
+ */
 const Categories = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+
+  /** @type {React.RefObject<HTMLInputElement>} Ref ke input pencarian */
   const searchInputRef = useRef(null);
 
-  // ✅ UPDATE: Tambah parameter bypassCache
+  // parameter bypassCache
+  /**
+   * Hook pencarian dengan debouncing dan pagination untuk data kategori.
+   * Mendukung pencarian teks bebas berdasarkan nama kategori.
+   */
   const {
     searchTerm,
     setSearchTerm,
@@ -39,13 +65,12 @@ const Categories = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      // ← Tambah parameter ke-4
       return await categoriesService.getPaginated(
         page,
         limit,
         search,
         {}, // filters
-        bypassCache // ← Pass bypassCache
+        bypassCache
       );
     },
     1,
@@ -54,11 +79,25 @@ const Categories = () => {
   );
 
   // === Permission Logic ===
+  /**
+   * Status apakah pengguna saat ini adalah super admin.
+   * @type {boolean}
+   */
   const isSuper = isSuperAdmin(currentUser);
+
+  /**
+   * Status apakah pengguna memiliki izin mengelola kategori.
+   * @type {boolean}
+   */
   const canManageCategories =
     isSuper || canManage(currentUser?.permissions, "category");
 
-  // ✅ TAMBAH: refreshWithPageValidation
+  // refreshWithPageValidation
+  /**
+   * Memperbarui data kategori dengan validasi halaman untuk mencegah out-of-bounds.
+   * @async
+   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
       const result = await categoriesService.getPaginated(
@@ -87,9 +126,13 @@ const Categories = () => {
     }
   };
 
+  /**
+   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
+   * Memperbarui data kategori secara otomatis.
+   * @async
+   */
   const handleAutoRefetch = async () => {
     try {
-      // Refetch users data (bypass cache untuk data fresh)
       await refreshWithPageValidation(true);
     } catch (error) {
       console.error("❌ Catgories.jsx: Auto-refetch failed:", error);
@@ -98,10 +141,17 @@ const Categories = () => {
 
   useAutoRefetch(handleAutoRefetch);
 
+  /**
+   * Handler untuk input pencarian.
+   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   */
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
+  /**
+   * Membuka modal tambah kategori baru.
+   */
   const handleAddCategory = () => {
     if (!canManageCategories) return;
     openModal(
@@ -123,7 +173,11 @@ const Categories = () => {
     );
   };
 
-  // ✅ UPDATE: handleEditCategory dengan refreshWithPageValidation
+  // handleEditCategory dengan refreshWithPageValidation
+  /**
+   * Membuka modal edit kategori.
+   * @param {Object} item - Data kategori yang akan diedit
+   */
   const handleEditCategory = (item) => {
     if (!canManageCategories) return;
     openModal(
@@ -139,14 +193,18 @@ const Categories = () => {
           onClose={() => closeModal("edit-category")}
           onSuccess={() => {
             closeModal("edit-category");
-            refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+            refreshWithPageValidation(true);
           }}
         />
       </Modal>
     );
   };
 
-  // ✅ UPDATE: handleDeleteCategory dengan refreshWithPageValidation
+  // handleDeleteCategory dengan refreshWithPageValidation
+  /**
+   * Membuka modal konfirmasi hapus kategori.
+   * @param {Object} item - Data kategori yang akan dihapus
+   */
   const handleDeleteCategory = (item) => {
     if (!canManageCategories) return;
     openModal(
@@ -186,7 +244,7 @@ const Categories = () => {
                   }
                   onClose={() => {
                     closeModal("deleteSuccessAlert");
-                    refreshWithPageValidation(true); // ✅ UPDATE: Bypass cache
+                    refreshWithPageValidation(true);
                   }}
                 />,
                 "small"
@@ -222,6 +280,11 @@ const Categories = () => {
     );
   };
 
+  /**
+   * Merender pesan ketika tidak ada data kategori.
+   * Menyesuaikan pesan berdasarkan konteks pencarian.
+   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   */
   const renderNoDataMessage = () => {
     if (searchTerm.trim()) {
       // Jika sedang search
@@ -253,6 +316,7 @@ const Categories = () => {
   };
 
   // Generate page numbers
+  /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = generatePageNumbers(currentPage, totalPages);
 
   return (
@@ -278,6 +342,7 @@ const Categories = () => {
             stroke="currentColor"
             className="search-icon"
             onClick={() => searchInputRef.current?.focus()}
+            aria-label="Focus search input"
           />
           <input
             ref={searchInputRef}
@@ -286,6 +351,7 @@ const Categories = () => {
             value={searchTerm}
             onChange={handleSearch}
             className="search-input"
+            aria-label="Search categories"
           />
           {loading && searchTerm && (
             <div className="search-input-spinner"></div>
@@ -296,7 +362,7 @@ const Categories = () => {
       {error && (
         <div className="error-banner">
           <span>{error}</span>
-          <button onClick={refresh} className="retry-btn">
+          <button onClick={refresh} className="retry-btn" aria-label="Retry">
             Retry
           </button>
         </div>
@@ -334,6 +400,7 @@ const Categories = () => {
                       className={`badge status ${
                         item.isActive ? "ACTIVE" : "INACTIVE"
                       }`}
+                      aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
                     >
                       {item.isActive ? "Active" : "Inactive"}
                     </span>
@@ -346,6 +413,7 @@ const Categories = () => {
                           className="btn-edit"
                           title="Edit category"
                           onClick={() => handleEditCategory(item)}
+                          aria-label={`Edit category ${item.name}`}
                         >
                           <Edit2 size={18} />
                         </button>
@@ -353,6 +421,7 @@ const Categories = () => {
                           className="btn-delete"
                           title="Delete category"
                           onClick={() => handleDeleteCategory(item)}
+                          aria-label={`Delete category ${item.name}`}
                         >
                           <Trash2 size={18} />
                         </button>
@@ -380,6 +449,7 @@ const Categories = () => {
             }`}
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
+            aria-label="Previous page"
           >
             <ChevronLeft size={16} />
             <span>Prev</span>
@@ -398,6 +468,7 @@ const Categories = () => {
                     currentPage === page ? "active" : ""
                   }`}
                   onClick={() => goToPage(page)}
+                  aria-label={`Go to page ${page}`}
                 >
                   {page}
                 </button>
@@ -411,6 +482,7 @@ const Categories = () => {
             }`}
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
+            aria-label="Next page"
           >
             <span>Next</span>
             <ChevronRight size={16} />

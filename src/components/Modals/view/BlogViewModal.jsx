@@ -1,11 +1,53 @@
-// src/components/Modals/BlogViewModal.jsx
+/**
+ * @file BlogViewModal.jsx
+ * @description Komponen modal untuk menampilkan preview lengkap blog dalam format yang ramah pengguna.
+ * Menyediakan tampilan readonly dari konten blog dengan:
+ * - Dukungan multi-bahasa (English/Indonesian)
+ * - Render konten HTML yang aman
+ * - Tampilan metadata (tanggal, views, featured status)
+ * - Preview gambar featured
+ * - Embed content eksternal
+ * - Tag dan excerpt
+ * 
+ * Dirancang untuk memberikan pengalaman membaca yang optimal
+ * sebelum atau setelah publikasi blog.
+ */
+
 import React, { useState, useEffect } from "react";
 import { Calendar, Tag, Star, Eye, Globe } from "lucide-react";
 import "../../../sass/components/Modals/BlogViewModal/BlogViewModal.css";
 
+/**
+ * Props untuk komponen BlogViewModal.
+ * @typedef {Object} BlogViewModalProps
+ * @property {Object} blog - Data blog yang akan ditampilkan
+ * @property {'EN'|'ID'} [initialLanguage='EN'] - Bahasa awal untuk ditampilkan
+ */
+
+/**
+ * Komponen modal preview blog.
+ * Menampilkan konten blog dalam format yang siap baca dengan dukungan bilingual.
+ *
+ * @component
+ * @param {BlogViewModalProps} props - Props komponen
+ */
 const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
+  /**
+   * Bahasa yang sedang aktif untuk ditampilkan.
+   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
+   */
   const [currentLanguage, setCurrentLanguage] = useState(initialLanguage);
+
+  /**
+   * Status apakah blog memiliki terjemahan dalam bahasa Indonesia.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [hasIndonesian, setHasIndonesian] = useState(false);
+
+  /**
+   * Data blog yang telah diproses untuk ditampilkan.
+   * @type {Object|null}
+   */
   const [displayBlog, setDisplayBlog] = useState(null);
 
   // Jika blog sudah diberikan, proses terjemahannya
@@ -38,6 +80,10 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
     setDisplayBlog(processed);
   }, [blog, currentLanguage]);
 
+  /**
+   * Handler perubahan bahasa tampilan.
+   * @param {'EN'|'ID'} language - Bahasa yang dipilih
+   */
   const handleLanguageChange = (language) => {
     if (language === currentLanguage) return;
     setCurrentLanguage(language);
@@ -65,6 +111,11 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
     );
   }
 
+  /**
+   * Merender konten utama blog.
+   * Menggunakan dangerouslySetInnerHTML untuk konten HTML dari editor rich text.
+   * @returns {JSX.Element} Konten blog atau pesan fallback
+   */
   const renderContent = () => {
     if (!displayBlog.content) {
       return (
@@ -87,16 +138,18 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
       {/* Language Switcher - Only show if Indonesian translation exists */}
       {hasIndonesian && (
         <div className="blog-language-switcher">
-          <Globe size={16} />
+          <Globe size={16} aria-label="Language switcher" />
           <button
             className={`lang-btn ${currentLanguage === "EN" ? "active" : ""}`}
             onClick={() => handleLanguageChange("EN")}
+            aria-label="Switch to English"
           >
             EN
           </button>
           <button
             className={`lang-btn ${currentLanguage === "ID" ? "active" : ""}`}
             onClick={() => handleLanguageChange("ID")}
+            aria-label="Switch to Indonesian"
           >
             ID
           </button>
@@ -110,6 +163,7 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
             src={displayBlog.imageUrl}
             alt={displayBlog.title || "Blog image"}
             loading="lazy"
+            aria-label={`Featured image for ${displayBlog.title || "blog"}`}
           />
         </div>
       )}
@@ -119,20 +173,20 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
         {/* Meta Info */}
         <div className="blog-view-meta">
           <div className="meta-item">
-            <Calendar size={16} />
+            <Calendar size={16} aria-hidden="true" />
             <span>{displayBlog.createdAtFormatted || "N/A"}</span>
           </div>
 
           {displayBlog.viewCount !== undefined && displayBlog.viewCount > 0 && (
             <div className="meta-item">
-              <Eye size={16} />
+              <Eye size={16} aria-hidden="true" />
               <span>{displayBlog.viewCount.toLocaleString()}</span>
             </div>
           )}
 
           {displayBlog.isFeatured && (
             <div className="meta-item featured">
-              <Star size={14} fill="currentColor" />
+              <Star size={14} fill="currentColor" aria-hidden="true" />
               <span>Featured</span>
             </div>
           )}
@@ -152,7 +206,7 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
         {/* Tags */}
         {displayBlog.tags && displayBlog.tags.length > 0 && (
           <div className="blog-view-tags">
-            <Tag size={16} />
+            <Tag size={16} aria-hidden="true" />
             <div className="tags-list">
               {displayBlog.tags.map((tag, index) => (
                 <span key={index} className="tag-item">
@@ -173,6 +227,7 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
                 allowFullScreen
                 sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                 frameBorder="0"
+                aria-label="Embedded content"
               />
             </div>
           </div>

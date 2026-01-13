@@ -1,3 +1,12 @@
+/**
+ * @file ResetPassword.jsx
+ * @description Halaman reset kata sandi setelah pengguna mengklik tautan dari email.
+ * Mengambil token dari query string dan email dari localStorage,
+ * memvalidasi input password (min 6 karakter, konfirmasi cocok),
+ * lalu mengirim permintaan ke backend untuk memperbarui password.
+ * Menampilkan pesan error jika token tidak valid atau sesi kadaluarsa.
+ */
+
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -6,41 +15,107 @@ import Logo from "../../assets/images/logo.svg";
 import PulseDots from "../../components/Loaders/PulseDots";
 import "../../sass/views/Auth/ResetPassword/ResetPassword.css";
 
+/**
+ * Komponen halaman reset password.
+ * Memerlukan token dari URL dan email dari localStorage untuk berfungsi.
+ *
+ * @component
+ * @example
+ * // URL: /reset-password?token=abc123
+ * // localStorage: resetEmail = "user@example.com"
+ * <ResetPassword />
+ */
 const ResetPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  /**
+   * Token reset password dari query string URL (`?token=...`).
+   * @type {string | null}
+   */
   const token = searchParams.get("token");
 
-  // ✅ Ambil email dari localStorage
+  /**
+   * Email pengguna yang disimpan saat permintaan lupa password.
+   * Diambil dari localStorage; digunakan untuk mengidentifikasi akun.
+   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
+   */
   const [email] = useState(() => {
     return localStorage.getItem("resetEmail") || "";
   });
 
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} */
   const [password, setPassword] = useState("");
+
+  /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} */
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [loading, setLoading] = useState(false);
+
+  /**
+   * State untuk menampilkan pesan alert (sukses/error).
+   * @type {[{show: boolean, message: string, type: 'success'|'error'}, React.Dispatch<React.SetStateAction<...>>]}
+   */
   const [alert, setAlert] = useState({ show: false, message: "", type: "" });
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [isFadingOut, setIsFadingOut] = useState(false);
+
+  /**
+   * Status validitas token dan email.
+   * Jika `false`, form dinonaktifkan dan ditampilkan pesan error.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
   const [isTokenValid, setIsTokenValid] = useState(true);
 
-  // 🔥 State untuk toggle visibility password
+  // State untuk toggle visibility password
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [showPassword, setShowPassword] = useState(false);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // 🔥 State untuk tracking focus dan error tooltip
-  const [focusedInput, setFocusedInput] = useState(null); // 'password' | 'confirmPassword'
+  // State untuk tracking focus dan error tooltip
+  /**
+   * Input yang sedang dalam fokus, digunakan untuk menampilkan tooltip error real-time.
+   * Nilai: `'password'` | `'confirmPassword'` | `null`
+   * @type {['password'|'confirmPassword'|null, React.Dispatch<React.SetStateAction<...>>]}
+   */
+  const [focusedInput, setFocusedInput] = useState(null);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [showPasswordError, setShowPasswordError] = useState(false);
+
+  /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
   const [showConfirmPasswordError, setShowConfirmPasswordError] =
     useState(false);
 
-  // 🔥 Validasi password (sesuai backend: min 6 karakter)
+  // Validasi password (sesuai backend: min 6 karakter)
+  /**
+   * Apakah password memenuhi kriteria minimal (≥6 karakter).
+   * @type {boolean}
+   */
   const isPasswordValid = password.length >= 6;
+
+  /**
+   * Apakah password dan konfirmasi cocok.
+   * @type {boolean}
+   */
   const passwordsMatch = password === confirmPassword;
+
+  /**
+   * Apakah seluruh form valid dan siap dikirim.
+   * @type {boolean}
+   */
   const isFormValid =
     isPasswordValid && passwordsMatch && password && confirmPassword;
 
-  // 🔥 Validasi keberadaan token & email
+  // Validasi keberadaan token & email
+  /**
+   * Memeriksa apakah token dan email tersedia.
+   * Jika tidak, tampilkan error dan nonaktifkan form.
+   */
   useEffect(() => {
     if (!token || !email) {
       setAlert({
@@ -53,7 +128,10 @@ const ResetPassword = () => {
     }
   }, [token, email]);
 
-  // 🔥 Auto-hide alert
+  // Auto-hide alert
+  /**
+   * Menyembunyikan alert secara otomatis setelah 3–4 detik.
+   */
   useEffect(() => {
     if (alert.show) {
       const fadeOutTimeout = setTimeout(() => setIsFadingOut(true), 3000);
@@ -68,7 +146,10 @@ const ResetPassword = () => {
     }
   }, [alert.show]);
 
-  // 🔥 useEffect untuk mengatur tampilan error tooltip
+  // useEffect untuk mengatur tampilan error tooltip
+  /**
+   * Menampilkan tooltip error hanya saat input dalam fokus dan nilai tidak valid.
+   */
   useEffect(() => {
     if (focusedInput === "password" && password && !isPasswordValid) {
       setShowPasswordError(true);
@@ -93,6 +174,16 @@ const ResetPassword = () => {
     passwordsMatch,
   ]);
 
+  /**
+   * Menangani pengiriman form reset password.
+   * - Memvalidasi form dan token
+   * - Mengirim `token`, `email`, dan `password` ke `/auth/reset-password`
+   * - Membersihkan `localStorage` setelah sukses
+   * - Redirect ke halaman login
+   *
+   * @param {React.FormEvent<HTMLFormElement>} e - Event submit form
+   * @async
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -101,7 +192,7 @@ const ResetPassword = () => {
     setLoading(true);
     setAlert({ show: false, message: "", type: "" });
 
-    // ✅ Kirim email (dari localStorage), token, dan password
+    // Kirim email (dari localStorage), token, dan password
     const result = await generalApiService.create("/auth/reset-password", {
       token,
       email,
@@ -109,7 +200,7 @@ const ResetPassword = () => {
     });
 
     if (result.success) {
-      // ✅ Hapus email dari localStorage setelah sukses
+      // Hapus email dari localStorage setelah sukses
       localStorage.removeItem("resetEmail");
 
       setAlert({
@@ -139,7 +230,7 @@ const ResetPassword = () => {
     setLoading(false);
   };
 
-  // ✅ Tampilkan error jika token atau email tidak tersedia
+  // Tampilkan error jika token atau email tidak tersedia
   if (!token || !email) {
     return (
       <div className="reset-password-container">
@@ -218,6 +309,10 @@ const ResetPassword = () => {
                 placeholder="At least 6 characters"
                 onFocus={() => setFocusedInput("password")}
                 onBlur={() => setFocusedInput(null)}
+                aria-invalid={password && !isPasswordValid}
+                aria-describedby={
+                  showPasswordError ? "password-error-tooltip" : undefined
+                }
               />
               <button
                 type="button"
@@ -230,7 +325,10 @@ const ResetPassword = () => {
               </button>
 
               {showPasswordError && (
-                <div className="reset-password-error-tooltip">
+                <div
+                  id="password-error-tooltip"
+                  className="reset-password-error-tooltip"
+                >
                   Password must be at least 6 characters.
                 </div>
               )}
@@ -258,6 +356,12 @@ const ResetPassword = () => {
                 placeholder="Re-enter your password"
                 onFocus={() => setFocusedInput("confirmPassword")}
                 onBlur={() => setFocusedInput(null)}
+                aria-invalid={confirmPassword && !passwordsMatch}
+                aria-describedby={
+                  showConfirmPasswordError
+                    ? "confirm-password-error-tooltip"
+                    : undefined
+                }
               />
               <button
                 type="button"
@@ -274,7 +378,10 @@ const ResetPassword = () => {
               </button>
 
               {showConfirmPasswordError && (
-                <div className="reset-password-error-tooltip">
+                <div
+                  id="confirm-password-error-tooltip"
+                  className="reset-password-error-tooltip"
+                >
                   Passwords do not match.
                 </div>
               )}
@@ -285,6 +392,7 @@ const ResetPassword = () => {
             type="submit"
             className="reset-password-button"
             disabled={loading || !isFormValid || !isTokenValid}
+            aria-disabled={loading || !isFormValid || !isTokenValid}
           >
             {loading ? (
               <span className="reset-password-button-loading">
