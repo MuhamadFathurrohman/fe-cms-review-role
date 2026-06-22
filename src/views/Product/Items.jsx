@@ -1,21 +1,31 @@
 /**
  * @file Items.jsx
- * @description Komponen halaman manajemen produk/item dengan dukungan multi-bahasa.
+ * @description Komponen halaman manajemen produk/item dengan dukungan multi-bahasa
+ * dan alur Review & Approval.
  * Menyediakan antarmuka lengkap untuk:
  * - Melihat daftar produk dalam format grid
- * - Membuat, mengedit, dan menghapus produk
+ * - Membuat, mengedit, dan menghapus produk (dengan batasan berdasarkan reviewStatus)
  * - Pencarian berdasarkan nama atau deskripsi
+ * - Filter berdasarkan review status
  * - Ekspor data berdasarkan periode
  * - Preview detail produk dalam modal
- * 
+ * - Navigasi ke halaman Item Approval untuk reviewer
+ *
  * Mendukung konten bilingual (English/Indonesian) dengan tampilan default dalam bahasa Inggris.
  * Mengimplementasikan kontrol akses berbasis izin:
  * - Super admin: Akses penuh ke semua fitur
- * - Pengguna dengan izin "manage product": Akses CRUD
+ * - Pengguna dengan izin "manage product": Akses CRUD kecuali Delete
+ * - Pengguna dengan izin "review product": Akses Delete + halaman approval
  * - Pengguna dengan izin "export product": Akses ekspor
+ *
+ * Kontrol aksi per role:
+ * - Tombol Edit: hanya staff (canManage, bukan canReview), status DRAFT atau REVISION
+ * - Tombol Delete: hanya reviewer (canReviewItems)
+ * - Tombol View: selalu muncul untuk reviewer; untuk staff disembunyikan saat status REVISION
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Eye,
   Package,
@@ -26,9 +36,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Image,
+  ClipboardCheck,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { itemService } from "../../services/itemService";
+import { itemService, REVIEW_STATUS } from "../../services/itemService";
 import { useModalContext } from "../../contexts/ModalContext";
 import Modal from "../../components/Modals/Modal";
 import ItemsForm from "../../components/Modals/Form/ItemsForm";
@@ -38,24 +50,71 @@ import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { generatePageNumbers } from "../../utils/pagination";
 import SkeletonItem from "../../components/Loaders/SkeletonItem";
 import AlertModal from "../../components/Alerts/AlertModal";
-import { canManage, canExport, isSuperAdmin } from "../../utils/permissions";
+import {
+  canManage,
+  canExport,
+  canReview,
+  canAccess,
+  isSuperAdmin,
+} from "../../utils/permissions";
 import ExportDropdown from "../../components/ExportDropdown";
 import "../../sass/views/Items/Items.css";
 
 /**
+ * Mapping reviewStatus ke label dan className untuk badge.
+ */
+const REVIEW_STATUS_CONFIG = {
+  [REVIEW_STATUS.DRAFT]: { label: "Draft", className: "draft" },
+  [REVIEW_STATUS.PENDING_REVIEW]: {
+    label: "Pending Review",
+    className: "pending-review",
+  },
+  [REVIEW_STATUS.APPROVED]: { label: "Approved", className: "approved" },
+  [REVIEW_STATUS.REJECTED]: { label: "Rejected", className: "rejected" },
+  [REVIEW_STATUS.REVISION]: { label: "Revision", className: "revision" },
+};
+
+/**
+ * Opsi filter review status untuk dropdown.
+ * @type {Array<{label: string, value: string}>}
+ */
+const REVIEW_STATUS_OPTIONS = [
+  { label: "All Status", value: "" },
+  { label: "Draft", value: "DRAFT" },
+  { label: "Pending Review", value: "PENDING_REVIEW" },
+  { label: "Approved", value: "APPROVED" },
+  { label: "Rejected", value: "REJECTED" },
+  { label: "Revision", value: "REVISION" },
+];
+
+/**
+ * Status yang mengizinkan tombol Edit ditampilkan.
+ * @type {string[]}
+ */
+const EDITABLE_STATUSES = [REVIEW_STATUS.DRAFT, REVIEW_STATUS.REVISION];
+
+/**
  * Komponen halaman manajemen produk utama.
- * Menampilkan grid produk dengan fitur pencarian, pagination, dan aksi CRUD.
+ * Menampilkan grid produk dengan fitur pencarian, filter, pagination, dan aksi CRUD.
  *
  * @component
  */
 const Items = () => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+  const navigate = useNavigate();
 
-  // parameter bypassCache
+  /** @type {[string, Function]} State filter review status yang aktif */
+  const [reviewStatusFilter, setReviewStatusFilter] = useState("");
+
+  /** @type {[boolean, Function]} State untuk toggle dropdown filter */
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  /** @type {React.RefObject} Ref untuk deteksi klik di luar dropdown */
+  const filterDropdownRef = useRef(null);
+
   /**
    * Hook pencarian dengan debouncing dan pagination untuk data produk.
-   * Mendukung pencarian teks bebas berdasarkan nama atau deskripsi produk.
    */
   const {
     searchTerm,
@@ -73,19 +132,35 @@ const Items = () => {
         page,
         limit,
         search,
-        bypassCache
+        {
+          reviewStatus: reviewStatusFilter || undefined,
+        },
+        bypassCache,
       );
     },
     1,
     10,
-    800
+    800,
   );
 
-  // refreshWithPageValidation dengan bypassCache
   /**
-   * Memperbarui data produk dengan validasi halaman untuk mencegah out-of-bounds.
-   * @async
-   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
+   * Menutup dropdown filter saat klik di luar area dropdown.
+   */
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(e.target)
+      ) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  /**
+   * Memperbarui data produk dengan validasi halaman.
    */
   const refreshWithPageValidation = async (bypassCache = false) => {
     try {
@@ -93,7 +168,8 @@ const Items = () => {
         1,
         10,
         searchTerm,
-        bypassCache
+        { reviewStatus: reviewStatusFilter || undefined },
+        bypassCache,
       );
 
       if (result.success) {
@@ -114,11 +190,6 @@ const Items = () => {
     }
   };
 
-  /**
-   * Fungsi auto-refetch yang dipanggil setiap 30 detik.
-   * Memperbarui data produk secara otomatis.
-   * @async
-   */
   const handleAutoRefetch = async () => {
     try {
       await refreshWithPageValidation(true);
@@ -129,38 +200,77 @@ const Items = () => {
 
   useAutoRefetch(handleAutoRefetch);
 
-  // === Permission Logic ===//
-  /**
-   * Status apakah pengguna saat ini adalah super admin.
-   * @type {boolean}
-   */
+  // ==================== PERMISSION LOGIC ====================
+
   const isSuper = isSuperAdmin(currentUser);
 
-  /**
-   * Status apakah pengguna memiliki izin mengelola produk.
-   * @type {boolean}
-   */
   const canManageItems =
-    isSuper || canManage(currentUser?.permissions, "product");
+    isSuper || canAccess(currentUser?.permissions, "product");
+
+  const canReviewItems =
+    isSuper || canReview(currentUser?.permissions, "product");
+
+  const canExportItems =
+    isSuper ||
+    canExport(currentUser?.permissions, "product") ||
+    canReview(currentUser?.permissions, "product");
 
   /**
-   * Status apakah pengguna memiliki izin mengekspor data produk.
-   * @type {boolean}
+   * Staff adalah user yang bisa manage tapi bukan reviewer.
+   * Digunakan untuk membatasi aksi Edit dan View.
    */
-  const canExportItems =
-    isSuper || canExport(currentUser?.permissions, "product");
+  const isStaff = canManageItems && !canReviewItems;
 
   /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return generatePageNumbers(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
+  // ==================== FILTER HELPERS ====================
+
+  const activeFilterLabel = useMemo(() => {
+    const found = REVIEW_STATUS_OPTIONS.find(
+      (opt) => opt.value === reviewStatusFilter,
+    );
+    return found ? found.label : "All Status";
+  }, [reviewStatusFilter]);
+
+  const handleFilterSelect = (value) => {
+    setReviewStatusFilter(value);
+    setIsFilterOpen(false);
+    goToPage(1);
+  };
+
+  // ==================== ACCESS CONTROL HELPERS ====================
+
   /**
-   * Handler untuk input pencarian.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
+   * Menentukan apakah tombol View ditampilkan untuk item tertentu.
+   * - Reviewer: selalu tampil
+   * - Staff: disembunyikan saat status REVISION
    */
+  const canShowViewButton = (item) => {
+    if (canReviewItems) return true;
+    return item.reviewStatus !== "REVISION";
+  };
+
+  /**
+   * Menentukan apakah tombol Edit ditampilkan untuk item tertentu.
+   * - Hanya untuk staff (canManage, bukan canReview)
+   * - Status harus DRAFT atau REVISION
+   */
+  const canShowEditButton = (item) => {
+    if (!canManageItems || canReviewItems) return false;
+    return EDITABLE_STATUSES.includes(item.reviewStatus);
+  };
+
+  // ==================== EVENT HANDLERS ====================
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+  };
+
+  const handleGoToApproval = () => {
+    navigate("/dashboard/products/items/approval");
   };
 
   /**
@@ -180,16 +290,15 @@ const Items = () => {
           onClose={() => closeModal("addItem")}
           onSuccess={() => {
             closeModal("addItem");
-            refresh(); // Add tidak perlu bypass cache
+            refresh();
           }}
         />
-      </Modal>
+      </Modal>,
     );
   };
 
   /**
    * Membuka modal preview produk.
-   * @param {Object} item - Data produk yang akan dilihat
    */
   const handleViewItem = (item) => {
     openModal(
@@ -205,17 +314,17 @@ const Items = () => {
           itemId={item.id}
           onClose={() => closeModal("view-item")}
         />
-      </Modal>
+      </Modal>,
     );
   };
 
-  // handleEditItem dengan refreshWithPageValidation
   /**
    * Membuka modal edit produk.
-   * @param {Object} item - Data produk yang akan diedit
+   * Hanya bisa diakses oleh staff (canManage, bukan canReview).
+   * Status harus DRAFT atau REVISION.
    */
   const handleEditItem = async (item) => {
-    if (!canManageItems) return;
+    if (!canManageItems || canReviewItems) return;
 
     try {
       const result = await itemService.getById(item.id);
@@ -232,7 +341,7 @@ const Items = () => {
             onConfirm={() => closeModal("fetchError")}
             onCancel={() => closeModal("fetchError")}
           />,
-          "small"
+          "small",
         );
         return;
       }
@@ -253,7 +362,7 @@ const Items = () => {
               refreshWithPageValidation(true);
             }}
           />
-        </Modal>
+        </Modal>,
       );
     } catch (err) {
       openModal(
@@ -267,18 +376,17 @@ const Items = () => {
           onConfirm={() => closeModal("fetchError")}
           onCancel={() => closeModal("fetchError")}
         />,
-        "small"
+        "small",
       );
     }
   };
 
-  // handleDeleteItem dengan refreshWithPageValidation
   /**
    * Membuka modal konfirmasi hapus produk.
-   * @param {Object} item - Data produk yang akan dihapus
+   * Hanya bisa diakses oleh reviewer (canReviewItems).
    */
   const handleDeleteItem = (item) => {
-    if (!canManageItems) return;
+    if (!canReviewItems) return;
     openModal(
       "deleteItemConfirm",
       <AlertModal
@@ -297,9 +405,9 @@ const Items = () => {
         onConfirm={async () => {
           closeModal("deleteItemConfirm");
           try {
-            const result = await itemService.softDelete(
+            const result = await itemService.hardDelete(
               item.id,
-              currentUser.id
+              currentUser.id,
             );
             if (result.success) {
               openModal(
@@ -318,7 +426,7 @@ const Items = () => {
                     refreshWithPageValidation(true);
                   }}
                 />,
-                "small"
+                "small",
               );
             } else {
               openModal(
@@ -329,7 +437,7 @@ const Items = () => {
                   message={result.message || "Failed to delete item."}
                   onClose={() => closeModal("deleteError")}
                 />,
-                "small"
+                "small",
               );
             }
           } catch (err) {
@@ -341,60 +449,78 @@ const Items = () => {
                 message="An error occurred while deleting item."
                 onClose={() => closeModal("deleteError")}
               />,
-              "small"
+              "small",
             );
           }
         }}
         onCancel={() => closeModal("deleteItemConfirm")}
       />,
-      "small"
+      "small",
     );
   };
 
+  // ==================== RENDER HELPERS ====================
+
   /**
-   * Merender pesan ketika tidak ada data produk.
-   * Menyesuaikan pesan berdasarkan konteks pencarian.
-   * @returns {JSX.Element} Pesan no data yang sesuai konteks
+   * Merender badge reviewStatus untuk item.
    */
+  const renderStatusBadge = (item) => {
+    const config =
+      REVIEW_STATUS_CONFIG[item.reviewStatus] || REVIEW_STATUS_CONFIG["DRAFT"];
+
+    return (
+      <span
+        className={`item-review-status review-status--${config.className}`}
+        aria-label={`Review status: ${config.label}`}
+      >
+        {config.label}
+      </span>
+    );
+  };
+
   const renderNoDataMessage = () => {
-    if (searchTerm.trim()) {
-      // Jika ada filter aktif
+    if (searchTerm.trim() || reviewStatusFilter) {
       return (
         <>
           <Package size={48} />
           <p>
-            No items found matching "<strong>{searchTerm}</strong>"
+            No items found
+            {searchTerm.trim() && (
+              <>
+                {" "}
+                matching "<strong>{searchTerm}</strong>"
+              </>
+            )}
+            {reviewStatusFilter && (
+              <>
+                {" "}
+                with status <strong>{activeFilterLabel}</strong>
+              </>
+            )}
           </p>
           <p className="no-data-subtitle">
-            Try adjusting your search criteria.
+            Try adjusting your search or filter criteria.
           </p>
-        </>
-      );
-    } else {
-      // Jika tidak ada filter
-      return (
-        <>
-          <Package size={48} />
-          <p>No items product available.</p>
-          {canManageItems && (
-            <>
-              <br />
-              <p className="no-data-subtitle">
-                Click "Add New Item" to create your first item.
-              </p>
-            </>
-          )}
         </>
       );
     }
+
+    return (
+      <>
+        <Package size={48} />
+        <p>No items product available.</p>
+        {canManageItems && (
+          <>
+            <br />
+            <p className="no-data-subtitle">
+              Click "Add New Item" to create your first item.
+            </p>
+          </>
+        )}
+      </>
+    );
   };
 
-  // Skeleton Item Component
-  /**
-   * Komponen skeleton untuk loading state produk.
-   * @component
-   * @returns {JSX.Element} Skeleton item untuk placeholder loading
-   */
   const ItemSkeleton = () => (
     <div className="item skeleton-loading">
       <div className="item-image-wrapper">
@@ -430,6 +556,8 @@ const Items = () => {
     </div>
   );
 
+  // ==================== RENDER ====================
+
   return (
     <div className="page-items">
       <div className="page-header">
@@ -444,6 +572,11 @@ const Items = () => {
             <div className="item-export-dropdown-wrapper">
               <ExportDropdown entity="product" />
             </div>
+          )}
+          {canReviewItems && (
+            <button className="btn-secondary" onClick={handleGoToApproval}>
+              <ClipboardCheck size={18} /> Item Approval
+            </button>
           )}
           {canManageItems && (
             <button className="btn-primary" onClick={handleAddItem}>
@@ -464,6 +597,37 @@ const Items = () => {
             className="search-input"
             aria-label="Search items"
           />
+        </div>
+
+        {/* Review Status Filter Dropdown */}
+        <div className="filter-dropdown-wrapper" ref={filterDropdownRef}>
+          <button
+            className={`filter-dropdown-btn ${reviewStatusFilter ? "active" : ""}`}
+            onClick={() => setIsFilterOpen((prev) => !prev)}
+            aria-label="Filter by review status"
+          >
+            <span>{activeFilterLabel}</span>
+            <ChevronDown
+              size={16}
+              className={`dropdown-chevron ${isFilterOpen ? "open" : ""}`}
+            />
+          </button>
+
+          {isFilterOpen && (
+            <div className="filter-dropdown-menu">
+              {REVIEW_STATUS_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  className={`filter-dropdown-item ${
+                    reviewStatusFilter === opt.value ? "selected" : ""
+                  }`}
+                  onClick={() => handleFilterSelect(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -505,43 +669,49 @@ const Items = () => {
 
                   <div className="item-overlay">
                     <div className="item-actions">
-                      <button
-                        className="item-action-btn view-btn"
-                        title="View details"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleViewItem(item);
-                        }}
-                        aria-label={`View details for ${item.name}`}
-                      >
-                        <Eye size={16} />
-                      </button>
+                      {/* View — reviewer selalu tampil, staff disembunyikan saat REVISION */}
+                      {canShowViewButton(item) && (
+                        <button
+                          className="item-action-btn view-btn"
+                          title="View details"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewItem(item);
+                          }}
+                          aria-label={`View details for ${item.name}`}
+                        >
+                          <Eye size={16} />
+                        </button>
+                      )}
 
-                      {canManageItems && (
-                        <>
-                          <button
-                            className="item-action-btn edit-btn"
-                            title="Edit item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditItem(item);
-                            }}
-                            aria-label={`Edit ${item.name}`}
-                          >
-                            <Edit2 size={16} />
-                          </button>
-                          <button
-                            className="item-action-btn delete-btn"
-                            title="Delete item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteItem(item);
-                            }}
-                            aria-label={`Delete ${item.name}`}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </>
+                      {/* Edit — hanya staff, status DRAFT atau REVISION */}
+                      {canShowEditButton(item) && (
+                        <button
+                          className="item-action-btn edit-btn"
+                          title="Edit item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditItem(item);
+                          }}
+                          aria-label={`Edit ${item.name}`}
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      )}
+
+                      {/* Delete — hanya reviewer */}
+                      {canReviewItems && (
+                        <button
+                          className="item-action-btn delete-btn"
+                          title="Delete item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteItem(item);
+                          }}
+                          aria-label={`Delete ${item.name}`}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       )}
                     </div>
                   </div>
@@ -550,17 +720,8 @@ const Items = () => {
                 <div className="item-info">
                   <h3 className="item-title">{item.name}</h3>
                   <div className="item-meta">
-                    <span className="item-date">
-                      {item.createdAtFormatted}{" "}
-                    </span>
-                    <span
-                      className={`item-status ${
-                        item.isActive ? "active" : "inactive"
-                      }`}
-                      aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
-                    >
-                      {item.isActive ? "Active" : "Inactive"}
-                    </span>
+                    <span className="item-date">{item.createdAtFormatted}</span>
+                    {renderStatusBadge(item)}
                   </div>
                 </div>
               </div>
@@ -608,7 +769,7 @@ const Items = () => {
                   >
                     {page}
                   </button>
-                )
+                ),
               )}
             </div>
 

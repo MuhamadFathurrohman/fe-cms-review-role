@@ -26,10 +26,6 @@
 .page-clients {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Override table container */
-  /* Pagination Modern */
-  /* Loading State */
-  /* No Data */
 }
 .page-clients .page-header {
   display: flex;
@@ -198,6 +194,9 @@
 .page-clients .btn-secondary svg {
   color: white;
 }
+.page-clients {
+  /* Override table container */
+}
 .page-clients .table-container {
   border-radius: 10px;
   padding: 0 0 10px 0;
@@ -341,6 +340,9 @@
   background: rgba(239, 68, 68, 0.1);
   transform: scale(1.1);
 }
+.page-clients {
+  /* Pagination Modern */
+}
 .page-clients .pagination-controls {
   display: flex;
   align-items: center;
@@ -436,6 +438,9 @@
   color: white;
   font-weight: 500;
 }
+.page-clients {
+  /* Loading State */
+}
 .page-clients .loading-cell {
   text-align: center;
   padding: 40px 0;
@@ -455,6 +460,9 @@
   color: #64748b;
   font-size: 16px;
   font-weight: 500;
+}
+.page-clients {
+  /* No Data */
 }
 .page-clients .no-data {
   text-align: center;
@@ -525,9 +533,6 @@
 }
 /* 1024px - Tablet Landscape */
 @media (max-width: 1024px) {
-  .page-clients {
-    /* 🔹 Scroll horizontal untuk tabel */
-  }
   .page-clients .page-header {
     gap: 12px;
   }
@@ -537,6 +542,9 @@
   .page-clients .search-input {
     font-size: 13px;
     padding: 10px 14px 10px 38px;
+  }
+  .page-clients {
+    /* 🔹 Scroll horizontal untuk tabel */
   }
   .page-clients .table-container {
     overflow-x: auto;

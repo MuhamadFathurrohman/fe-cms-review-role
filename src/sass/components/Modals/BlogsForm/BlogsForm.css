@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /* BlogsForm.scss - Optimized & Responsive */
 .blogs-form {
   font-family: "Poppins", sans-serif;
@@ -7,17 +8,6 @@
   margin: 0 auto;
   overflow: visible !important;
   /* Autofill styling */
-  /* ==================== GLOBAL ERROR ==================== */
-  /* ==================== LANGUAGE SWITCHER ==================== */
-  /* ==================== INFO BANNER ==================== */
-  /* ==================== FORM GROUP ==================== */
-  /* ==================== FORM ROW (2-COLUMN) ==================== */
-  /* ==================== IMAGE UPLOAD ==================== */
-  /* ==================== TAGS ==================== */
-  /* ==================== SEO SECTION ==================== */
-  /* ==================== FORM ACTIONS ==================== */
-  /* ==================== ANIMATIONS ==================== */
-  /* ==================== RESPONSIVE ==================== */
 }
 .blogs-form input:-webkit-autofill {
   box-shadow: 0 0 0 1000px white inset !important;
@@ -28,6 +18,9 @@
   flex-direction: column;
   gap: 20px;
   overflow: visible !important;
+}
+.blogs-form {
+  /* ==================== GLOBAL ERROR ==================== */
 }
 .blogs-form .form-error {
   display: flex;
@@ -70,6 +63,186 @@
 .blogs-form .form-error .error-close-btn:focus {
   outline: 2px solid rgba(220, 38, 38, 0.3);
   outline-offset: 2px;
+}
+.blogs-form {
+  /* ==================== REVIEW STATUS BANNER ==================== */
+}
+.blogs-form .review-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+.blogs-form .review-status-banner .review-status-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+.blogs-form .review-status-banner .review-status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.blogs-form .review-status-banner .review-status-badge.draft {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.blogs-form .review-status-banner .review-status-badge.pending-review {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde047;
+}
+.blogs-form .review-status-banner .review-status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.blogs-form .review-status-banner .review-status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.blogs-form .review-status-banner .review-status-badge.revision {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+.blogs-form {
+  /* ==================== REVIEW NOTE BANNER ==================== */
+}
+.blogs-form .review-note-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+.blogs-form .review-note-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.blogs-form .review-note-banner .review-note-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.blogs-form .review-note-banner .review-note-content .review-note-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.blogs-form .review-note-banner .review-note-content .review-note-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.blogs-form .review-note-banner.rejected {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+.blogs-form .review-note-banner.rejected svg {
+  color: #dc2626;
+}
+.blogs-form .review-note-banner.revision {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+.blogs-form .review-note-banner.revision svg {
+  color: #f97316;
+}
+.blogs-form {
+  /* ==================== FORM DISABLED NOTICE ==================== */
+}
+.blogs-form .form-disabled-notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+.blogs-form .form-disabled-notice svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+.blogs-form {
+  /* ==================== FORM DISABLED STATE ==================== */
+}
+.blogs-form.form-disabled input[type=text],
+.blogs-form.form-disabled input[type=url],
+.blogs-form.form-disabled textarea {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+.blogs-form.form-disabled input[type=text]:hover,
+.blogs-form.form-disabled input[type=url]:hover,
+.blogs-form.form-disabled textarea:hover {
+  border-color: #e2e8f0;
+}
+.blogs-form.form-disabled input[type=text]:focus,
+.blogs-form.form-disabled input[type=url]:focus,
+.blogs-form.form-disabled textarea:focus {
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+.blogs-form.form-disabled .lang-btn {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.blogs-form.form-disabled .lang-btn:hover:not(.active) {
+  transform: none;
+  background: white;
+  border-color: #cbd5e1;
+}
+.blogs-form.form-disabled .status-toggle button,
+.blogs-form.form-disabled .toggle-group button {
+  cursor: not-allowed;
+}
+.blogs-form.form-disabled .status-toggle button:hover:not(.active),
+.blogs-form.form-disabled .toggle-group button:hover:not(.active) {
+  transform: none;
+  background: white;
+  border-color: #d1d5db;
+}
+.blogs-form.form-disabled .image-upload-btn {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.blogs-form.form-disabled .image-upload-btn:hover {
+  border-color: #cbd5e1;
+  background: white;
+  color: #2d4c52;
+}
+.blogs-form.form-disabled .image-upload-btn.disabled {
+  pointer-events: none;
+}
+.blogs-form.form-disabled .tag-add-btn {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.blogs-form.form-disabled .tag-item {
+  padding-right: 12px;
+}
+.blogs-form {
+  /* ==================== LANGUAGE SWITCHER ==================== */
 }
 .blogs-form .language-switcher {
   display: flex;
@@ -124,6 +297,9 @@
   font-style: italic;
   white-space: nowrap;
 }
+.blogs-form {
+  /* ==================== INFO BANNER ==================== */
+}
 .blogs-form .image-info-banner {
   display: flex;
   align-items: center;
@@ -159,6 +335,9 @@
     width: 18px;
     height: 18px;
   }
+}
+.blogs-form {
+  /* ==================== FORM GROUP ==================== */
 }
 .blogs-form .form-group {
   display: flex;
@@ -232,7 +411,6 @@
 .blogs-form .form-group textarea:-webkit-autofill:active {
   -webkit-text-fill-color: #4a5d63 !important;
   caret-color: #4a5d63;
-  /* // trik agar background autofill tidak kuning */
   -webkit-transition: background-color 9999s ease-in-out 0s;
   transition: background-color 9999s ease-in-out 0s;
 }
@@ -282,6 +460,9 @@
 .blogs-form .form-group .tiptap-editor .custom-dropdown .dropdown-menu {
   z-index: 9999 !important;
 }
+.blogs-form {
+  /* ==================== FORM ROW (2-COLUMN) ==================== */
+}
 .blogs-form .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -289,6 +470,9 @@
 }
 .blogs-form .form-row .form-group.half {
   width: 100%;
+}
+.blogs-form {
+  /* ==================== IMAGE UPLOAD ==================== */
 }
 .blogs-form .image-preview-container {
   display: flex;
@@ -389,6 +573,9 @@
 }
 .blogs-form .image-upload-placeholder .image-upload-btn span {
   white-space: nowrap;
+}
+.blogs-form {
+  /* ==================== TAGS ==================== */
 }
 .blogs-form .tags-input {
   display: flex;
@@ -500,6 +687,9 @@
   border-color: #2d4c52;
   box-shadow: 0 4px 8px rgba(45, 76, 82, 0.15);
 }
+.blogs-form {
+  /* ==================== SEO SECTION ==================== */
+}
 .blogs-form .form-section {
   border-top: 2px solid #e2e8f0;
   padding-top: 24px;
@@ -524,6 +714,9 @@
 .blogs-form .form-section input,
 .blogs-form .form-section textarea {
   margin-bottom: 18px;
+}
+.blogs-form {
+  /* ==================== FORM ACTIONS ==================== */
 }
 .blogs-form .form-actions {
   display: flex;
@@ -562,6 +755,32 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+.blogs-form .form-actions {
+  /* Tombol Save — border style, tidak se-bold btn-primary */
+}
+.blogs-form .form-actions .btn-outline {
+  background: white;
+  color: #2d4c52;
+  border: 2px solid #2d4c52;
+}
+.blogs-form .form-actions .btn-outline:hover:not(:disabled) {
+  background: #f0f4f5;
+  border-color: #1e3a40;
+  color: #1e3a40;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(45, 76, 82, 0.12);
+}
+.blogs-form .form-actions .btn-outline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.blogs-form .form-actions .btn-outline .btn-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 10px;
+}
 .blogs-form .form-actions .btn-primary {
   background: linear-gradient(135deg, #f3994b, #e6863f);
   color: white;
@@ -584,6 +803,9 @@
   justify-content: center;
   min-height: 10px;
 }
+.blogs-form {
+  /* ==================== ANIMATIONS ==================== */
+}
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -593,6 +815,9 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+.blogs-form {
+  /* ==================== RESPONSIVE ==================== */
 }
 @media (max-width: 1440px) {
   .blogs-form {
@@ -686,6 +911,12 @@
   .blogs-form .section-title {
     font-size: 15px;
   }
+  .blogs-form .review-status-banner,
+  .blogs-form .review-note-banner,
+  .blogs-form .form-disabled-notice {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
 }
 @media (max-width: 800px) {
   .blogs-form {
@@ -746,6 +977,10 @@
   .blogs-form .status-toggle button {
     font-size: 13px;
   }
+  .blogs-form .review-note-banner .review-note-content .review-note-title,
+  .blogs-form .review-note-banner .review-note-content .review-note-text {
+    font-size: 12px;
+  }
 }
 @media (max-width: 480px) {
   .blogs-form {
@@ -778,6 +1013,37 @@
   .blogs-form .image-info-banner {
     padding: 10px 12px;
     font-size: 12px;
+  }
+  .blogs-form .review-status-banner {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .blogs-form .review-status-banner .review-status-label {
+    font-size: 12px;
+  }
+  .blogs-form .review-status-banner .review-status-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+  .blogs-form .review-note-banner {
+    padding: 10px 12px;
+  }
+  .blogs-form .review-note-banner svg {
+    width: 15px;
+    height: 15px;
+  }
+  .blogs-form .review-note-banner .review-note-content .review-note-title,
+  .blogs-form .review-note-banner .review-note-content .review-note-text {
+    font-size: 12px;
+  }
+  .blogs-form .form-disabled-notice {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+  .blogs-form .form-disabled-notice svg {
+    width: 15px;
+    height: 15px;
   }
   .blogs-form .form-group {
     gap: 6px;
@@ -861,6 +1127,7 @@
     margin-top: 23px;
   }
   .blogs-form .form-actions .btn-secondary,
+  .blogs-form .form-actions .btn-outline,
   .blogs-form .form-actions .btn-primary {
     width: 100%;
     justify-content: center;
@@ -868,7 +1135,8 @@
     font-size: 13px;
     min-height: 44px;
   }
-  .blogs-form .form-actions .btn-primary .btn-loading {
+  .blogs-form .form-actions .btn-primary .btn-loading,
+  .blogs-form .form-actions .btn-outline .btn-loading {
     min-width: auto;
     min-height: 1em;
     width: 100%;
@@ -898,6 +1166,18 @@
   }
   .blogs-form .image-info-banner {
     padding: 8px 10px;
+    font-size: 11px;
+  }
+  .blogs-form .review-status-banner,
+  .blogs-form .form-disabled-notice {
+    padding: 8px 10px;
+    font-size: 11px;
+  }
+  .blogs-form .review-note-banner {
+    padding: 8px 10px;
+  }
+  .blogs-form .review-note-banner .review-note-content .review-note-title,
+  .blogs-form .review-note-banner .review-note-content .review-note-text {
     font-size: 11px;
   }
   .blogs-form .form-group input,
@@ -961,15 +1241,13 @@
     margin-top: 23px;
   }
   .blogs-form .form-actions .btn-secondary,
+  .blogs-form .form-actions .btn-outline,
   .blogs-form .form-actions .btn-primary {
     padding: 10px 20px;
   }
 }
 
 /* ==================== TIPTAP EDITOR CUSTOM ==================== */
-.form-group {
-  /* // Override untuk TiptapEditor agar tidak ada border tambahan */
-}
 .form-group .tiptap-editor .ProseMirror {
   border: none !important;
   outline: none !important;

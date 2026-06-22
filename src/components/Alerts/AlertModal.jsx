@@ -1,13 +1,12 @@
 /**
  * @file AlertModal.jsx
  * @description Komponen modal alert generik untuk menampilkan pesan kepada pengguna.
- * Mendukung lima tipe notifikasi dengan ikon dan warna yang sesuai:
+ * Mendukung empat tipe notifikasi dengan ikon dan warna yang sesuai:
  * - `success`: Operasi berhasil
  * - `error`: Kesalahan sistem atau validasi
- * - `warning`: Peringatan atau konfirmasi
+ * - `confirm`: Konfirmasi aksi yang memerlukan keputusan eksplisit dari user
  * - `delete`: Konfirmasi penghapusan data
- * - `info`: Informasi umum
- * 
+ *
  * Menyediakan dua mode interaksi:
  * - **Simple mode**: Satu tombol (OK) untuk pesan informasi
  * - **Confirmation mode**: Dua tombol (Cancel/Confirm) untuk konfirmasi aksi
@@ -15,13 +14,7 @@
 
 import React from "react";
 import Modal from "../Modals/Modal";
-import {
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Trash2,
-  Info,
-} from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Trash2 } from "lucide-react";
 import "../../sass/components/Alerts/AlertModal/AlertModal.css";
 
 /**
@@ -32,7 +25,7 @@ import "../../sass/components/Alerts/AlertModal/AlertModal.css";
  * @property {function(): void} onClose - Handler saat modal ditutup
  * @property {function(): void} [onConfirm] - Handler saat tombol konfirmasi diklik
  * @property {function(): void} [onCancel] - Handler saat tombol cancel diklik
- * @property {'success'|'error'|'warning'|'delete'|'info'} [type='success'] - Tipe alert yang menentukan ikon dan warna
+ * @property {'success'|'error'|'confirm'|'delete'} [type='success'] - Tipe alert yang menentukan ikon dan warna
  * @property {boolean} [showActions=false] - Jika true, tampilkan dua tombol (confirmation mode); jika false, satu tombol (simple mode)
  * @property {string} [confirmText] - Teks kustom untuk tombol konfirmasi
  * @property {string} [cancelText='Cancel'] - Teks kustom untuk tombol cancel
@@ -65,6 +58,19 @@ import "../../sass/components/Alerts/AlertModal/AlertModal.css";
  *   onCancel={handleClose}
  *   onClose={handleClose}
  * />
+ *
+ * @example
+ * // Action confirmation
+ * <AlertModal
+ *   type="confirm"
+ *   title="Submit for Review?"
+ *   message="Once submitted, this cannot be edited until reviewer gives feedback."
+ *   showActions={true}
+ *   confirmText="Submit"
+ *   onConfirm={handleSubmit}
+ *   onCancel={handleClose}
+ *   onClose={handleClose}
+ * />
  */
 const AlertModal = ({
   title,
@@ -92,12 +98,10 @@ const AlertModal = ({
         return <CheckCircle {...iconProps} />;
       case "error":
         return <XCircle {...iconProps} />;
-      case "warning":
+      case "confirm":
         return <AlertTriangle {...iconProps} />;
       case "delete":
         return <Trash2 {...iconProps} />;
-      case "info":
-        return <Info {...iconProps} />;
       default:
         return <CheckCircle {...iconProps} />;
     }
@@ -107,18 +111,16 @@ const AlertModal = ({
   const defaultTitle = {
     success: "Success!",
     error: "Error",
-    warning: "Warning",
+    confirm: "Are you sure?",
     delete: "Delete?",
-    info: "Information",
   };
 
   /** @type {{[key: string]: string}} Default teks tombol konfirmasi berdasarkan tipe alert */
   const defaultConfirmText = {
     success: "OK",
     error: "OK",
-    warning: "Continue",
+    confirm: "Confirm",
     delete: "Delete",
-    info: "OK",
   };
 
   /**

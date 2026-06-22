@@ -1,12 +1,13 @@
 .item-view-content {
     display: grid;
-    grid-template-columns: 42% 58%;
+    grid-template-columns: minmax(0, 42%) minmax(0, 58%);
+    grid-template-rows: auto 1fr;
     gap: 24px;
     padding: 20px;
     max-height: 80vh;
+    overflow-x: hidden;
     overflow-y: auto;
 
-    /* // Custom scrollbar */
     &::-webkit-scrollbar {
         width: 6px;
     }
@@ -56,6 +57,219 @@
             margin: 0;
             max-width: 380px;
             line-height: 1.6;
+        }
+    }
+
+    /* ==================== HEADER META ==================== */
+    /* Span full width di atas dua kolom */
+    .item-view-header-meta {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    /* ==================== REVIEW STATUS BADGE ==================== */
+    .item-view-review-status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .review-status-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        .review-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+
+            &.draft {
+                background-color: #f1f5f9;
+                color: #475569;
+            }
+
+            &.pending-review {
+                background-color: #fef3c7;
+                color: #92400e;
+            }
+
+            &.approved {
+                background-color: #d1fae5;
+                color: #065f46;
+            }
+
+            &.rejected {
+                background-color: #fee2e2;
+                color: #991b1b;
+            }
+
+            &.revision {
+                background-color: #ffedd5;
+                color: #9a3412;
+            }
+        }
+    }
+
+    /* ==================== REVIEW NOTE BANNER ==================== */
+    .item-view-review-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 10px;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .review-note-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .review-note-title {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .review-note-text {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        &.rejected {
+            background-color: #fff1f2;
+            border: 1px solid #fecdd3;
+
+            svg {
+                color: #e11d48;
+            }
+            .review-note-title {
+                color: #881337;
+            }
+            .review-note-text {
+                color: #be123c;
+            }
+        }
+
+        &.revision {
+            background-color: #fff7ed;
+            border: 1px solid #fed7aa;
+
+            svg {
+                color: #ea580c;
+            }
+            .review-note-title {
+                color: #9a3412;
+            }
+            .review-note-text {
+                color: #c2410c;
+            }
+        }
+    }
+
+    /* ==================== REVIEWER CONTROLS ==================== */
+    .item-view-reviewer-controls {
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 20px;
+
+        .reviewer-controls-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 14px 0;
+        }
+
+        .reviewer-controls-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .reviewer-control-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .reviewer-control-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .reviewer-control-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .reviewer-control-desc {
+            font-size: 12px;
+            color: #64748b;
+        }
+    }
+
+    /* Toggle button */
+    .reviewer-toggle {
+        position: relative;
+        width: 44px;
+        height: 24px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        background-color: #cbd5e1;
+        transition: background-color 0.25s ease;
+        flex-shrink: 0;
+        padding: 0;
+
+        .toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            transition: transform 0.25s ease;
+            display: block;
+        }
+
+        &.active {
+            background-color: #2d4c52;
+
+            .toggle-knob {
+                transform: translateX(20px);
+            }
+        }
+
+        &.loading {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        &:hover:not(:disabled):not(.loading) {
+            opacity: 0.85;
         }
     }
 
@@ -128,7 +342,6 @@
         &.prev {
             left: 12px;
         }
-
         &.next {
             right: 12px;
         }
@@ -270,34 +483,6 @@
         gap: 10px;
         flex-wrap: wrap;
         align-items: center;
-    }
-
-    .status-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 5px 12px;
-        border-radius: 14px;
-        font-size: 11px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-
-        &.active {
-            background: #d1fae5;
-            color: #047857;
-        }
-
-        &.inactive {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        svg {
-            flex-shrink: 0;
-            width: 12px;
-            height: 12px;
-        }
     }
 
     .date-info {
@@ -461,12 +646,29 @@
     }
 }
 
-/* Responsive Design */
+/* ==================== RESPONSIVE ==================== */
+
 @media (max-width: 1440px) {
     .item-view-content {
         padding: 18px;
         gap: 22px;
         min-height: 400px;
+
+        .item-view-reviewer-controls {
+            padding: 14px 18px;
+
+            .reviewer-controls-title {
+                font-size: 12px;
+                margin-bottom: 12px;
+            }
+
+            .reviewer-control-label {
+                font-size: 13px;
+            }
+            .reviewer-control-desc {
+                font-size: 11px;
+            }
+        }
 
         .view-left {
             padding: 18px;
@@ -485,7 +687,6 @@
         .product-title {
             font-size: 19px;
         }
-
         .section-title {
             font-size: 14px;
         }
@@ -498,10 +699,48 @@
 
 @media (max-width: 1280px) {
     .item-view-content {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
         padding: 16px;
         gap: 20px;
         min-height: 380px;
+
+        .item-view-review-status {
+            .review-status-badge {
+                font-size: 11px;
+                padding: 3px 10px;
+            }
+        }
+
+        .item-view-review-note {
+            padding: 10px 14px;
+
+            .review-note-title,
+            .review-note-text {
+                font-size: 12px;
+            }
+        }
+
+        .item-view-reviewer-controls {
+            padding: 12px 16px;
+
+            .reviewer-controls-row {
+                gap: 10px;
+            }
+        }
+
+        .reviewer-toggle {
+            width: 40px;
+            height: 22px;
+
+            .toggle-knob {
+                width: 16px;
+                height: 16px;
+            }
+
+            &.active .toggle-knob {
+                transform: translateX(18px);
+            }
+        }
 
         .view-left {
             padding: 16px;
@@ -524,7 +763,6 @@
             &.prev {
                 left: 10px;
             }
-
             &.next {
                 right: 10px;
             }
@@ -554,12 +792,6 @@
         .product-meta {
             gap: 9px;
         }
-
-        .status-badge {
-            padding: 4px 10px;
-            font-size: 10px;
-        }
-
         .date-info {
             font-size: 11px;
         }
@@ -576,7 +808,6 @@
         .short-description {
             font-size: 12px;
         }
-
         .long-description {
             font-size: 11px;
         }
@@ -597,7 +828,6 @@
         .spec-item {
             padding: 8px 11px;
         }
-
         .spec-label,
         .spec-value {
             font-size: 11px;
@@ -621,6 +851,11 @@
         gap: 18px;
         max-height: none;
         min-height: auto;
+
+        .item-view-reviewer-controls {
+            padding: 12px 14px;
+            border-radius: 10px;
+        }
 
         .view-left {
             padding: 16px;
@@ -658,6 +893,54 @@
         padding: 14px;
         gap: 16px;
 
+        .item-view-review-status {
+            gap: 8px;
+
+            .review-status-label {
+                font-size: 12px;
+            }
+
+            .review-status-badge {
+                font-size: 11px;
+                padding: 3px 9px;
+            }
+        }
+
+        .item-view-review-note {
+            padding: 10px 12px;
+            gap: 8px;
+            border-radius: 8px;
+        }
+
+        .item-view-reviewer-controls {
+            padding: 12px 14px;
+            border-radius: 10px;
+
+            .reviewer-controls-title {
+                font-size: 11px;
+            }
+            .reviewer-control-label {
+                font-size: 12px;
+            }
+            .reviewer-control-desc {
+                font-size: 10px;
+            }
+        }
+
+        .reviewer-toggle {
+            width: 38px;
+            height: 21px;
+
+            .toggle-knob {
+                width: 15px;
+                height: 15px;
+            }
+
+            &.active .toggle-knob {
+                transform: translateX(17px);
+            }
+        }
+
         .view-left {
             padding: 14px;
             border-radius: 10px;
@@ -681,7 +964,6 @@
             &.prev {
                 left: 9px;
             }
-
             &.next {
                 right: 9px;
             }
@@ -714,16 +996,6 @@
 
         .product-meta {
             gap: 8px;
-        }
-
-        .status-badge {
-            padding: 4px 9px;
-            font-size: 10px;
-
-            svg {
-                width: 11px;
-                height: 11px;
-            }
         }
 
         .date-info {
@@ -810,6 +1082,67 @@
         padding: 12px;
         gap: 14px;
 
+        .item-view-review-status {
+            gap: 6px;
+
+            .review-status-label {
+                font-size: 11px;
+            }
+
+            .review-status-badge {
+                font-size: 10px;
+                padding: 2px 8px;
+            }
+        }
+
+        .item-view-review-note {
+            padding: 8px 10px;
+            gap: 6px;
+            border-radius: 8px;
+            margin-bottom: 0;
+
+            svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .review-note-title,
+            .review-note-text {
+                font-size: 11px;
+            }
+        }
+
+        .item-view-reviewer-controls {
+            padding: 10px 12px;
+            border-radius: 8px;
+
+            .reviewer-controls-title {
+                font-size: 10px;
+                margin-bottom: 10px;
+            }
+
+            .reviewer-control-label {
+                font-size: 11px;
+            }
+            .reviewer-control-desc {
+                font-size: 10px;
+            }
+        }
+
+        .reviewer-toggle {
+            width: 36px;
+            height: 20px;
+
+            .toggle-knob {
+                width: 14px;
+                height: 14px;
+            }
+
+            &.active .toggle-knob {
+                transform: translateX(16px);
+            }
+        }
+
         .view-left {
             padding: 12px;
             border-radius: 9px;
@@ -833,7 +1166,6 @@
             &.prev {
                 left: 8px;
             }
-
             &.next {
                 right: 8px;
             }
@@ -886,16 +1218,6 @@
             gap: 6px;
             flex-direction: column;
             align-items: flex-start;
-        }
-
-        .status-badge {
-            padding: 3px 8px;
-            font-size: 9px;
-
-            svg {
-                width: 10px;
-                height: 10px;
-            }
         }
 
         .date-info {
@@ -958,7 +1280,6 @@
         .spec-value {
             font-size: 9px;
         }
-
         .spec-value {
             text-align: left;
         }
@@ -987,7 +1308,6 @@
             h3 {
                 font-size: 16px;
             }
-
             p {
                 font-size: 11px;
             }
@@ -999,6 +1319,40 @@
     .item-view-content {
         padding: 10px;
         gap: 12px;
+
+        .item-view-review-status {
+            .review-status-label {
+                font-size: 10px;
+            }
+
+            .review-status-badge {
+                font-size: 9px;
+                padding: 2px 7px;
+            }
+        }
+
+        .item-view-review-note {
+            padding: 8px;
+
+            .review-note-title,
+            .review-note-text {
+                font-size: 10px;
+            }
+        }
+
+        .item-view-reviewer-controls {
+            padding: 8px 10px;
+
+            .reviewer-controls-title {
+                font-size: 9px;
+            }
+            .reviewer-control-label {
+                font-size: 10px;
+            }
+            .reviewer-control-desc {
+                font-size: 9px;
+            }
+        }
 
         .view-left {
             padding: 10px;
@@ -1016,7 +1370,6 @@
             &.prev {
                 left: 7px;
             }
-
             &.next {
                 right: 7px;
             }
@@ -1059,12 +1412,6 @@
         .product-title {
             font-size: 15px;
         }
-
-        .status-badge {
-            padding: 2px 7px;
-            font-size: 8px;
-        }
-
         .date-info {
             font-size: 8px;
         }
@@ -1100,7 +1447,6 @@
             h3 {
                 font-size: 14px;
             }
-
             p {
                 font-size: 10px;
             }
@@ -1108,7 +1454,7 @@
     }
 }
 
-/* Language Switcher for View Modal */
+/* ==================== LANGUAGE SWITCHER ==================== */
 .view-language-switcher {
     display: flex;
     align-items: center;
@@ -1149,7 +1495,7 @@
     border-color: #2d4c52;
 }
 
-/* No Data Text */
+/* ==================== NO DATA TEXT ==================== */
 .no-data-text {
     color: #94a3b8;
     font-size: 14px;
@@ -1160,7 +1506,6 @@
     border: 1px dashed #cbd5e1;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
     .view-language-switcher {
         padding: 8px 12px;

@@ -8,7 +8,6 @@
   background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 220% 220%;
   animation: elegantWaveFlow 15s ease-in-out infinite;
   /* Wave Layer dengan animasi yang lebih smooth */
-  /* Simplified Wave Particles */
 }
 .layout-container::before {
   content: "";
@@ -22,6 +21,9 @@
   animation: gentleFloat 15s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
+}
+.layout-container {
+  /* Simplified Wave Particles */
 }
 .layout-container::after {
   content: "";

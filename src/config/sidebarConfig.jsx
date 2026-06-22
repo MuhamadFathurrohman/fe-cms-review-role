@@ -23,7 +23,7 @@ import ArrowDownIcon from "../assets/icons/ArrowDown.svg";
 import ProductsIcon from "../assets/icons/Product.svg";
 import CatalogIcon from "../assets/icons/Catalog.svg";
 import ShieldIcon from "../assets/icons/Shield.svg";
-import { canRead } from "../utils/permissions";
+import { canRead, canReview } from "../utils/permissions";
 
 /**
  * @typedef {Object} SidebarMenuItem
@@ -202,8 +202,26 @@ export const sidebarConfig = {
 };
 
 /**
+ * Memeriksa apakah user memiliki akses ke resource tertentu.
+ * Mencakup semua level akses: read, manage, dan review.
+ *
+ * @param {Array<{resource: string, access: string}>} userPermissions
+ * @param {string|null|undefined} resource
+ * @returns {boolean}
+ */
+const hasAnyAccess = (userPermissions, resource) => {
+  if (resource === null || resource === undefined) return true;
+  return (
+    canRead(userPermissions, resource) || canReview(userPermissions, resource)
+  );
+};
+
+/**
  * Menyaring daftar menu berdasarkan izin pengguna.
- * Hanya menampilkan item yang memiliki izin `canRead`.
+ * Mendukung semua level akses: read, manage, dan review.
+ * User dengan permission review pada suatu resource tetap bisa
+ * melihat menu yang terkait resource tersebut.
+ *
  * Untuk item dengan submenu:
  * - Jika ada submenu yang memenuhi izin → tampilkan item + submenu yang valid
  * - Jika tidak ada submenu yang valid tapi item utama memenuhi izin → tampilkan item tanpa submenu
@@ -222,7 +240,7 @@ export const filterMenuByPermission = (menuItems, userPermissions) => {
       let filteredSubmenu = [];
       if (item.submenu) {
         filteredSubmenu = item.submenu.filter((subItem) =>
-          canRead(userPermissions, subItem.requiredPermission)
+          hasAnyAccess(userPermissions, subItem.requiredPermission),
         );
       }
 
@@ -230,13 +248,15 @@ export const filterMenuByPermission = (menuItems, userPermissions) => {
         if (filteredSubmenu.length > 0) {
           return { ...item, submenu: filteredSubmenu };
         }
-        if (canRead(userPermissions, item.requiredPermission)) {
+        if (hasAnyAccess(userPermissions, item.requiredPermission)) {
           return { ...item, submenu: [] };
         }
         return null;
       }
 
-      return canRead(userPermissions, item.requiredPermission) ? item : null;
+      return hasAnyAccess(userPermissions, item.requiredPermission)
+        ? item
+        : null;
     })
     .filter(Boolean);
 };
@@ -259,9 +279,6 @@ export const getMenuByCategory = (menuItems, category) => {
  * @param {SidebarMenuItem[]} menuItems - Daftar menu
  * @param {string} path - Path rute yang dicari
  * @returns {SidebarMenuItem | { parent: SidebarMenuItem, submenu: SidebarMenuItem } | undefined}
- *   - Jika ditemukan di menu utama: kembalikan item
- *   - Jika ditemukan di submenu: kembalikan objek dengan `parent` dan `submenu`
- *   - Jika tidak ditemukan: `undefined`
  */
 export const findMenuByPath = (menuItems, path) => {
   let foundItem = menuItems.find((item) => item.path === path);
@@ -284,7 +301,7 @@ export const findMenuByPath = (menuItems, path) => {
  * Memeriksa apakah item menu memiliki submenu yang valid.
  *
  * @param {SidebarMenuItem} menuItem - Item menu yang diperiksa
- * @returns {boolean} `true` jika memiliki submenu, `false` jika tidak
+ * @returns {boolean}
  */
 export const hasSubmenu = (menuItem) => {
   return menuItem.hasSubmenu && menuItem.submenu && menuItem.submenu.length > 0;
@@ -292,13 +309,10 @@ export const hasSubmenu = (menuItem) => {
 
 /**
  * Memeriksa apakah item menu aktif berdasarkan path saat ini.
- * Item dianggap aktif jika:
- * - Path-nya cocok dengan `currentPath`, atau
- * - Salah satu submenu-nya cocok dengan `currentPath`
  *
  * @param {SidebarMenuItem} menuItem - Item menu
  * @param {string} currentPath - Path rute saat ini
- * @returns {boolean} `true` jika aktif, `false` jika tidak
+ * @returns {boolean}
  */
 export const isMenuActive = (menuItem, currentPath) => {
   if (menuItem.path === currentPath) {

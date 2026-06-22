@@ -1,10 +1,11 @@
 /**
  * @file ItemsForm.jsx
- * @description Komponen form modal untuk manajemen data produk/item dengan dukungan multi-bahasa.
+ * @description Komponen form modal untuk manajemen data produk/item dengan dukungan multi-bahasa
+ * dan alur Review & Approval.
  * Mendukung dua mode operasi:
  * - **Create**: Membuat produk baru dengan konten bilingual
  * - **Edit**: Mengedit produk yang sudah ada
- * 
+ *
  * Menyediakan fitur lengkap:
  * - Dukungan terjemahan bilingual (English wajib, Indonesian opsional)
  * - Upload multiple gambar dengan preview dan urutan primary
@@ -12,8 +13,16 @@
  * - Editor rich text (Tiptap) untuk deskripsi panjang
  * - Manajemen spesifikasi (key-value pairs) dan fitur (tags)
  * - Pengaturan SEO bilingual
- * - Status aktif/featured dan sort order
+ * - Sort order
  * - Validasi input bilingual yang ketat
+ * - Badge review status dan banner review note
+ * - Form disabled saat PENDING_REVIEW atau APPROVED
+ * - Tombol Save dan Submit sesuai skenario
+ *
+ * Alur Submit:
+ * - Create mode: handleSubmitNew — create → submitReview (dua call silent)
+ * - Edit mode DRAFT: handleSubmitReview — submitReview saja
+ * - Edit mode REVISION: handleSubmitRevision — update → submitReview
  */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -25,9 +34,15 @@ import {
   X,
   Upload,
   Trash2,
+  CheckCircle,
+  Clock,
+  XCircle,
+  RotateCcw,
+  FileText,
+  Send,
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
-import { itemService } from "../../../services/itemService";
+import { itemService, REVIEW_STATUS } from "../../../services/itemService";
 import { categoriesService } from "../../../services/categoriesService";
 import { brandService } from "../../../services/brandService";
 import { uploadService } from "../../../services/uploadService";
@@ -38,19 +53,56 @@ import TiptapEditor from "../../TiptapEditor";
 import "../../../sass/components/Modals/ItemsForm/ItemsForm.scss";
 
 /**
+ * Konfigurasi tampilan per review status.
+ * @type {Object}
+ */
+const REVIEW_STATUS_CONFIG = {
+  [REVIEW_STATUS.DRAFT]: {
+    label: "Draft",
+    className: "status-draft",
+    icon: FileText,
+  },
+  [REVIEW_STATUS.PENDING_REVIEW]: {
+    label: "Pending Review",
+    className: "status-pending",
+    icon: Clock,
+  },
+  [REVIEW_STATUS.APPROVED]: {
+    label: "Approved",
+    className: "status-approved",
+    icon: CheckCircle,
+  },
+  [REVIEW_STATUS.REJECTED]: {
+    label: "Rejected",
+    className: "status-rejected",
+    icon: XCircle,
+  },
+  [REVIEW_STATUS.REVISION]: {
+    label: "Revision",
+    className: "status-revision",
+    icon: RotateCcw,
+  },
+};
+
+/**
+ * Status yang membuat seluruh form menjadi read-only.
+ * @type {string[]}
+ */
+const DISABLED_STATUSES = [
+  REVIEW_STATUS.PENDING_REVIEW,
+  REVIEW_STATUS.APPROVED,
+];
+
+/**
+ * Status yang menampilkan banner reviewNote.
+ * @type {string[]}
+ */
+const REVIEW_NOTE_STATUSES = [REVIEW_STATUS.REJECTED, REVIEW_STATUS.REVISION];
+
+/**
  * Komponen custom select dropdown dengan dukungan loading dan disabled state.
- * Digunakan untuk seleksi kategori dan brand.
- * 
+ *
  * @component
- * @param {Object} props - Props komponen
- * @param {string} props.label - Label untuk dropdown
- * @param {string} props.value - Nilai yang dipilih saat ini
- * @param {function(string): void} props.onChange - Handler saat nilai berubah
- * @param {Array<{value: string, label: string}>} props.options - Opsi yang tersedia
- * @param {string} props.placeholder - Placeholder saat tidak ada pilihan
- * @param {boolean} [props.required=false] - Apakah field wajib diisi
- * @param {boolean} [props.disabled=false] - Apakah dropdown dinonaktifkan
- * @param {boolean} [props.loading=false] - Status loading dropdown
  */
 const CustomSelect = ({
   label,
@@ -79,7 +131,6 @@ const CustomSelect = ({
   const getDisplayValue = () => {
     if (loading) return "Loading...";
     if (disabled) return placeholder;
-
     const selectedOption = options.find((opt) => opt.value === value);
     return selectedOption ? selectedOption.label : placeholder;
   };
@@ -90,7 +141,6 @@ const CustomSelect = ({
         setIsOpen(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -138,40 +188,43 @@ const CustomSelect = ({
 };
 
 /**
- * Props untuk komponen ItemsForm.
- * @typedef {Object} ItemsFormProps
- * @property {Object|null} [item=null] - Data produk awal untuk mode edit
- * @property {function(): void} onClose - Callback saat form ditutup
- * @property {function(): void} onSuccess - Callback saat operasi berhasil
- */
-
-/**
  * Komponen form modal untuk manajemen data produk bilingual.
- * Digunakan dalam konteks modal untuk operasi CRUD produk.
  *
  * @component
- * @param {ItemsFormProps} props - Props komponen
+ * @param {Object} props
+ * @param {Object|null} [props.item=null] - Data produk untuk mode edit
+ * @param {function(): void} props.onClose
+ * @param {function(): void} props.onSuccess
  */
 const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
 
-  /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
 
   /**
-   * Bahasa yang sedang aktif untuk pengisian form.
-   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
+   * Review status item saat ini (hanya relevan saat mode edit).
+   * @type {string}
    */
-  const [currentLanguage, setCurrentLanguage] = useState("EN");
+  const reviewStatus = item?.reviewStatus ?? REVIEW_STATUS.DRAFT;
 
   /**
-   * Data terjemahan untuk kedua bahasa.
-   * @type {{
-   *   EN: { shortDescription: string, longDescription: string, specifications: Object, features: string[], metaTitle: string, metaDescription: string, metaKeywords: string },
-   *   ID: { shortDescription: string, longDescription: string, specifications: Object, features: string[], metaTitle: string, metaDescription: string, metaKeywords: string }
-   * }}
+   * Apakah form dalam kondisi disabled (tidak bisa diedit).
+   * @type {boolean}
    */
+  const isFormDisabled = isEditing && DISABLED_STATUSES.includes(reviewStatus);
+
+  /**
+   * Apakah banner reviewNote perlu ditampilkan.
+   * @type {boolean}
+   */
+  const showReviewNote =
+    isEditing &&
+    REVIEW_NOTE_STATUSES.includes(reviewStatus) &&
+    !!item?.reviewNote;
+
+  const [currentLanguage, setCurrentLanguage] = useState("EN");
+
   const [translations, setTranslations] = useState({
     EN: {
       shortDescription: "",
@@ -193,109 +246,34 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     },
   });
 
-  /**
-   * Data master produk (non-terjemahan).
-   * @type {{
-   *   name: string,
-   *   categoryId: string,
-   *   brandId: string,
-   *   images: string,
-   *   isActive: boolean,
-   *   isFeatured: boolean,
-   *   sortOrder: number
-   * }}
-   */
   const [masterData, setMasterData] = useState({
     name: "",
     categoryId: "",
     brandId: "",
-    images: "",
-    isActive: true,
-    isFeatured: false,
     sortOrder: 0,
   });
 
-  
-  /**
-   * State gambar produk (multiple).
-   * Struktur: Array of { id: string, file: File|null, preview: string, isExisting: boolean }
-   * @type {Array<{ id: string, file: File|null, preview: string, isExisting: boolean }>}
-   */
   const [images, setImages] = useState([]);
-
-  /**
-   * Pesan error validasi untuk upload gambar.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [imageError, setImageError] = useState("");
-
-  /**
-   * Input teks sementara untuk penambahan fitur.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [featureInput, setFeatureInput] = useState("");
-
-  /**
-   * Input kunci sementara untuk penambahan spesifikasi.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [specKey, setSpecKey] = useState("");
-
-  /**
-   * Input nilai sementara untuk penambahan spesifikasi.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [specValue, setSpecValue] = useState("");
-
-  /**
-   * Pesan error validasi untuk spesifikasi.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [specError, setSpecError] = useState("");
 
-  /**
-   * Status loading saat proses submit berlangsung.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
-  const [loading, setLoading] = useState(false);
+  /** @type {[boolean, Function]} Loading state untuk tombol Save */
+  const [loadingSave, setLoadingSave] = useState(false);
 
-  /**
-   * Pesan error umum untuk form.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
+  /** @type {[boolean, Function]} Loading state untuk tombol Submit */
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
   const [error, setError] = useState("");
-
-  /**
-   * Pesan error validasi per field.
-   * @type {{[fieldName: string]: string}}
-   */
   const [validationErrors, setValidationErrors] = useState({});
-
-  /**
-   * Daftar kategori yang tersedia untuk seleksi.
-   * @type {Array<Object>}
-   */
   const [categories, setCategories] = useState([]);
-
-  /**
-   * Daftar brand yang tersedia untuk seleksi.
-   * @type {Array<Object>}
-   */
   const [brands, setBrands] = useState([]);
-
-  /**
-   * Status loading saat mengambil data kategori.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [categoriesLoading, setCategoriesLoading] = useState(false);
-
-  /**
-   * Status loading saat mengambil data brand.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [brandsLoading, setBrandsLoading] = useState(false);
 
-  // Load kategori dan brand saat komponen dipasang
+  // Load kategori dan brand
   useEffect(() => {
     const loadOptions = async () => {
       try {
@@ -318,7 +296,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
         const brandResult = await brandService.getAll();
         if (brandResult.success && Array.isArray(brandResult.data)) {
           const productBrands = brandResult.data.filter(
-            (brand) => brand.type === "PRODUCT"
+            (brand) => brand.type === "PRODUCT",
           );
           setBrands(productBrands);
           if (productBrands.length > 0 && !masterData.brandId) {
@@ -350,12 +328,9 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
         name: item.name || "",
         categoryId: item.categoryId || "",
         brandId: item.brandId || "",
-        isActive: item.isActive ?? true,
-        isFeatured: item.isFeatured ?? false,
         sortOrder: item.sortOrder ?? 0,
       });
 
-      // IMAGES
       if (Array.isArray(item.images)) {
         const existingImages = item.images.map((url, index) => ({
           id: `existing-${index}`,
@@ -366,9 +341,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
         setImages(existingImages);
       }
 
-      // --- FIX BESAR DI SINI ---
       const enTrans = item.translations?.find((t) => t.language === "EN") || {};
-
       const idTrans = item.translations?.find((t) => t.language === "ID") || {};
 
       const enData = {
@@ -396,7 +369,6 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       };
 
       setTranslations({ EN: enData, ID: idData });
-
       setValidationErrors({});
       setError("");
       setImageError("");
@@ -414,53 +386,30 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     };
   }, [images]);
 
-  /**
-   * Memvalidasi form sebelum submit.
-   * Menerapkan aturan bilingual yang ketat:
-   * - English selalu wajib (deskripsi pendek dan panjang)
-   * - Indonesian opsional tapi harus lengkap jika disediakan
-   * - Gambar minimal 1 buah
-   * - Kategori dan brand wajib diisi
-   * 
-   * @returns {boolean} `true` jika valid, `false` jika tidak
-   */
+  // ==================== VALIDATION ====================
+
   const validateForm = () => {
     const errors = {};
 
-    if (!masterData.name?.trim()) {
-      errors.name = "Item name is required";
-    }
-    if (!masterData.categoryId) {
-      errors.categoryId = "Category is required";
-    }
-    if (!masterData.brandId) {
-      errors.brandId = "Brand is required";
-    }
+    if (!masterData.name?.trim()) errors.name = "Item name is required";
+    if (!masterData.categoryId) errors.categoryId = "Category is required";
+    if (!masterData.brandId) errors.brandId = "Brand is required";
+    if (images.length === 0) errors.images = "At least one image is required";
 
-    if (images.length === 0) {
-      errors.images = "At least one image is required";
-    }
-
-    // English Translation - REQUIRED
     const en = translations.EN;
-    if (!en.shortDescription?.trim()) {
+    if (!en.shortDescription?.trim())
       errors["EN.shortDescription"] = "English short description is required";
-    }
-    if (!en.longDescription?.trim()) {
+    if (!en.longDescription?.trim())
       errors["EN.longDescription"] = "English long description is required";
-    }
 
-    // Indonesian Translation - OPTIONAL but must be COMPLETE
     const id = translations.ID;
     const hasIdShort = id.shortDescription?.trim();
     const hasIdLong = id.longDescription?.trim();
 
-    // If user fills one field, must fill both
     if (hasIdShort && !hasIdLong) {
       errors["ID.longDescription"] =
         "Indonesian long description is required when short description is provided";
     }
-
     if (hasIdLong && !hasIdShort) {
       errors["ID.shortDescription"] =
         "Indonesian short description is required when long description is provided";
@@ -470,10 +419,53 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     return Object.keys(errors).length === 0;
   };
 
+  // ==================== HELPERS ====================
+
   /**
-   * Handler perubahan bahasa aktif.
-   * @param {'EN'|'ID'} lang - Bahasa yang dipilih
+   * Membangun payload productData dari state saat ini.
+   * @returns {Object}
    */
+  const buildProductData = () => {
+    const productData = {
+      name: masterData.name,
+      categoryId: masterData.categoryId,
+      brandId: masterData.brandId,
+      sortOrder: masterData.sortOrder,
+      images,
+      translations: [],
+    };
+
+    productData.translations.push({
+      language: "EN",
+      shortDescription: translations.EN.shortDescription || "",
+      longDescription: translations.EN.longDescription || "",
+      specifications: translations.EN.specifications || {},
+      features: translations.EN.features || [],
+      metaTitle: translations.EN.metaTitle || "",
+      metaDescription: translations.EN.metaDescription || "",
+      metaKeywords: translations.EN.metaKeywords || "",
+    });
+
+    const idShort = translations.ID.shortDescription?.trim();
+    const idLong = translations.ID.longDescription?.trim();
+    if (idShort && idLong) {
+      productData.translations.push({
+        language: "ID",
+        shortDescription: idShort,
+        longDescription: idLong,
+        specifications: translations.ID.specifications || {},
+        features: translations.ID.features || [],
+        metaTitle: translations.ID.metaTitle || "",
+        metaDescription: translations.ID.metaDescription || "",
+        metaKeywords: translations.ID.metaKeywords || "",
+      });
+    }
+
+    return productData;
+  };
+
+  // ==================== HANDLERS ====================
+
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
     setFeatureInput("");
@@ -481,18 +473,10 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     setSpecValue("");
   };
 
-  /**
-   * Handler perubahan field terjemahan.
-   * @param {string} field - Nama field yang diubah
-   * @param {string} value - Nilai baru
-   */
   const handleTranslationChange = (field, value) => {
     setTranslations((prev) => ({
       ...prev,
-      [currentLanguage]: {
-        ...prev[currentLanguage],
-        [field]: value,
-      },
+      [currentLanguage]: { ...prev[currentLanguage], [field]: value },
     }));
     setValidationErrors((prev) => {
       const key = `${currentLanguage}.${field}`;
@@ -501,11 +485,6 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     });
   };
 
-  /**
-   * Handler perubahan field master data.
-   * @param {string} field - Nama field yang diubah
-   * @param {string|boolean|number} value - Nilai baru
-   */
   const handleMasterChange = (field, value) => {
     setMasterData((prev) => ({ ...prev, [field]: value }));
     setValidationErrors((prev) => {
@@ -515,17 +494,10 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     if (error) setError("");
   };
 
-  // Handle multiple image uploads
-  /**
-   * Handler penambahan multiple gambar.
-   * Melakukan validasi file sebelum memproses preview.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input file
-   */
   const handleImageAdd = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Validate each file
     for (const file of files) {
       const validation = uploadService.validateFile(file);
       if (!validation.isValid) {
@@ -535,11 +507,9 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
 
     setImageError("");
-
-    // Add new images to existing array
     const newImages = files.map((file, index) => ({
       id: `new-${Date.now()}-${index}`,
-      file: file,
+      file,
       preview: URL.createObjectURL(file),
       isExisting: false,
     }));
@@ -549,35 +519,20 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       const { images, ...rest } = prev;
       return rest;
     });
-
-    // Reset input
     e.target.value = "";
   };
 
-  // Remove image
-  /**
-   * Handler penghapusan gambar tertentu dari form.
-   * Membersihkan state dan URL object.
-   * @param {string} imageId - ID gambar yang akan dihapus
-   */
   const handleImageRemove = (imageId) => {
     setImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === imageId);
-
-      // Revoke blob URL if it's a new upload
-      if (imageToRemove && imageToRemove.preview.startsWith("blob:")) {
+      if (imageToRemove?.preview?.startsWith("blob:")) {
         URL.revokeObjectURL(imageToRemove.preview);
       }
-
       return prev.filter((img) => img.id !== imageId);
     });
-
     setImageError("");
   };
 
-  /**
-   * Handler penambahan fitur dari input teks.
-   */
   const handleAddFeature = () => {
     if (
       featureInput.trim() &&
@@ -594,77 +549,44 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
   };
 
-  /**
-   * Handler penghapusan fitur tertentu.
-   * @param {string} featureToRemove - Fitur yang akan dihapus
-   */
   const handleRemoveFeature = (featureToRemove) => {
     setTranslations((prev) => ({
       ...prev,
       [currentLanguage]: {
         ...prev[currentLanguage],
         features: prev[currentLanguage].features.filter(
-          (feature) => feature !== featureToRemove
+          (f) => f !== featureToRemove,
         ),
       },
     }));
   };
 
-  /**
-   * Handler penambahan spesifikasi (key-value pair).
-   */
   const handleAddSpecification = () => {
-    // Validasi: harus mengisi keduanya
     if (specKey.trim() && !specValue.trim()) {
       setSpecError("Please fill in the specification value");
       return;
     }
-
     if (!specKey.trim() && specValue.trim()) {
       setSpecError("Please fill in the specification key");
       return;
     }
-
     if (specKey.trim() && specValue.trim()) {
-      const newSpecs = {
-        ...translations[currentLanguage].specifications,
-        [specKey.trim()]: specValue.trim(),
-      };
       setTranslations((prev) => ({
         ...prev,
         [currentLanguage]: {
           ...prev[currentLanguage],
-          specifications: newSpecs,
+          specifications: {
+            ...prev[currentLanguage].specifications,
+            [specKey.trim()]: specValue.trim(),
+          },
         },
       }));
       setSpecKey("");
       setSpecValue("");
-      setSpecError(""); // Clear error jika berhasil
+      setSpecError("");
     }
   };
 
-  /**
-   * Handler perubahan input kunci spesifikasi.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
-   */
-  const handleSpecKeyChange = (e) => {
-    setSpecKey(e.target.value);
-    if (specError) setSpecError(""); // Clear error saat user mulai mengisi
-  };
-
-  /**
-   * Handler perubahan input nilai spesifikasi.
-   * @param {React.ChangeEvent<HTMLInputElement>} e - Event input
-   */
-  const handleSpecValueChange = (e) => {
-    setSpecValue(e.target.value);
-    if (specError) setSpecError(""); // Clear error saat user mulai mengisi
-  };
-
-  /**
-   * Handler penghapusan spesifikasi tertentu.
-   * @param {string} keyToRemove - Kunci spesifikasi yang akan dihapus
-   */
   const handleRemoveSpecification = (keyToRemove) => {
     const newSpecs = { ...translations[currentLanguage].specifications };
     delete newSpecs[keyToRemove];
@@ -677,34 +599,17 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }));
   };
 
-  /**
-   * Handler perubahan status aktif/non-aktif.
-   * @param {boolean} status - Status baru
-   */
-  const handleStatusChange = (status) => {
-    setMasterData((prev) => ({ ...prev, isActive: status }));
-  };
+  // ==================== SUBMIT HANDLERS ====================
 
   /**
-   * Handler perubahan status featured.
-   * @param {boolean} featured - Status featured baru
+   * Handler tombol Save — menyimpan sebagai DRAFT tanpa submit review.
+   * Digunakan pada mode create maupun edit (DRAFT/REVISION).
    */
-  const handleFeaturedChange = (featured) => {
-    setMasterData((prev) => ({ ...prev, isFeatured: featured }));
-  };
-
-  /**
-   * Handler submit form utama.
-   * Mengelola logika bisnis untuk create/update produk dengan validasi bilingual.
-   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
-   */
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  const handleSave = async () => {
+    setLoadingSave(true);
     setError("");
-    setImageError("");
 
-    if (!currentUser || !currentUser.id) {
+    if (!currentUser?.id) {
       openModal(
         "authError",
         <AlertModal
@@ -714,105 +619,45 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           showActions={true}
           confirmText="OK"
           onConfirm={() => closeModal("authError")}
+          onCancel={() => closeModal("authError")}
         />,
-        "small"
+        "small",
       );
-      setLoading(false);
+      setLoadingSave(false);
+      return;
+    }
+
+    if (!validateForm()) {
+      setError("Please complete all required fields.");
+      setLoadingSave(false);
       return;
     }
 
     try {
-      if (!validateForm()) {
-        setError("Please complete all required fields.");
-        setLoading(false);
-        return;
-      }
-
-      if (images.length === 0) {
-        setError("Please upload at least one image.");
-        setLoading(false);
-        return;
-      }
-
-      const productData = {
-        name: masterData.name,
-        categoryId: masterData.categoryId,
-        brandId: masterData.brandId,
-        isActive: masterData.isActive,
-        isFeatured: masterData.isFeatured,
-        sortOrder: masterData.sortOrder,
-        images: images, // Pass raw images array
-        translations: [],
-      };
-
-      /* ---------------------------------------------
-      FINAL FIX → Build translations
-      --------------------------------------------- */
-      // EN always required
-      productData.translations.push({
-        language: "EN",
-        shortDescription: translations.EN.shortDescription || "",
-        longDescription: translations.EN.longDescription || "",
-        specifications: translations.EN.specifications || {},
-        features: translations.EN.features || [],
-        metaTitle: translations.EN.metaTitle || "",
-        metaDescription: translations.EN.metaDescription || "",
-        metaKeywords: translations.EN.metaKeywords || "",
-      });
-
-      // ID optional but must be complete
-      const idShort = translations.ID.shortDescription?.trim();
-      const idLong = translations.ID.longDescription?.trim();
-
-      if (idShort && idLong) {
-        productData.translations.push({
-          language: "ID",
-          shortDescription: idShort,
-          longDescription: idLong,
-          specifications: translations.ID.specifications || {},
-          features: translations.ID.features || [],
-          metaTitle: translations.ID.metaTitle || "",
-          metaDescription: translations.ID.metaDescription || "",
-          metaKeywords: translations.ID.metaKeywords || "",
-        });
-      }
-
-      console.log("📤 Submitting product:", {
-        isEditing,
-        totalImages: images.length,
-        newImages: images.filter((img) => !img.isExisting).length,
-        existingImages: images.filter((img) => img.isExisting).length,
-      });
-      let result;
-      if (isEditing) {
-        result = await itemService.update(item.id, productData);
-      } else {
-        result = await itemService.create(productData, currentUser.id);
-      }
-
-      /* --------------------------------------------- */
+      const productData = buildProductData();
+      const result = isEditing
+        ? await itemService.update(item.id, productData)
+        : await itemService.create(productData, currentUser.id);
 
       if (result.success) {
         const modalId = isEditing ? `editItem-${item.id}` : "addItem";
         closeModal(modalId);
-
         setTimeout(() => {
           openModal(
             "itemSaveSuccess",
             <AlertModal
               type="success"
-              title={isEditing ? "Updated!" : "Created!"}
-              message={`Item has been successfully ${
-                isEditing ? "updated" : "created"
-              }.`}
+              title={isEditing ? "Updated!" : "Saved!"}
+              message={`Item has been successfully ${isEditing ? "updated" : "saved as draft"}.`}
               showActions={true}
               confirmText="OK"
               onConfirm={() => {
                 closeModal("itemSaveSuccess");
                 onSuccess();
               }}
+              onCancel={() => closeModal("itemSaveSuccess")}
             />,
-            "small"
+            "small",
           );
         }, 300);
       } else {
@@ -825,8 +670,9 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             showActions={true}
             confirmText="OK"
             onConfirm={() => closeModal("itemSaveError")}
+            onCancel={() => closeModal("itemSaveError")}
           />,
-          "small"
+          "small",
         );
       }
     } catch (err) {
@@ -839,33 +685,376 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           showActions={true}
           confirmText="OK"
           onConfirm={() => closeModal("itemSaveError")}
+          onCancel={() => closeModal("itemSaveError")}
         />,
-        "small"
+        "small",
       );
     } finally {
-      setLoading(false);
+      setLoadingSave(false);
     }
   };
 
   /**
-   * Mendapatkan nilai field terjemahan untuk bahasa saat ini.
-   * @param {string} field - Nama field
-   * @returns {string|Object|Array} Nilai field
+   * Handler tombol Submit pada mode create.
+   * Dua call silent berurutan: create → submitReview.
    */
-  const getCurrentField = (field) => {
-    return translations[currentLanguage][field];
+  const handleSubmitNew = async () => {
+    setLoadingSubmit(true);
+    setError("");
+
+    if (!currentUser?.id) {
+      openModal(
+        "authError",
+        <AlertModal
+          type="error"
+          title="Authentication Error"
+          message="User session expired. Please log in again."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("authError")}
+          onCancel={() => closeModal("authError")}
+        />,
+        "small",
+      );
+      setLoadingSubmit(false);
+      return;
+    }
+
+    if (!validateForm()) {
+      setError("Please complete all required fields.");
+      setLoadingSubmit(false);
+      return;
+    }
+
+    try {
+      const productData = buildProductData();
+
+      // Step 1: Create item (status DRAFT)
+      const createResult = await itemService.create(
+        productData,
+        currentUser.id,
+      );
+      if (!createResult.success) {
+        openModal(
+          "itemSaveError",
+          <AlertModal
+            type="error"
+            title="Error"
+            message={createResult.message || "Failed to create item."}
+            showActions={true}
+            confirmText="OK"
+            onConfirm={() => closeModal("itemSaveError")}
+            onCancel={() => closeModal("itemSaveError")}
+          />,
+          "small",
+        );
+        setLoadingSubmit(false);
+        return;
+      }
+
+      const newItemId = createResult.data?.id;
+
+      if (!newItemId) {
+        closeModal("addItem");
+        setTimeout(() => {
+          openModal(
+            "itemSubmitPartial",
+            <AlertModal
+              type="warning"
+              title="Saved but Not Submitted"
+              message="Item was saved as draft but could not be submitted for review. Please submit manually from the item list."
+              showActions={true}
+              confirmText="OK"
+              onConfirm={() => {
+                closeModal("itemSubmitPartial");
+                onSuccess();
+              }}
+              onCancel={() => closeModal("itemSubmitPartial")}
+            />,
+            "small",
+          );
+        }, 300);
+        return;
+      }
+
+      // Step 2: Submit review
+      const submitResult = await itemService.submitReview(newItemId);
+
+      if (submitResult.success) {
+        closeModal("addItem");
+        setTimeout(() => {
+          openModal(
+            "itemSubmitSuccess",
+            <AlertModal
+              type="success"
+              title="Submitted!"
+              message="Item has been successfully submitted for review."
+              showActions={true}
+              confirmText="OK"
+              onConfirm={() => {
+                closeModal("itemSubmitSuccess");
+                onSuccess();
+              }}
+              onCancel={() => closeModal("itemSubmitSuccess")}
+            />,
+            "small",
+          );
+        }, 300);
+      } else {
+        closeModal("addItem");
+        setTimeout(() => {
+          openModal(
+            "itemSubmitPartial",
+            <AlertModal
+              type="warning"
+              title="Saved but Not Submitted"
+              message="Item was saved as draft but could not be submitted for review. Please submit manually from the item list."
+              showActions={true}
+              confirmText="OK"
+              onConfirm={() => {
+                closeModal("itemSubmitPartial");
+                onSuccess();
+              }}
+              onCancel={() => closeModal("itemSubmitPartial")}
+            />,
+            "small",
+          );
+        }, 300);
+      }
+    } catch (err) {
+      openModal(
+        "itemSaveError",
+        <AlertModal
+          type="error"
+          title="Error"
+          message={err.message || "An error occurred while submitting item."}
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("itemSaveError")}
+          onCancel={() => closeModal("itemSaveError")}
+        />,
+        "small",
+      );
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
   /**
-   * Mengatur nilai field terjemahan untuk bahasa saat ini.
-   * @param {string} field - Nama field
-   * @param {string|Object|Array} value - Nilai baru
+   * Handler tombol Submit Review — untuk item status DRAFT di mode edit.
+   * Langsung call submitReview tanpa update karena tidak ada perubahan
+   * yang perlu disimpan, atau staff sudah Save sebelumnya.
    */
-  const setCurrentField = (field, value) => {
-    handleTranslationChange(field, value);
+  const handleSubmitReview = () => {
+    openModal(
+      "submitReviewConfirm",
+      <AlertModal
+        type="confirm"
+        title="Submit for Review?"
+        message="Once submitted, this item cannot be edited until the reviewer gives feedback. Are you sure you want to submit?"
+        showActions={true}
+        confirmText="Submit"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          closeModal("submitReviewConfirm");
+          setLoadingSubmit(true);
+
+          try {
+            const result = await itemService.submitReview(item.id);
+
+            if (result.success) {
+              closeModal(`editItem-${item.id}`);
+              setTimeout(() => {
+                openModal(
+                  "itemSubmitSuccess",
+                  <AlertModal
+                    type="success"
+                    title="Submitted!"
+                    message="Item has been successfully submitted for review."
+                    showActions={true}
+                    confirmText="OK"
+                    onConfirm={() => {
+                      closeModal("itemSubmitSuccess");
+                      onSuccess();
+                    }}
+                    onCancel={() => closeModal("itemSubmitSuccess")}
+                  />,
+                  "small",
+                );
+              }, 300);
+            } else {
+              openModal(
+                "itemSubmitError",
+                <AlertModal
+                  type="error"
+                  title="Error"
+                  message={
+                    result.message || "Failed to submit item for review."
+                  }
+                  showActions={true}
+                  confirmText="OK"
+                  onConfirm={() => closeModal("itemSubmitError")}
+                  onCancel={() => closeModal("itemSubmitError")}
+                />,
+                "small",
+              );
+            }
+          } catch (err) {
+            openModal(
+              "itemSubmitError",
+              <AlertModal
+                type="error"
+                title="Error"
+                message={
+                  err.message ||
+                  "An error occurred while submitting item. Please try again."
+                }
+                showActions={true}
+                confirmText="OK"
+                onConfirm={() => closeModal("itemSubmitError")}
+                onCancel={() => closeModal("itemSubmitError")}
+              />,
+              "small",
+            );
+          } finally {
+            setLoadingSubmit(false);
+          }
+        }}
+        onCancel={() => closeModal("submitReviewConfirm")}
+      />,
+      "small",
+    );
   };
 
-  /** @type {Array<{value: string, label: string}>} Opsi kategori untuk dropdown */
+  /**
+   * Handler tombol Submit Review — khusus untuk item status REVISION.
+   * Selalu call update dulu baru submitReview untuk memastikan semua
+   * perubahan tersimpan sebelum diajukan kembali, termasuk gambar baru
+   * yang mungkin belum di-Save oleh staff.
+   */
+  const handleSubmitRevision = () => {
+    openModal(
+      "submitRevisionConfirm",
+      <AlertModal
+        type="confirm"
+        title="Submit Revision for Review?"
+        message="Your changes will be saved and submitted for review. Once submitted, this item cannot be edited until the reviewer gives feedback. Are you sure?"
+        showActions={true}
+        confirmText="Submit"
+        cancelText="Cancel"
+        onConfirm={async () => {
+          closeModal("submitRevisionConfirm");
+          setLoadingSubmit(true);
+
+          try {
+            if (!validateForm()) {
+              setError("Please complete all required fields.");
+              return;
+            }
+
+            // Step 1: Simpan semua perubahan termasuk gambar baru
+            const productData = buildProductData();
+            const updateResult = await itemService.update(item.id, productData);
+
+            if (!updateResult.success) {
+              openModal(
+                "itemSubmitError",
+                <AlertModal
+                  type="error"
+                  title="Error"
+                  message={
+                    updateResult.message ||
+                    "Failed to save changes. Please try again."
+                  }
+                  showActions={true}
+                  confirmText="OK"
+                  onConfirm={() => closeModal("itemSubmitError")}
+                  onCancel={() => closeModal("itemSubmitError")}
+                />,
+                "small",
+              );
+              return;
+            }
+
+            // Step 2: Submit review
+            const submitResult = await itemService.submitReview(item.id);
+
+            if (submitResult.success) {
+              closeModal(`editItem-${item.id}`);
+              setTimeout(() => {
+                openModal(
+                  "itemSubmitSuccess",
+                  <AlertModal
+                    type="success"
+                    title="Submitted!"
+                    message="Item revision has been successfully submitted for review."
+                    showActions={true}
+                    confirmText="OK"
+                    onConfirm={() => {
+                      closeModal("itemSubmitSuccess");
+                      onSuccess();
+                    }}
+                    onCancel={() => closeModal("itemSubmitSuccess")}
+                  />,
+                  "small",
+                );
+              }, 300);
+            } else {
+              // Update berhasil tapi submit gagal
+              closeModal(`editItem-${item.id}`);
+              setTimeout(() => {
+                openModal(
+                  "itemSubmitPartial",
+                  <AlertModal
+                    type="warning"
+                    title="Saved but Not Submitted"
+                    message="Changes were saved but could not be submitted for review. Please submit manually from the item list."
+                    showActions={true}
+                    confirmText="OK"
+                    onConfirm={() => {
+                      closeModal("itemSubmitPartial");
+                      onSuccess();
+                    }}
+                    onCancel={() => closeModal("itemSubmitPartial")}
+                  />,
+                  "small",
+                );
+              }, 300);
+            }
+          } catch (err) {
+            openModal(
+              "itemSubmitError",
+              <AlertModal
+                type="error"
+                title="Error"
+                message={
+                  err.message ||
+                  "An error occurred while submitting revision. Please try again."
+                }
+                showActions={true}
+                confirmText="OK"
+                onConfirm={() => closeModal("itemSubmitError")}
+                onCancel={() => closeModal("itemSubmitError")}
+              />,
+              "small",
+            );
+          } finally {
+            setLoadingSubmit(false);
+          }
+        }}
+        onCancel={() => closeModal("submitRevisionConfirm")}
+      />,
+      "small",
+    );
+  };
+
+  // ==================== GETTER HELPERS ====================
+
+  const getCurrentField = (field) => translations[currentLanguage][field];
+
+  const setCurrentField = (field, value) =>
+    handleTranslationChange(field, value);
+
   const categoryOptions = Array.isArray(categories)
     ? categories.map((cat) => ({
         value: cat.id,
@@ -873,7 +1062,6 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       }))
     : [];
 
-  /** @type {Array<{value: string, label: string}>} Opsi brand untuk dropdown */
   const brandOptions = Array.isArray(brands)
     ? brands.map((brand) => ({
         value: brand.id,
@@ -881,9 +1069,60 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       }))
     : [];
 
+  // ==================== REVIEW STATUS BADGE ====================
+
+  const renderReviewStatusBadge = () => {
+    const config = REVIEW_STATUS_CONFIG[reviewStatus];
+    if (!config) return null;
+    const Icon = config.icon;
+    return (
+      <div className={`review-status-banner ${config.className}`}>
+        <Icon size={15} />
+        <span>{config.label}</span>
+      </div>
+    );
+  };
+
+  // ==================== RENDER ====================
+
   return (
-    <div className="items-form">
-      <form onSubmit={handleSubmit}>
+    <div className={`items-form ${isFormDisabled ? "form-disabled" : ""}`}>
+      <form onSubmit={(e) => e.preventDefault()}>
+        {/* Review Status Badge — hanya saat edit */}
+        {isEditing && renderReviewStatusBadge()}
+
+        {/* Review Note Banner — hanya saat REJECTED atau REVISION */}
+        {showReviewNote && (
+          <div
+            className={`review-note-banner ${
+              reviewStatus === REVIEW_STATUS.REJECTED ? "rejected" : "revision"
+            }`}
+          >
+            <AlertCircle size={16} />
+            <div className="review-note-content">
+              <strong>
+                {reviewStatus === REVIEW_STATUS.REJECTED
+                  ? "Rejection Reason:"
+                  : "Revision Note:"}
+              </strong>
+              <p>{item.reviewNote}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Form Disabled Notice */}
+        {isFormDisabled && (
+          <div className="form-disabled-notice">
+            <AlertCircle size={15} />
+            <span>
+              {reviewStatus === REVIEW_STATUS.PENDING_REVIEW
+                ? "This item is currently under review and cannot be edited."
+                : "This item has been approved and cannot be edited."}
+            </span>
+          </div>
+        )}
+
+        {/* General Error */}
         {error && (
           <div className="form-error">
             <AlertCircle size={16} />
@@ -898,6 +1137,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </button>
           </div>
         )}
+
         {/* Language Switcher */}
         <div className="language-switcher">
           <Globe size={16} />
@@ -906,6 +1146,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "EN" ? "active" : ""}`}
             onClick={() => handleLanguageChange("EN")}
+            disabled={isFormDisabled}
             aria-label="Switch to English"
           >
             EN {translations.EN.longDescription && "✓"}
@@ -914,6 +1155,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             type="button"
             className={`lang-btn ${currentLanguage === "ID" ? "active" : ""}`}
             onClick={() => handleLanguageChange("ID")}
+            disabled={isFormDisabled}
             aria-label="Switch to Indonesian"
           >
             ID {translations.ID.longDescription && "✓"}
@@ -925,7 +1167,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           </small>
         </div>
 
-        {isEditing && (
+        {isEditing && !isFormDisabled && (
           <div className="image-info-banner">
             <AlertCircle size={16} />
             <span>
@@ -934,7 +1176,8 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </span>
           </div>
         )}
-        {/* Name */}
+
+        {/* Item Name */}
         <div
           className={`form-group ${validationErrors.name ? "has-error" : ""}`}
         >
@@ -946,6 +1189,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             value={masterData.name}
             onChange={(e) => handleMasterChange("name", e.target.value)}
             placeholder="Enter item name in English"
+            disabled={isFormDisabled}
             aria-label="Item name"
             aria-required="true"
           />
@@ -953,12 +1197,11 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             <span className="field-error">{validationErrors.name}</span>
           )}
         </div>
+
         {/* Category & Brand */}
         <div className="form-row">
           <div
-            className={`form-group half ${
-              validationErrors.categoryId ? "has-error" : ""
-            }`}
+            className={`form-group half ${validationErrors.categoryId ? "has-error" : ""}`}
           >
             <CustomSelect
               label="Category"
@@ -968,8 +1211,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               placeholder="Select Category"
               required={true}
               loading={categoriesLoading}
-              disabled={categoriesLoading}
-              aria-label="Select category"
+              disabled={categoriesLoading || isFormDisabled}
             />
             {validationErrors.categoryId && (
               <span className="field-error">{validationErrors.categoryId}</span>
@@ -977,9 +1219,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           </div>
 
           <div
-            className={`form-group half ${
-              validationErrors.brandId ? "has-error" : ""
-            }`}
+            className={`form-group half ${validationErrors.brandId ? "has-error" : ""}`}
           >
             <CustomSelect
               label="Brand"
@@ -989,14 +1229,14 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               placeholder="Select Brand"
               required={true}
               loading={brandsLoading}
-              disabled={brandsLoading}
-              aria-label="Select brand"
+              disabled={brandsLoading || isFormDisabled}
             />
             {validationErrors.brandId && (
               <span className="field-error">{validationErrors.brandId}</span>
             )}
           </div>
         </div>
+
         {/* Short Description */}
         <div
           className={`form-group ${
@@ -1020,6 +1260,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 : "Masukkan deskripsi singkat dalam Bahasa (opsional)"
             }
             rows={2}
+            disabled={isFormDisabled}
             aria-label={`Short description in ${currentLanguage}`}
           />
           {validationErrors[`${currentLanguage}.shortDescription`] && (
@@ -1028,6 +1269,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </span>
           )}
         </div>
+
         {/* Long Description */}
         <div
           className={`form-group ${
@@ -1048,6 +1290,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                 ? "Enter long description in English (required)"
                 : "Masukkan deskripsi panjang dalam Bahasa (opsional)"
             }
+            editable={!isFormDisabled}
             rows={6}
             aria-label={`Long description in ${currentLanguage}`}
           />
@@ -1057,51 +1300,59 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </span>
           )}
         </div>
+
         {/* Specifications */}
         <div className="form-group">
           <label>Specifications ({currentLanguage})</label>
-          <div className="specs-input">
-            <input
-              type="text"
-              value={specKey}
-              onChange={handleSpecKeyChange}
-              placeholder={
-                currentLanguage === "EN"
-                  ? "Key (e.g., capacity)"
-                  : "Kunci (misal: kapasitas)"
-              }
-              className="spec-key"
-              aria-label={`Specification key in ${currentLanguage}`}
-            />
-            <input
-              type="text"
-              value={specValue}
-              onChange={handleSpecValueChange}
-              placeholder={
-                currentLanguage === "EN"
-                  ? "Value (e.g., 500W)"
-                  : "Nilai (misal: 500W)"
-              }
-              className="spec-value"
-              aria-label={`Specification value in ${currentLanguage}`}
-            />
-            <button
-              type="button"
-              onClick={handleAddSpecification}
-              className="spec-add-btn"
-              aria-label="Add specification"
-            >
-              +
-            </button>
-          </div>
-
-          {/* Tampilkan error message */}
-          {specError && (
-            <div className="field-error" style={{ marginTop: "3px" }}>
-              {specError}
-            </div>
+          {!isFormDisabled && (
+            <>
+              <div className="specs-input">
+                <input
+                  type="text"
+                  value={specKey}
+                  onChange={(e) => {
+                    setSpecKey(e.target.value);
+                    if (specError) setSpecError("");
+                  }}
+                  placeholder={
+                    currentLanguage === "EN"
+                      ? "Key (e.g., capacity)"
+                      : "Kunci (misal: kapasitas)"
+                  }
+                  className="spec-key"
+                  aria-label={`Specification key in ${currentLanguage}`}
+                />
+                <input
+                  type="text"
+                  value={specValue}
+                  onChange={(e) => {
+                    setSpecValue(e.target.value);
+                    if (specError) setSpecError("");
+                  }}
+                  placeholder={
+                    currentLanguage === "EN"
+                      ? "Value (e.g., 500W)"
+                      : "Nilai (misal: 500W)"
+                  }
+                  className="spec-value"
+                  aria-label={`Specification value in ${currentLanguage}`}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSpecification}
+                  className="spec-add-btn"
+                  aria-label="Add specification"
+                >
+                  +
+                </button>
+              </div>
+              {specError && (
+                <div className="field-error" style={{ marginTop: "3px" }}>
+                  {specError}
+                </div>
+              )}
+            </>
           )}
-
           <div className="specs-list">
             {Object.entries(getCurrentField("specifications")).map(
               ([key, value]) => (
@@ -1109,63 +1360,71 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   <span>
                     <strong>{key}:</strong> {value}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSpecification(key)}
-                    className="spec-remove"
-                    aria-label={`Remove specification ${key}`}
-                  >
-                    ×
-                  </button>
+                  {!isFormDisabled && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSpecification(key)}
+                      className="spec-remove"
+                      aria-label={`Remove specification ${key}`}
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
-              )
+              ),
             )}
           </div>
         </div>
+
         {/* Features */}
         <div className="form-group">
           <label>Features ({currentLanguage})</label>
-          <div className="tags-input">
-            <input
-              type="text"
-              value={featureInput}
-              onChange={(e) => setFeatureInput(e.target.value)}
-              placeholder={
-                currentLanguage === "EN"
-                  ? "Add feature and press Enter"
-                  : "Tambah fitur dan tekan Enter"
-              }
-              onKeyDown={(e) =>
-                e.key === "Enter" && (e.preventDefault(), handleAddFeature())
-              }
-              aria-label={`Add features in ${currentLanguage}`}
-            />
-            <button
-              type="button"
-              onClick={handleAddFeature}
-              className="tag-add-btn"
-              aria-label="Add feature"
-            >
-              +
-            </button>
-          </div>
+          {!isFormDisabled && (
+            <div className="tags-input">
+              <input
+                type="text"
+                value={featureInput}
+                onChange={(e) => setFeatureInput(e.target.value)}
+                placeholder={
+                  currentLanguage === "EN"
+                    ? "Add feature and press Enter"
+                    : "Tambah fitur dan tekan Enter"
+                }
+                onKeyDown={(e) =>
+                  e.key === "Enter" && (e.preventDefault(), handleAddFeature())
+                }
+                aria-label={`Add features in ${currentLanguage}`}
+              />
+              <button
+                type="button"
+                onClick={handleAddFeature}
+                className="tag-add-btn"
+                aria-label="Add feature"
+              >
+                +
+              </button>
+            </div>
+          )}
           <div className="tags-list">
             {getCurrentField("features").map((feature, index) => (
               <span key={index} className="tag-item">
                 {feature}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveFeature(feature)}
-                  className="tag-remove"
-                  aria-label={`Remove feature ${feature}`}
-                >
-                  ×
-                </button>
+                {!isFormDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveFeature(feature)}
+                    className="tag-remove"
+                    aria-label={`Remove feature ${feature}`}
+                  >
+                    ×
+                  </button>
+                )}
               </span>
             ))}
           </div>
         </div>
-        {/* Updated Images Section */}
+
+        {/* Images */}
         <div
           className={`form-group ${validationErrors.images ? "has-error" : ""}`}
         >
@@ -1173,21 +1432,26 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             Item Images {!isEditing && <span className="required">*</span>}
           </label>
 
-          {/* Image Grid */}
           {images.length > 0 && (
             <div className="image-grid">
               {images.map((img, index) => (
                 <div key={img.id} className="image-grid-item">
-                  <img src={img.preview} alt={`Image ${index + 1}`} aria-label={`Product image ${index + 1}`} />
-                  <button
-                    type="button"
-                    className="image-remove-btn"
-                    onClick={() => handleImageRemove(img.id)}
-                    title="Remove image"
-                    aria-label="Remove image"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <img
+                    src={img.preview}
+                    alt={`Image ${index + 1}`}
+                    aria-label={`Product image ${index + 1}`}
+                  />
+                  {!isFormDisabled && (
+                    <button
+                      type="button"
+                      className="image-remove-btn"
+                      onClick={() => handleImageRemove(img.id)}
+                      title="Remove image"
+                      aria-label="Remove image"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                   {index === 0 && (
                     <span className="primary-badge">Primary</span>
                   )}
@@ -1196,33 +1460,34 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </div>
           )}
 
-          {/* Add Images Button */}
-          <div className="image-upload-section">
-            <input
-              type="file"
-              accept="image/png, image/jpeg, image/jpg"
-              multiple
-              onChange={handleImageAdd}
-              id="item-images-upload"
-              className="image-input"
-              aria-label="Upload product images"
-            />
-            <label htmlFor="item-images-upload" className="image-upload-btn">
-              <Upload size={16} />
-              {images.length > 0 ? "Add More Images" : "Upload Images"}
-            </label>
-          </div>
+          {!isFormDisabled && (
+            <div className="image-upload-section">
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/jpg"
+                multiple
+                onChange={handleImageAdd}
+                id="item-images-upload"
+                className="image-input"
+                aria-label="Upload product images"
+              />
+              <label htmlFor="item-images-upload" className="image-upload-btn">
+                <Upload size={16} />
+                {images.length > 0 ? "Add More Images" : "Upload Images"}
+              </label>
+            </div>
+          )}
 
           {imageError && <span className="field-error">{imageError}</span>}
           {validationErrors.images && !imageError && (
             <span className="field-error">{validationErrors.images}</span>
           )}
-
           <small className="field-hint">
             Only PNG or JPG. Max 2MB per image. First image will be the primary
             image.
           </small>
         </div>
+
         {/* Sort Order */}
         <div className="form-group">
           <label>Sort Order</label>
@@ -1233,62 +1498,17 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               const value = e.target.value;
               handleMasterChange(
                 "sortOrder",
-                value === "" ? 0 : parseInt(value, 10) || 0
+                value === "" ? 0 : parseInt(value, 10) || 0,
               );
             }}
             placeholder="0"
             min="0"
+            disabled={isFormDisabled}
             aria-label="Sort order"
           />
           <small className="field-hint">
             • <strong>0</strong> = Automatic positioning (placed at the end)
           </small>
-        </div>
-        {/* Status & Featured */}
-        <div className="form-row">
-          <div className="form-group half">
-            <label>Status</label>
-            <div className="status-toggle">
-              <button
-                type="button"
-                className={masterData.isActive ? "active" : ""}
-                onClick={() => handleStatusChange(true)}
-                aria-label="Set status to active"
-              >
-                Active
-              </button>
-              <button
-                type="button"
-                className={!masterData.isActive ? "active" : ""}
-                onClick={() => handleStatusChange(false)}
-                aria-label="Set status to inactive"
-              >
-                Inactive
-              </button>
-            </div>
-          </div>
-
-          <div className="form-group half">
-            <label>Featured</label>
-            <div className="toggle-group">
-              <button
-                type="button"
-                className={masterData.isFeatured ? "active" : ""}
-                onClick={() => handleFeaturedChange(true)}
-                aria-label="Mark as featured"
-              >
-                Yes
-              </button>
-              <button
-                type="button"
-                className={!masterData.isFeatured ? "active" : ""}
-                onClick={() => handleFeaturedChange(false)}
-                aria-label="Unmark as featured"
-              >
-                No
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* SEO Fields */}
@@ -1305,6 +1525,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "SEO title in English (optional)"
                   : "Judul SEO dalam Bahasa (opsional)"
               }
+              disabled={isFormDisabled}
               aria-label={`Meta title in ${currentLanguage}`}
             />
           </div>
@@ -1321,6 +1542,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   : "Deskripsi SEO dalam Bahasa (opsional)"
               }
               rows={2}
+              disabled={isFormDisabled}
               aria-label={`Meta description in ${currentLanguage}`}
             />
           </div>
@@ -1335,6 +1557,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   ? "Comma-separated English keywords (optional)"
                   : "Kata kunci Bahasa dipisah koma (opsional)"
               }
+              disabled={isFormDisabled}
               aria-label={`Meta keywords in ${currentLanguage}`}
             />
           </div>
@@ -1342,24 +1565,150 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
 
         {/* Action Buttons */}
         <div className="form-actions">
-          <button
-            type="button"
-            className="btn-secondary"
-            onClick={onClose}
-            disabled={loading}
-            aria-label="Cancel form"
-          >
-            Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={loading}>
-            {loading ? (
-              <PulseDots size="sm" color="#ffffff" count={6} />
-            ) : isEditing ? (
-              "Update Item"
-            ) : (
-              "Create Item"
+          {/* Mode: Form disabled (PENDING_REVIEW / APPROVED) — hanya Cancel */}
+          {isFormDisabled && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={onClose}
+              aria-label="Cancel"
+            >
+              Cancel
+            </button>
+          )}
+
+          {/* Mode: Create — Save (draft) dan Submit (create → submitReview) */}
+          {!isEditing && !isFormDisabled && (
+            <>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={onClose}
+                disabled={loadingSave || loadingSubmit}
+                aria-label="Cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-outline"
+                onClick={handleSave}
+                disabled={loadingSave || loadingSubmit}
+                aria-label="Save as draft"
+              >
+                {loadingSave ? (
+                  <PulseDots size="sm" color="currentColor" count={6} />
+                ) : (
+                  "Save"
+                )}
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={handleSubmitNew}
+                disabled={loadingSave || loadingSubmit}
+                aria-label="Submit for review"
+              >
+                {loadingSubmit ? (
+                  <PulseDots size="sm" color="#ffffff" count={6} />
+                ) : (
+                  <>
+                    <Send size={15} /> Submit
+                  </>
+                )}
+              </button>
+            </>
+          )}
+
+          {/* Mode: Edit status DRAFT — Save dan Submit Review (submitReview saja) */}
+          {isEditing &&
+            !isFormDisabled &&
+            reviewStatus === REVIEW_STATUS.DRAFT && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={onClose}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Cancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={handleSave}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Save changes"
+                >
+                  {loadingSave ? (
+                    <PulseDots size="sm" color="currentColor" count={6} />
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSubmitReview}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Submit item for review"
+                >
+                  {loadingSubmit ? (
+                    <PulseDots size="sm" color="#ffffff" count={6} />
+                  ) : (
+                    <>
+                      <Send size={15} /> Submit Review
+                    </>
+                  )}
+                </button>
+              </>
             )}
-          </button>
+
+          {/* Mode: Edit status REVISION — Save dan Submit Review (update → submitReview) */}
+          {isEditing &&
+            !isFormDisabled &&
+            reviewStatus === REVIEW_STATUS.REVISION && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={onClose}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Cancel"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={handleSave}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Save changes"
+                >
+                  {loadingSave ? (
+                    <PulseDots size="sm" color="currentColor" count={6} />
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleSubmitRevision}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Submit item revision for review"
+                >
+                  {loadingSubmit ? (
+                    <PulseDots size="sm" color="#ffffff" count={6} />
+                  ) : (
+                    <>
+                      <Send size={15} /> Submit Review
+                    </>
+                  )}
+                </button>
+              </>
+            )}
         </div>
       </form>
     </div>

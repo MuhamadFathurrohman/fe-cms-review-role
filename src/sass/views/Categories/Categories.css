@@ -2,10 +2,6 @@
 .page-categories {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Filter Section */
-  /* Error Banner */
-  /* Table Container */
-  /* Pagination Modern */
 }
 .page-categories .page-header {
   display: flex;
@@ -30,6 +26,9 @@
   margin: 4px 0 0 0;
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
+}
+.page-categories {
+  /* Filter Section */
 }
 .page-categories .categories-filters {
   margin-top: 10px;
@@ -116,6 +115,9 @@
 .page-categories .btn-primary svg {
   color: white;
 }
+.page-categories {
+  /* Error Banner */
+}
 .page-categories .error-banner {
   background: #fee2e2;
   border: 1px solid #fecaca;
@@ -125,6 +127,9 @@
   margin-bottom: 24px;
   font-size: 15px;
   font-weight: 500;
+}
+.page-categories {
+  /* Table Container */
 }
 .page-categories .table-container {
   border-radius: 10px;
@@ -140,7 +145,6 @@
 .page-categories .categories-table {
   width: 100%;
   border-collapse: collapse;
-  /* // --- AKHIR PERUBAHAN --- */
 }
 .page-categories .categories-table th {
   background: rgba(45, 76, 82, 0.05);
@@ -244,6 +248,12 @@
 }
 .page-categories .categories-table .no-data {
   font-style: italic;
+}
+.page-categories .categories-table {
+  /* // --- AKHIR PERUBAHAN --- */
+}
+.page-categories {
+  /* Pagination Modern */
 }
 .page-categories .pagination-controls {
   display: flex;
@@ -500,12 +510,14 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-radius: 16px;
-    /* Pastikan shadow tetap terlihat saat scroll */
-    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-categories .table-container::-webkit-scrollbar {
     display: none;
+  }
+  .page-categories .table-container {
+    border-radius: 16px;
+    /* Pastikan shadow tetap terlihat saat scroll */
+    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-categories .categories-table {
     min-width: 650px;

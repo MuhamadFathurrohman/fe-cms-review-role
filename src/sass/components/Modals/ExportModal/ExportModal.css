@@ -5,7 +5,6 @@
 }
 .export-modal-content .form-group {
   margin-bottom: 20px;
-  /* // Error tooltip */
 }
 .export-modal-content .form-group .form-label {
   display: block;
@@ -31,7 +30,6 @@
   background: white;
   font-family: "Poppins", sans-serif;
   transition: all 0.3s ease;
-  /* // State error */
 }
 .export-modal-content .form-group .form-input:focus {
   outline: none;
@@ -46,6 +44,9 @@
   color: #6b7280;
   font-weight: 500;
 }
+.export-modal-content .form-group .form-input {
+  /* // State error */
+}
 .export-modal-content .form-group .form-input.error {
   border-color: #e53e3e;
   box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.15);
@@ -53,6 +54,9 @@
 .export-modal-content .form-group .form-input.error:focus {
   border-color: #e53e3e !important;
   box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.2) !important;
+}
+.export-modal-content .form-group {
+  /* // Error tooltip */
 }
 .export-modal-content .form-group .error-tooltip {
   position: absolute;
@@ -110,8 +114,6 @@
   transform: translateY(-50%);
   cursor: pointer;
   /* // Style custom melalui sibling label */
-  /* // Hover effect (non-disabled) */
-  /* // Disabled state */
 }
 .export-modal-content .format-options .export-radio-input + .export-radio-label {
   position: relative;
@@ -120,7 +122,6 @@
      -moz-user-select: none;
           user-select: none;
   /* // Outer circle */
-  /* // Inner dot (checked state) */
 }
 .export-modal-content .format-options .export-radio-input + .export-radio-label::before {
   content: "";
@@ -134,6 +135,9 @@
   border-radius: 50%;
   background: white;
   transition: all 0.2s ease;
+}
+.export-modal-content .format-options .export-radio-input + .export-radio-label {
+  /* // Inner dot (checked state) */
 }
 .export-modal-content .format-options .export-radio-input + .export-radio-label::after {
   content: "";
@@ -153,8 +157,14 @@
 .export-modal-content .format-options .export-radio-input:checked + .export-radio-label::after {
   transform: translateY(-50%) scale(1);
 }
+.export-modal-content .format-options .export-radio-input {
+  /* // Hover effect (non-disabled) */
+}
 .export-modal-content .format-options .export-radio-input:not(:disabled):hover + .export-radio-label::before {
   border-color: #f3994b;
+}
+.export-modal-content .format-options .export-radio-input {
+  /* // Disabled state */
 }
 .export-modal-content .format-options .export-radio-input:disabled + .export-radio-label {
   opacity: 0.5;
@@ -410,12 +420,14 @@
   }
   .export-modal-content .form-group {
     margin-bottom: 12px;
-    /* // Adjust tooltip for small mobile */
   }
   .export-modal-content .form-group .form-input {
     font-size: 12.5px;
     padding: 7px 9px;
     border-radius: 10px;
+  }
+  .export-modal-content .form-group {
+    /* // Adjust tooltip for small mobile */
   }
   .export-modal-content .form-group .error-tooltip {
     padding: 4px 7px;

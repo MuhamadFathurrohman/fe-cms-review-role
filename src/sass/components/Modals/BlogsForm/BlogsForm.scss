@@ -69,6 +69,203 @@
         }
     }
 
+    /* ==================== REVIEW STATUS BANNER ==================== */
+    .review-status-banner {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        animation: slideDown 0.3s ease;
+
+        .review-status-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            white-space: nowrap;
+        }
+
+        .review-status-badge {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+
+            &.draft {
+                background: #f1f5f9;
+                color: #475569;
+                border: 1px solid #cbd5e1;
+            }
+
+            &.pending-review {
+                background: #fef9c3;
+                color: #854d0e;
+                border: 1px solid #fde047;
+            }
+
+            &.approved {
+                background: #dcfce7;
+                color: #166534;
+                border: 1px solid #86efac;
+            }
+
+            &.rejected {
+                background: #fee2e2;
+                color: #991b1b;
+                border: 1px solid #fca5a5;
+            }
+
+            &.revision {
+                background: #fff7ed;
+                color: #9a3412;
+                border: 1px solid #fdba74;
+            }
+        }
+    }
+
+    /* ==================== REVIEW NOTE BANNER ==================== */
+    .review-note-banner {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px;
+        border-radius: 8px;
+        animation: slideDown 0.3s ease;
+
+        svg {
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .review-note-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+
+            .review-note-title {
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .review-note-text {
+                font-size: 13px;
+                font-weight: 500;
+                line-height: 1.5;
+            }
+        }
+
+        &.rejected {
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+
+            svg {
+                color: #dc2626;
+            }
+        }
+
+        &.revision {
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            color: #9a3412;
+
+            svg {
+                color: #f97316;
+            }
+        }
+    }
+
+    /* ==================== FORM DISABLED NOTICE ==================== */
+    .form-disabled-notice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 500;
+        animation: slideDown 0.3s ease;
+
+        svg {
+            flex-shrink: 0;
+            color: #64748b;
+        }
+    }
+
+    /* ==================== FORM DISABLED STATE ==================== */
+    &.form-disabled {
+        input[type="text"],
+        input[type="url"],
+        textarea {
+            background: #f8fafc;
+            color: #64748b;
+            cursor: not-allowed;
+            border-color: #e2e8f0;
+
+            &:hover {
+                border-color: #e2e8f0;
+            }
+
+            &:focus {
+                border-color: #e2e8f0;
+                box-shadow: none;
+            }
+        }
+
+        .lang-btn {
+            cursor: not-allowed;
+            opacity: 0.7;
+
+            &:hover:not(.active) {
+                transform: none;
+                background: white;
+                border-color: #cbd5e1;
+            }
+        }
+
+        .status-toggle button,
+        .toggle-group button {
+            cursor: not-allowed;
+
+            &:hover:not(.active) {
+                transform: none;
+                background: white;
+                border-color: #d1d5db;
+            }
+        }
+
+        .image-upload-btn {
+            cursor: not-allowed;
+            opacity: 0.6;
+
+            &:hover {
+                border-color: #cbd5e1;
+                background: white;
+                color: #2d4c52;
+            }
+
+            &.disabled {
+                pointer-events: none;
+            }
+        }
+
+        .tag-add-btn {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .tag-item {
+            padding-right: 12px;
+        }
+    }
+
     /* ==================== LANGUAGE SWITCHER ==================== */
     .language-switcher {
         display: flex;
@@ -236,8 +433,6 @@
             &:-webkit-autofill:active {
                 -webkit-text-fill-color: #4a5d63 !important;
                 caret-color: #4a5d63;
-
-                /* // trik agar background autofill tidak kuning */
                 transition: background-color 9999s ease-in-out 0s;
             }
         }
@@ -621,6 +816,34 @@
             }
         }
 
+        /* Tombol Save — border style, tidak se-bold btn-primary */
+        .btn-outline {
+            background: white;
+            color: #2d4c52;
+            border: 2px solid #2d4c52;
+
+            &:hover:not(:disabled) {
+                background: #f0f4f5;
+                border-color: #1e3a40;
+                color: #1e3a40;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(45, 76, 82, 0.12);
+            }
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+            .btn-loading {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 10px;
+            }
+        }
+
         .btn-primary {
             background: linear-gradient(135deg, #f3994b, #e6863f);
             color: white;
@@ -770,6 +993,13 @@
         .section-title {
             font-size: 15px;
         }
+
+        .review-status-banner,
+        .review-note-banner,
+        .form-disabled-notice {
+            font-size: 13px;
+            padding: 10px 14px;
+        }
     }
 
     @media (max-width: 800px) {
@@ -840,6 +1070,15 @@
         .status-toggle button {
             font-size: 13px;
         }
+
+        .review-note-banner {
+            .review-note-content {
+                .review-note-title,
+                .review-note-text {
+                    font-size: 12px;
+                }
+            }
+        }
     }
 
     @media (max-width: 480px) {
@@ -878,6 +1117,47 @@
         .image-info-banner {
             padding: 10px 12px;
             font-size: 12px;
+        }
+
+        .review-status-banner {
+            padding: 10px 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+
+            .review-status-label {
+                font-size: 12px;
+            }
+
+            .review-status-badge {
+                font-size: 11px;
+                padding: 3px 10px;
+            }
+        }
+
+        .review-note-banner {
+            padding: 10px 12px;
+
+            svg {
+                width: 15px;
+                height: 15px;
+            }
+
+            .review-note-content {
+                .review-note-title,
+                .review-note-text {
+                    font-size: 12px;
+                }
+            }
+        }
+
+        .form-disabled-notice {
+            padding: 10px 12px;
+            font-size: 12px;
+
+            svg {
+                width: 15px;
+                height: 15px;
+            }
         }
 
         .form-group {
@@ -977,6 +1257,7 @@
             margin-top: 23px;
 
             .btn-secondary,
+            .btn-outline,
             .btn-primary {
                 width: 100%;
                 justify-content: center;
@@ -985,7 +1266,8 @@
                 min-height: 44px;
             }
 
-            .btn-primary .btn-loading {
+            .btn-primary .btn-loading,
+            .btn-outline .btn-loading {
                 min-width: auto;
                 min-height: 1em;
                 width: 100%;
@@ -1021,6 +1303,23 @@
         .image-info-banner {
             padding: 8px 10px;
             font-size: 11px;
+        }
+
+        .review-status-banner,
+        .form-disabled-notice {
+            padding: 8px 10px;
+            font-size: 11px;
+        }
+
+        .review-note-banner {
+            padding: 8px 10px;
+
+            .review-note-content {
+                .review-note-title,
+                .review-note-text {
+                    font-size: 11px;
+                }
+            }
         }
 
         .form-group {
@@ -1095,6 +1394,7 @@
             margin-top: 23px;
 
             .btn-secondary,
+            .btn-outline,
             .btn-primary {
                 padding: 10px 20px;
             }
@@ -1104,7 +1404,6 @@
 
 /* ==================== TIPTAP EDITOR CUSTOM ==================== */
 .form-group {
-    /* // Override untuk TiptapEditor agar tidak ada border tambahan */
     .tiptap-editor {
         .ProseMirror {
             border: none !important;

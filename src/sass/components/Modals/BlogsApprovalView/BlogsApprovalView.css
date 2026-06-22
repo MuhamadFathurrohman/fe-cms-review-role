@@ -1,0 +1,786 @@
+@charset "UTF-8";
+/* BlogsApprovalView.scss */
+.blogs-approval-view {
+  font-family: "Poppins", sans-serif;
+  color: #2d4c52;
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* ==================== HEADER META ==================== */
+}
+.blogs-approval-view .approval-view-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.blogs-approval-view .approval-view-header .header-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.blogs-approval-view .approval-view-header .header-meta .meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+.blogs-approval-view .approval-view-header .header-meta .meta-row svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+.blogs-approval-view .approval-view-header .header-meta .meta-row .meta-label {
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+.blogs-approval-view .approval-view-header .header-meta .meta-row .meta-value {
+  color: #64748b;
+}
+.blogs-approval-view {
+  /* ==================== REVIEW STATUS BADGE ==================== */
+}
+.blogs-approval-view .review-status-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+.blogs-approval-view .review-status-badge.draft {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.blogs-approval-view .review-status-badge.pending-review {
+  background: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fde047;
+}
+.blogs-approval-view .review-status-badge.approved {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+.blogs-approval-view .review-status-badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+.blogs-approval-view .review-status-badge.revision {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+.blogs-approval-view .review-status-badge.published {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+.blogs-approval-view {
+  /* ==================== LANGUAGE SWITCHER ==================== */
+}
+.blogs-approval-view .language-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border: 1px solid rgba(45, 76, 82, 0.4);
+  border-radius: 10px;
+  width: -moz-fit-content;
+  width: fit-content;
+  flex-shrink: 0;
+}
+.blogs-approval-view .language-switcher svg {
+  color: #2d4c52;
+  flex-shrink: 0;
+}
+.blogs-approval-view .language-switcher .lang-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+.blogs-approval-view .language-switcher .lang-btn {
+  padding: 7px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 50px;
+  text-align: center;
+}
+.blogs-approval-view .language-switcher .lang-btn:hover:not(.active) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  color: #1e293b;
+  transform: translateY(-1px);
+}
+.blogs-approval-view .language-switcher .lang-btn.active {
+  background: linear-gradient(135deg, #2d4c52, #1e3a40);
+  color: white;
+  border-color: #2d4c52;
+  box-shadow: 0 4px 8px rgba(45, 76, 82, 0.2);
+}
+.blogs-approval-view .language-switcher .lang-btn.unavailable {
+  opacity: 0.5;
+  cursor: default;
+}
+.blogs-approval-view .language-switcher .lang-btn.unavailable:hover:not(.active) {
+  transform: none;
+  background: white;
+  border-color: #cbd5e1;
+}
+.blogs-approval-view {
+  /* ==================== REVIEW NOTE BANNER ==================== */
+}
+.blogs-approval-view .review-note-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  animation: slideDown 0.3s ease;
+}
+.blogs-approval-view .review-note-banner svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.blogs-approval-view .review-note-banner .review-note-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+.blogs-approval-view .review-note-banner .review-note-content .review-note-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.blogs-approval-view .review-note-banner .review-note-content .review-note-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.blogs-approval-view .review-note-banner.rejected {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+.blogs-approval-view .review-note-banner.rejected svg {
+  color: #dc2626;
+}
+.blogs-approval-view .review-note-banner.revision {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+}
+.blogs-approval-view .review-note-banner.revision svg {
+  color: #f97316;
+}
+.blogs-approval-view {
+  /* ==================== FEATURED IMAGE ==================== */
+}
+.blogs-approval-view .approval-view-image {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  max-height: 360px;
+}
+.blogs-approval-view .approval-view-image img {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  display: block;
+}
+.blogs-approval-view {
+  /* ==================== CONTENT SECTIONS ==================== */
+}
+.blogs-approval-view .approval-view-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.blogs-approval-view .approval-view-section .section-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.blogs-approval-view .approval-view-section .section-label svg {
+  flex-shrink: 0;
+}
+.blogs-approval-view .approval-view-section .blog-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+  margin: 0;
+}
+.blogs-approval-view .approval-view-section .blog-excerpt {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.7;
+  font-style: italic;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-left: 3px solid #cbd5e1;
+  border-radius: 0 8px 8px 0;
+  margin: 0;
+}
+.blogs-approval-view .approval-view-section .blog-content {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.8;
+  padding: 16px;
+  background: #fafafa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  min-height: 120px;
+}
+.blogs-approval-view .approval-view-section .empty-field {
+  font-size: 13px;
+  color: #94a3b8;
+  font-style: italic;
+}
+.blogs-approval-view .approval-view-section {
+  /* Tags */
+}
+.blogs-approval-view .approval-view-section .tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.blogs-approval-view .approval-view-section .tags-list .tag-item {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #0369a1;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #7dd3fc;
+}
+.blogs-approval-view .approval-view-section {
+  /* SEO */
+}
+.blogs-approval-view .approval-view-section.seo-section {
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+.blogs-approval-view .approval-view-section.seo-section .seo-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.blogs-approval-view .approval-view-section.seo-section .seo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.blogs-approval-view .approval-view-section.seo-section .seo-field .seo-field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+.blogs-approval-view .approval-view-section.seo-section .seo-field .seo-field-value {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.5;
+}
+.blogs-approval-view {
+  /* ==================== REVIEW ACTIONS ==================== */
+}
+.blogs-approval-view .approval-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+.blogs-approval-view .approval-actions button {
+  padding: 11px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+}
+.blogs-approval-view .approval-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+.blogs-approval-view .approval-actions .btn-approve {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  box-shadow: 0 4px 8px rgba(34, 197, 94, 0.3);
+}
+.blogs-approval-view .approval-actions .btn-approve:hover:not(:disabled) {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(34, 197, 94, 0.4);
+}
+.blogs-approval-view .approval-actions .btn-revision {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: white;
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
+}
+.blogs-approval-view .approval-actions .btn-revision:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(249, 115, 22, 0.4);
+}
+.blogs-approval-view .approval-actions .btn-reject {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+.blogs-approval-view .approval-actions .btn-reject:hover:not(:disabled) {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+}
+.blogs-approval-view {
+  /* ==================== ANIMATIONS ==================== */
+}
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==================== REVIEW NOTE MODAL (NESTED) ==================== */
+/*
+ * Overlay dan modal ini berada di luar .blogs-approval-view
+ * karena di-render sebagai overlay di atas modal utama.
+ * Menggunakan z-index lebih tinggi dari modal utama.
+ */
+.review-note-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+.review-note-overlay .review-note-modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.25s ease;
+  overflow: hidden;
+  /* ── Header ── */
+}
+.review-note-overlay .review-note-modal .review-note-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.review-note-overlay .review-note-modal .review-note-modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+.review-note-overlay .review-note-modal .review-note-modal-header .modal-close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+.review-note-overlay .review-note-modal .review-note-modal-header .modal-close-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.review-note-overlay .review-note-modal {
+  /* ── Body ── */
+}
+.review-note-overlay .review-note-modal .review-note-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-modal-desc {
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2d4c52;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field label .required {
+  color: #ef4444;
+  font-size: 15px;
+  line-height: 1;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(45, 76, 82, 0.4);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  font-family: "Poppins", sans-serif;
+  background: white;
+  resize: none;
+  min-height: 100px;
+  line-height: 1.6;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field textarea:focus {
+  outline: none;
+  border-color: #f3994b;
+  box-shadow: 0 0 0 3px rgba(243, 153, 75, 0.15);
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field textarea::-moz-placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field textarea::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field.has-error textarea {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field .field-error {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  background: rgba(220, 38, 38, 0.08);
+  border-radius: 6px;
+  border-left: 3px solid #dc2626;
+}
+.review-note-overlay .review-note-modal .review-note-modal-body .review-note-field .field-error svg {
+  flex-shrink: 0;
+}
+.review-note-overlay .review-note-modal {
+  /* ── Actions ── */
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: "Poppins", sans-serif;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-cancel {
+  background: white;
+  color: #6b7280;
+  border: 2px solid #e2e8f0;
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-cancel:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #2d4c52;
+  transform: translateY(-1px);
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-confirm {
+  border: none;
+  color: white;
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-confirm.reject {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  box-shadow: 0 4px 8px rgba(239, 68, 68, 0.25);
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-confirm.reject:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px rgba(239, 68, 68, 0.35);
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-confirm.revision {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 4px 8px rgba(249, 115, 22, 0.25);
+}
+.review-note-overlay .review-note-modal .review-note-modal-actions .btn-confirm.revision:hover {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px rgba(249, 115, 22, 0.35);
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 1024px) {
+  .blogs-approval-view {
+    padding: 20px;
+    gap: 18px;
+  }
+  .blogs-approval-view .approval-view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .blogs-approval-view .approval-view-section .blog-title {
+    font-size: 20px;
+  }
+  .blogs-approval-view .approval-view-section .blog-content {
+    font-size: 13px;
+    padding: 14px;
+  }
+  .blogs-approval-view .approval-actions button {
+    font-size: 13px;
+    padding: 10px 18px;
+  }
+}
+@media (max-width: 768px) {
+  .blogs-approval-view {
+    padding: 16px;
+    gap: 16px;
+  }
+  .blogs-approval-view .language-switcher {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .blogs-approval-view .approval-view-image {
+    max-height: 260px;
+  }
+  .blogs-approval-view .approval-view-section .blog-title {
+    font-size: 18px;
+  }
+  .blogs-approval-view .approval-view-section .blog-excerpt {
+    font-size: 13px;
+  }
+  .blogs-approval-view .approval-view-section .blog-content {
+    font-size: 13px;
+    padding: 12px;
+  }
+  .blogs-approval-view .approval-actions {
+    justify-content: stretch;
+  }
+  .blogs-approval-view .approval-actions button {
+    flex: 1;
+    min-width: unset;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+  .review-note-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .review-note-overlay .review-note-modal {
+    border-radius: 16px 16px 0 0;
+    max-width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .blogs-approval-view {
+    padding: 12px;
+    gap: 14px;
+  }
+  .blogs-approval-view .approval-view-header {
+    gap: 10px;
+  }
+  .blogs-approval-view .approval-view-header .header-meta .meta-row {
+    font-size: 12px;
+  }
+  .blogs-approval-view .language-switcher {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .blogs-approval-view .language-switcher .lang-label {
+    font-size: 12px;
+  }
+  .blogs-approval-view .language-switcher .lang-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    min-width: 44px;
+  }
+  .blogs-approval-view .review-note-banner {
+    padding: 10px 12px;
+  }
+  .blogs-approval-view .review-note-banner svg {
+    width: 15px;
+    height: 15px;
+  }
+  .blogs-approval-view .review-note-banner .review-note-content .review-note-title,
+  .blogs-approval-view .review-note-banner .review-note-content .review-note-text {
+    font-size: 12px;
+  }
+  .blogs-approval-view .approval-view-image {
+    max-height: 200px;
+  }
+  .blogs-approval-view .approval-view-section {
+    gap: 8px;
+  }
+  .blogs-approval-view .approval-view-section .blog-title {
+    font-size: 16px;
+  }
+  .blogs-approval-view .approval-view-section .blog-excerpt {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+  .blogs-approval-view .approval-view-section .blog-content {
+    font-size: 12px;
+    padding: 10px;
+  }
+  .blogs-approval-view .approval-view-section .section-label {
+    font-size: 11px;
+  }
+  .blogs-approval-view .approval-view-section .tags-list .tag-item {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+  .blogs-approval-view .approval-view-section.seo-section {
+    padding: 12px;
+  }
+  .blogs-approval-view .approval-view-section.seo-section .seo-field .seo-field-label {
+    font-size: 11px;
+  }
+  .blogs-approval-view .approval-view-section.seo-section .seo-field .seo-field-value {
+    font-size: 12px;
+  }
+  .blogs-approval-view .approval-actions {
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 16px;
+  }
+  .blogs-approval-view .approval-actions button {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 13px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-header {
+    padding: 14px 16px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-header h3 {
+    font-size: 15px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-body {
+    padding: 16px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-body .review-note-modal-desc {
+    font-size: 12px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-body .review-note-field label {
+    font-size: 12px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-body .review-note-field textarea {
+    font-size: 12px;
+    padding: 9px 10px;
+    min-height: 90px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-actions {
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .review-note-overlay .review-note-modal .review-note-modal-actions button {
+    width: 100%;
+    padding: 10px 16px;
+    font-size: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .blogs-approval-view {
+    padding: 10px;
+  }
+  .blogs-approval-view .language-switcher {
+    padding: 7px 10px;
+  }
+  .blogs-approval-view .language-switcher .lang-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+    min-width: 40px;
+  }
+  .blogs-approval-view .approval-view-section .blog-title {
+    font-size: 15px;
+  }
+  .blogs-approval-view .approval-actions button {
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+}
+/* ==================== ANIMATIONS ==================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}/*# sourceMappingURL=BlogsApprovalView.css.map */

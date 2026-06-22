@@ -554,11 +554,13 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-radius: 16px;
-    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-catalogs .table-container::-webkit-scrollbar {
     display: none;
+  }
+  .page-catalogs .table-container {
+    border-radius: 16px;
+    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-catalogs .catalog-table {
     min-width: 550px;

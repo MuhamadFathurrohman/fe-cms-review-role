@@ -6,18 +6,6 @@
   max-width: 600px;
   margin: 0 auto;
   /* // Autofill styling */
-  /* // ==================== FORM ERROR ==================== */
-  /* // ==================== FORM GROUP ==================== */
-  /* // ==================== STATUS TOGGLE ==================== */
-  /* // ==================== FORM ACTIONS ==================== */
-  /* // ==================== ANIMATIONS ==================== */
-  /* // ==================== RESPONSIVE BREAKPOINTS ==================== */
-  /* // 1440px - Large Desktop */
-  /* // 1280px - Medium Desktop */
-  /* // 1024px - Tablet Landscape */
-  /* // 800px - Tablet Portrait */
-  /* // 480px - Mobile Large */
-  /* // 380px - Mobile Small */
 }
 .categories-form input:-webkit-autofill {
   box-shadow: 0 0 0 1000px white inset !important;
@@ -27,6 +15,9 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+.categories-form {
+  /* // ==================== FORM ERROR ==================== */
 }
 .categories-form .form-error {
   display: flex;
@@ -44,12 +35,13 @@
 .categories-form .form-error svg {
   flex-shrink: 0;
 }
+.categories-form {
+  /* // ==================== FORM GROUP ==================== */
+}
 .categories-form .form-group {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  /* // Text Input */
-  /* // Textarea */
 }
 .categories-form .form-group label {
   font-weight: 700;
@@ -58,11 +50,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  /* // Asterisk for required */
 }
 .categories-form .form-group label svg {
   color: #2d4c52;
   flex-shrink: 0;
+}
+.categories-form .form-group label {
+  /* // Asterisk for required */
 }
 .categories-form .form-group label::after {
   content: attr(data-required);
@@ -70,6 +64,9 @@
   font-size: 16px;
   line-height: 1;
   margin-left: 2px;
+}
+.categories-form .form-group {
+  /* // Text Input */
 }
 .categories-form .form-group .form-input {
   width: 100%;
@@ -107,6 +104,9 @@
   -webkit-transition: background-color 9999s ease-in-out 0s;
   transition: background-color 9999s ease-in-out 0s;
 }
+.categories-form .form-group {
+  /* // Textarea */
+}
 .categories-form .form-group .form-textarea {
   width: 100%;
   padding: 10px 12px;
@@ -138,6 +138,9 @@
   color: #9ca3af;
   font-weight: 500;
 }
+.categories-form {
+  /* // ==================== STATUS TOGGLE ==================== */
+}
 .categories-form .status-toggle {
   display: flex;
   gap: 12px;
@@ -159,7 +162,6 @@
   justify-content: center;
   gap: 8px;
   /* // Custom indicator */
-  /* // Active state */
 }
 .categories-form .status-toggle button::before {
   content: "";
@@ -174,6 +176,9 @@
   background: #f8fafc;
   border-color: #cbd5e1;
 }
+.categories-form .status-toggle button {
+  /* // Active state */
+}
 .categories-form .status-toggle button.active {
   border-color: #2d4c52;
   color: #2d4c52;
@@ -182,6 +187,9 @@
   border-color: #2d4c52;
   background: #2d4c52;
   box-shadow: inset 0 0 0 3px white;
+}
+.categories-form {
+  /* // ==================== FORM ACTIONS ==================== */
 }
 .categories-form .form-actions {
   display: flex;
@@ -242,6 +250,9 @@
   justify-content: center;
   min-height: 20px;
 }
+.categories-form {
+  /* // ==================== ANIMATIONS ==================== */
+}
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -251,6 +262,10 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+.categories-form {
+  /* // ==================== RESPONSIVE BREAKPOINTS ==================== */
+  /* // 1440px - Large Desktop */
 }
 @media (max-width: 1440px) {
   .categories-form {
@@ -266,6 +281,9 @@
   .categories-form .form-actions button {
     padding: 11px 22px;
   }
+}
+.categories-form {
+  /* // 1280px - Medium Desktop */
 }
 @media (max-width: 1280px) {
   .categories-form {
@@ -300,6 +318,9 @@
     padding: 10px 20px;
     min-width: 110px;
   }
+}
+.categories-form {
+  /* // 1024px - Tablet Landscape */
 }
 @media (max-width: 1024px) {
   .categories-form {
@@ -344,6 +365,9 @@
     min-width: 100px;
   }
 }
+.categories-form {
+  /* // 800px - Tablet Portrait */
+}
 @media (max-width: 800px) {
   .categories-form {
     padding: 14px;
@@ -374,6 +398,9 @@
     width: 14px;
     height: 14px;
   }
+}
+.categories-form {
+  /* // 480px - Mobile Large */
 }
 @media (max-width: 480px) {
   .categories-form {
@@ -432,6 +459,9 @@
     width: 100%;
     justify-content: center;
   }
+}
+.categories-form {
+  /* // 380px - Mobile Small */
 }
 @media (max-width: 380px) {
   .categories-form {

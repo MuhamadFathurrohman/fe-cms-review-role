@@ -6,18 +6,6 @@
   animation: elegantWaveFlow 15s ease-in-out infinite;
   position: relative;
   /* Wave Layer dengan animasi yang lebih smooth */
-  /* Simplified Wave Particles */
-  width: 100%;
-  height: 100vh;
-  min-height: 100vh;
-  max-height: 100vh;
-  font-family: "Poppins", sans-serif;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  overflow: hidden;
-  box-sizing: border-box;
 }
 .login-container::before {
   content: "";
@@ -32,6 +20,9 @@
   pointer-events: none;
   z-index: 1;
 }
+.login-container {
+  /* Simplified Wave Particles */
+}
 .login-container::after {
   content: "";
   position: absolute;
@@ -45,6 +36,19 @@
   opacity: 0.6;
   pointer-events: none;
   z-index: 2;
+}
+.login-container {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  max-height: 100vh;
+  font-family: "Poppins", sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Updated Wave Animation Keyframes - konsisten dengan media query style */
@@ -103,8 +107,7 @@
 }
 .login-card {
   background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(20px);
-          backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   font-family: "Barlow", sans-serif;
   padding: 30px;
@@ -117,13 +120,10 @@
   z-index: 10;
   display: flex;
   flex-direction: column;
-  /* ENHANCED: Enhanced Login Button dengan Loading Animation */
-  /* Text transition animations */
 }
 .login-card.login-card--loading {
   background: transparent;
-  -webkit-backdrop-filter: none;
-          backdrop-filter: none;
+  backdrop-filter: none;
   box-shadow: none;
   border: none;
 }
@@ -238,8 +238,7 @@
   font-size: 15px;
   font-weight: 600;
   background: rgba(255, 255, 255, 0.7);
-  -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   transition: all 0.3s ease;
 }
 .login-card .section-input input:focus,
@@ -317,6 +316,9 @@
 .login-card .section-input .forgot-password:hover {
   color: #d95d39;
 }
+.login-card {
+  /* ENHANCED: Enhanced Login Button dengan Loading Animation */
+}
 .login-card .login-button {
   justify-content: center;
   align-items: center;
@@ -338,7 +340,6 @@
   position: relative;
   overflow: hidden;
   /* Normal state hover */
-  /* Loading state styles */
 }
 .login-card .login-button:hover:not(.loading) {
   background: linear-gradient(135deg, #e6863f, #d95d39);
@@ -347,6 +348,9 @@
 }
 .login-card .login-button:active:not(.loading) {
   transform: translateY(0);
+}
+.login-card .login-button {
+  /* Loading state styles */
 }
 .login-card .login-button.loading {
   background: linear-gradient(135deg, #d4852f, #c87337);
@@ -359,6 +363,9 @@
   align-items: center;
   gap: 8px;
   justify-content: center;
+}
+.login-card {
+  /* Text transition animations */
 }
 @keyframes textFadeOut {
   0% {
@@ -427,8 +434,7 @@
 }
 .login-card .alert {
   background: rgba(254, 243, 242, 0.9);
-  -webkit-backdrop-filter: blur(15px);
-          backdrop-filter: blur(15px);
+  backdrop-filter: blur(15px);
   color: red;
   font-size: 13px;
   font-family: "Poppins", sans-serif;

@@ -1,10 +1,6 @@
 .page-brands {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Filter Section */
-  /* Error Banner */
-  /* Table Container */
-  /* Pagination Modern */
 }
 .page-brands .page-header {
   display: flex;
@@ -57,6 +53,9 @@
 }
 .page-brands .btn-primary svg {
   color: white;
+}
+.page-brands {
+  /* Filter Section */
 }
 .page-brands .brands-filters {
   margin-top: 10px;
@@ -120,6 +119,9 @@
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
+.page-brands {
+  /* Error Banner */
+}
 .page-brands .error-banner {
   background: #fee2e2;
   border: 1px solid #fecaca;
@@ -130,6 +132,9 @@
   font-size: 15px;
   font-weight: 500;
 }
+.page-brands {
+  /* Table Container */
+}
 .page-brands .table-container {
   border-radius: 10px;
   padding: 0 0 10px 0;
@@ -139,7 +144,6 @@
 .page-brands .brands-table {
   width: 100%;
   border-collapse: collapse;
-  /* --- LOADING CELL DI BAWAH THEAD --- */
 }
 .page-brands .brands-table th {
   background: rgba(45, 76, 82, 0.05);
@@ -229,6 +233,9 @@
   background: rgba(239, 68, 68, 0.1);
   transform: scale(1.1);
 }
+.page-brands .brands-table {
+  /* --- LOADING CELL DI BAWAH THEAD --- */
+}
 .page-brands .brands-table .loading-cell,
 .page-brands .brands-table .no-data {
   text-align: center;
@@ -255,6 +262,9 @@
 }
 .page-brands .brands-table .no-data {
   font-style: italic;
+}
+.page-brands {
+  /* Pagination Modern */
 }
 .page-brands .pagination-controls {
   display: flex;

@@ -26,10 +26,6 @@
 .page-users {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Override table container */
-  /* Pagination Modern */
-  /* Loading State */
-  /* No Data */
 }
 .page-users .page-header {
   display: flex;
@@ -155,6 +151,9 @@
 }
 .page-users .btn-primary svg {
   color: white;
+}
+.page-users {
+  /* Override table container */
 }
 .page-users .table-container {
   border-radius: 10px;
@@ -294,6 +293,9 @@
   background: rgba(239, 68, 68, 0.1);
   transform: scale(1.1);
 }
+.page-users {
+  /* Pagination Modern */
+}
 .page-users .pagination-controls {
   display: flex;
   align-items: center;
@@ -383,6 +385,9 @@
   color: white;
   font-weight: 500;
 }
+.page-users {
+  /* Loading State */
+}
 .page-users .loading-cell {
   text-align: center;
   padding: 40px 0;
@@ -402,6 +407,9 @@
   color: #64748b;
   font-size: 16px;
   font-weight: 500;
+}
+.page-users {
+  /* No Data */
 }
 .page-users .no-data {
   text-align: center;
@@ -462,10 +470,6 @@
     table-layout: fixed;
     /* ELLIPSIS EMAIL MULAI DARI 1280PX */
   }
-  .page-users .user-table th,
-  .page-users .user-table td {
-    /* Email */
-  }
   .page-users .user-table th:nth-child(1),
   .page-users .user-table td:nth-child(1) {
     width: 45px;
@@ -477,6 +481,10 @@
   .page-users .user-table th:nth-child(3),
   .page-users .user-table td:nth-child(3) {
     width: 180px;
+  }
+  .page-users .user-table th,
+  .page-users .user-table td {
+    /* Email */
   }
   .page-users .user-table th:nth-child(4),
   .page-users .user-table td:nth-child(4) {
@@ -507,10 +515,6 @@
   }
 }
 @media (max-width: 1024px) {
-  .page-users .user-table th,
-  .page-users .user-table td {
-    /* Email lebih sempit */
-  }
   .page-users .user-table th:nth-child(1),
   .page-users .user-table td:nth-child(1) {
     width: 45px;
@@ -522,6 +526,10 @@
   .page-users .user-table th:nth-child(3),
   .page-users .user-table td:nth-child(3) {
     width: 150px;
+  }
+  .page-users .user-table th,
+  .page-users .user-table td {
+    /* Email lebih sempit */
   }
   .page-users .user-table th:nth-child(4),
   .page-users .user-table td:nth-child(4) {
@@ -585,11 +593,6 @@
   .page-users .user-table {
     /* SEMUA KOLOM DENGAN LEBAR TETAP */
   }
-  .page-users .user-table th,
-  .page-users .user-table td {
-    /* Nama */
-    /* Email */
-  }
   .page-users .user-table th:nth-child(1),
   .page-users .user-table td:nth-child(1) {
     width: 40px;
@@ -598,9 +601,17 @@
   .page-users .user-table td:nth-child(2) {
     width: 120px;
   }
+  .page-users .user-table th,
+  .page-users .user-table td {
+    /* Nama */
+  }
   .page-users .user-table th:nth-child(3),
   .page-users .user-table td:nth-child(3) {
     width: 80px;
+  }
+  .page-users .user-table th,
+  .page-users .user-table td {
+    /* Email */
   }
   .page-users .user-table th:nth-child(4),
   .page-users .user-table td:nth-child(4) {
@@ -654,9 +665,6 @@
   }
 }
 @media (max-width: 480px) {
-  .page-users {
-    /* ✅ SCROLL HORIZONTAL UNTUK TABEL */
-  }
   .page-users .page-header {
     gap: 12px;
   }
@@ -675,17 +683,22 @@
   .page-users .search-wrapper {
     max-width: 100%;
   }
+  .page-users {
+    /* ✅ SCROLL HORIZONTAL UNTUK TABEL */
+  }
   .page-users .table-container {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-radius: 16px;
-    /* Pastikan shadow tetap terlihat saat scroll */
-    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-users .table-container::-webkit-scrollbar {
     display: none;
+  }
+  .page-users .table-container {
+    border-radius: 16px;
+    /* Pastikan shadow tetap terlihat saat scroll */
+    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-users .user-table {
     min-width: 650px; /* Lebar minimum untuk konten tabel */

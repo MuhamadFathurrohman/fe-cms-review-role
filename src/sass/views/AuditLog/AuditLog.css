@@ -509,12 +509,14 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-radius: 16px;
-    /* Pastikan shadow tetap terlihat saat scroll */
-    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-audit-log .table-container::-webkit-scrollbar {
     display: none;
+  }
+  .page-audit-log .table-container {
+    border-radius: 16px;
+    /* Pastikan shadow tetap terlihat saat scroll */
+    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-audit-log .audit-table {
     min-width: 700px;

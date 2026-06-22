@@ -4,35 +4,37 @@
  * Mendukung dua mode operasi:
  * - **Create**: Membuat peran baru dengan izin default "none"
  * - **Edit**: Mengedit peran yang sudah ada dengan izin yang disimpan
- * 
+ *
  * Menyediakan antarmuka pengguna yang intuitif untuk:
  * - Mengatur nama dan deskripsi peran
- * - Mengelola izin akses per resource (none/read/manage)
+ * - Mengelola izin akses per resource (none/read/manage/review)
  * - Validasi input dan penanganan error
- * 
+ *
  * Mengimplementasikan kontrol keamanan:
  * - Super admin dapat mengakses semua resource termasuk "role"
  * - Pengguna biasa hanya dapat mengakses resource umum
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { roleService } from "../../../services/roleService";
 import { useModalContext } from "../../../contexts/ModalContext";
 import AlertModal from "../../Alerts/AlertModal";
 import PulseDots from "../../Loaders/PulseDots";
+import { ChevronDown } from "lucide-react";
 import "../../../sass/components/Modals/RoleForm/RoleForm.css";
 
 /**
+ * Daftar resource yang mendukung permission review.
+ * Hanya blog dan product yang menampilkan opsi review pada dropdown.
+ * @constant {string[]}
+ */
+const REVIEW_SUPPORTED_RESOURCES = ["blog", "product"];
+
+/**
  * Memformat nama resource menjadi format yang ramah pengguna.
- * Mengubah underscore/dash menjadi spasi dan mengkapitalisasi setiap kata.
- * 
  * @param {string} resource - Nama resource dalam format snake_case atau kebab-case
  * @returns {string} Nama resource yang telah diformat
- * 
- * @example
- * formatResourceName("user_management"); // "User Management"
- * formatResourceName("audit-log"); // "Audit Log"
  */
 const formatResourceName = (resource) => {
   if (!resource) return "";
@@ -42,61 +44,32 @@ const formatResourceName = (resource) => {
 };
 
 /**
- * Props untuk komponen RoleForm.
- * @typedef {Object} RoleFormProps
- * @property {Object|null} [role=null] - Data peran awal untuk mode edit
- * @property {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
- * @property {function(): void} onSuccess - Callback saat operasi berhasil
- */
-
-/**
  * Komponen form modal untuk manajemen peran dan izin.
- * Digunakan dalam konteks modal untuk operasi CRUD peran.
- *
  * @component
- * @param {RoleFormProps} props - Props komponen
  */
 const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
+  const dropdownRef = useRef({});
 
-  /**
-   * Nama peran yang sedang diedit/dibuat.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [name, setName] = useState(initialRole?.name || "");
-
-  /**
-   * Deskripsi peran yang sedang diedit/dibuat.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [description, setDescription] = useState(
-    initialRole?.description || ""
+    initialRole?.description || "",
   );
-
-  /**
-   * Daftar izin per resource untuk peran ini.
-   * Setiap izin memiliki struktur: { resource: string, action: 'none'|'read'|'manage' }
-   * @type {Array<{resource: string, action: string}>}
-   */
   const [permissions, setPermissions] = useState([]);
-
-  /**
-   * Status loading saat proses penyimpanan berlangsung.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
-   */
   const [loading, setLoading] = useState(false);
-
-  /**
-   * Pesan error validasi untuk nama peran.
-   * @type {[string, React.Dispatch<React.SetStateAction<string>>]}
-   */
   const [error, setError] = useState("");
 
-  /** @type {string[]} Daftar resource yang tersedia berdasarkan status super admin */
+  /**
+   * Resource dropdown yang sedang terbuka.
+   * Menyimpan nama resource, null jika semua tertutup.
+   * @type {[string|null, React.Dispatch<React.SetStateAction<string|null>>]}
+   */
+  const [openDropdown, setOpenDropdown] = useState(null);
+
   const resourceList = roleService.getResourceList(isSuperAdmin);
 
-  // Inisialisasi izin berdasarkan mode
+  // Inisialisasi permissions
   useEffect(() => {
     if (initialRole) {
       const fetchPermissions = async () => {
@@ -111,29 +84,48 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
         resourceList.map((resource) => ({
           resource,
           action: "none",
-        }))
+        })),
       );
     }
   }, [initialRole, isSuperAdmin]);
 
+  // Tutup dropdown saat klik di luar
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (openDropdown) {
+        const activeRef = dropdownRef.current[openDropdown];
+        if (activeRef && !activeRef.contains(e.target)) {
+          setOpenDropdown(null);
+        }
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [openDropdown]);
+
   /**
-   * Handler perubahan izin untuk resource tertentu.
-   * @param {string} resource - Nama resource yang diubah
-   * @param {'none'|'read'|'manage'} action - Level aksi baru
+   * Toggle buka/tutup dropdown untuk resource tertentu.
+   * @param {string} resource - Nama resource
+   */
+  const toggleDropdown = (resource) => {
+    if (loading) return;
+    setOpenDropdown((prev) => (prev === resource ? null : resource));
+  };
+
+  /**
+   * Handler perubahan permission untuk resource tertentu.
+   * @param {string} resource - Nama resource
+   * @param {string} action - Level aksi baru
    */
   const handlePermissionChange = (resource, action) => {
     setPermissions((prev) =>
       prev.map((perm) =>
-        perm.resource === resource ? { ...perm, action } : perm
-      )
+        perm.resource === resource ? { ...perm, action } : perm,
+      ),
     );
+    setOpenDropdown(null);
   };
 
-  /**
-   * Handler submit form utama.
-   * Mengelola logika bisnis untuk create/update peran dengan validasi izin.
-   * @param {React.FormEvent<HTMLFormElement>} e - Event submit
-   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -147,10 +139,8 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
       const allResources = roleService.getResourceList(isSuperAdmin);
       const permissionMap = new Map();
 
-      // Gunakan "action" di sini
       permissions.forEach((perm) => {
-        const action = perm.action || "none";
-        permissionMap.set(perm.resource, action);
+        permissionMap.set(perm.resource, perm.action || "none");
       });
 
       const completePermissions = allResources.map((resource) => ({
@@ -158,7 +148,6 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
         action: permissionMap.get(resource) || "none",
       }));
 
-      // Kirim ke roleService
       let result;
       if (initialRole) {
         result = await roleService.update(
@@ -166,14 +155,14 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
           { name, description },
           completePermissions,
           isSuperAdmin,
-          currentUser.id
+          currentUser.id,
         );
       } else {
         result = await roleService.create(
           { name, description },
           completePermissions,
           isSuperAdmin,
-          currentUser.id
+          currentUser.id,
         );
       }
 
@@ -186,9 +175,7 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
           <AlertModal
             type="success"
             title={initialRole ? "Updated!" : "Created!"}
-            message={`Role has been successfully ${
-              initialRole ? "updated" : "created"
-            }.`}
+            message={`Role has been successfully ${initialRole ? "updated" : "created"}.`}
             showActions={true}
             confirmText="OK"
             onConfirm={() => {
@@ -197,7 +184,7 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
             }}
             onCancel={() => closeModal("roleSaveSuccess")}
           />,
-          "small"
+          "small",
         );
       } else {
         openModal(
@@ -211,7 +198,7 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
             onConfirm={() => closeModal("roleSaveError")}
             onCancel={() => closeModal("roleSaveError")}
           />,
-          "small"
+          "small",
         );
       }
     } catch (err) {
@@ -227,7 +214,7 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
           onConfirm={() => closeModal("roleSaveError")}
           onCancel={() => closeModal("roleSaveError")}
         />,
-        "small"
+        "small",
       );
     } finally {
       setLoading(false);
@@ -270,6 +257,7 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
           />
         </div>
 
+        {/* Permission Info */}
         <div className="role-form-permission-info">
           <div className="role-form-info-item">
             <strong>None</strong>: Resource is completely hidden and
@@ -279,42 +267,85 @@ const RoleForm = ({ role: initialRole, isSuperAdmin = false, onSuccess }) => {
             <strong>Read</strong>: View-only access. Export data is available.
           </div>
           <div className="role-form-info-item">
-            <strong>Manage</strong>: Full access — create, read, update, delete,
+            <strong>Manage</strong>: Full access for create, read, update, delete,
             and export (where applicable).
+          </div>
+          <div className="role-form-info-item">
+            <strong>Review</strong>: Can review, approve, reject, and
+            revisions on content for Blog and Product only.
           </div>
         </div>
 
+        {/* Permission Grid */}
         <div className="role-form-group">
           <label className="role-form-label">Resource Permissions</label>
           <div className="role-form-permission-grid">
-            {permissions.map((perm) => (
-              <div key={perm.resource} className="role-form-permission-row">
-                <span className="role-form-resource-label">
-                  {formatResourceName(perm.resource)}
-                </span>
-                <div className="role-form-radio-group">
-                  {["none", "read", "manage"].map((action) => (
-                    <label key={action} className="role-form-radio-option">
-                      <input
-                        type="radio"
-                        name={`permission-${perm.resource}`}
-                        value={action}
-                        checked={perm.action === action}
-                        onChange={() =>
-                          handlePermissionChange(perm.resource, action)
-                        }
-                        disabled={loading}
-                        className="role-form-radio-input"
-                        aria-label={`${action} access for ${formatResourceName(perm.resource)}`}
-                      />
-                      <span className="role-form-radio-label">
-                        {action.charAt(0).toUpperCase() + action.slice(1)}
+            {permissions.map((perm) => {
+              const isOpen = openDropdown === perm.resource;
+
+              return (
+                <div key={perm.resource} className="role-form-permission-row">
+                  <span className="role-form-resource-label">
+                    {formatResourceName(perm.resource)}
+                  </span>
+
+                  <div
+                    ref={(el) => (dropdownRef.current[perm.resource] = el)}
+                    className={`role-form-dropdown ${isOpen ? "is-open" : ""}`}
+                  >
+                    {/* Trigger */}
+                    <button
+                      type="button"
+                      className={`role-form-dropdown-trigger action-${perm.action}`}
+                      onClick={() => toggleDropdown(perm.resource)}
+                      disabled={loading}
+                      aria-haspopup="listbox"
+                      aria-expanded={isOpen}
+                      aria-label={`Permission for ${formatResourceName(perm.resource)}: ${perm.action}`}
+                    >
+                      <span>
+                        {perm.action.charAt(0).toUpperCase() +
+                          perm.action.slice(1)}
                       </span>
-                    </label>
-                  ))}
+                      <ChevronDown
+                        size={16}
+                        className="role-form-dropdown-chevron"
+                      />
+                    </button>
+
+                    {/* Options */}
+                    {isOpen && (
+                      <ul
+                        className="role-form-dropdown-menu"
+                        role="listbox"
+                        aria-label={`Options for ${formatResourceName(perm.resource)}`}
+                      >
+                        {[
+                          "none",
+                          "read",
+                          "manage",
+                          ...(REVIEW_SUPPORTED_RESOURCES.includes(perm.resource)
+                            ? ["review"]
+                            : []),
+                        ].map((action) => (
+                          <li
+                            key={action}
+                            role="option"
+                            aria-selected={perm.action === action}
+                            className={`role-form-dropdown-item ${perm.action === action ? "is-selected" : ""} item-${action}`}
+                            onClick={() =>
+                              handlePermissionChange(perm.resource, action)
+                            }
+                          >
+                            {action.charAt(0).toUpperCase() + action.slice(1)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

@@ -233,7 +233,7 @@ const Clients = () => {
         onConfirm={async () => {
           closeModal("deleteClientConfirm");
           try {
-            const result = await clientService.softDelete(
+            const result = await clientService.hardDelete(
               client.id,
               currentUser.id
             );

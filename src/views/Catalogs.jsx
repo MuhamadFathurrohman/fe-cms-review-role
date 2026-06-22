@@ -217,7 +217,7 @@ const Catalogs = () => {
         onConfirm={async () => {
           closeModal("deleteCatalogConfirm");
           try {
-            const result = await catalogService.softDelete(catalog.id);
+            const result = await catalogService.hardDelete(catalog.id);
             if (result.success || result.data) {
               openModal(
                 "deleteSuccessAlert",

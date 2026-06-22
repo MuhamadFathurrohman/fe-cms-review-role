@@ -285,7 +285,7 @@ const Users = () => {
         onConfirm={async () => {
           closeModal("deleteUserConfirm");
           try {
-            const result = await usersService.softDelete(user.id);
+            const result = await usersService.hardDelete(user.id);
             if (result.success) {
               openModal(
                 "deleteSuccessAlert",

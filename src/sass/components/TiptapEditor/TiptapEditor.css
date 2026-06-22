@@ -7,11 +7,6 @@
   overflow: visible;
   position: relative;
   --editor-text-color: #4a5d63;
-  /* ==================== DESKTOP TOOLBAR ==================== */
-  /* ==================== MOBILE TOOLBAR WITH DROPDOWNS ==================== */
-  /* Custom Dropdown */
-  /* ==================== EDITOR WRAPPER ==================== */
-  /* ==================== RESPONSIVE ==================== */
 }
 .tiptap-editor:hover {
   border-color: #9ca3af;
@@ -19,6 +14,9 @@
 .tiptap-editor:focus-within {
   border-color: #f3994b;
   box-shadow: 0 0 0 3px rgba(243, 153, 75, 0.15);
+}
+.tiptap-editor {
+  /* ==================== DESKTOP TOOLBAR ==================== */
 }
 .tiptap-editor .tiptap-toolbar {
   display: flex;
@@ -72,6 +70,9 @@
 .tiptap-editor .tiptap-toolbar .toolbar-btn:focus {
   outline: none;
 }
+.tiptap-editor {
+  /* ==================== MOBILE TOOLBAR WITH DROPDOWNS ==================== */
+}
 .tiptap-editor .tiptap-toolbar.mobile {
   display: flex;
   align-items: center;
@@ -87,6 +88,9 @@
 }
 .tiptap-editor .tiptap-toolbar.mobile::-webkit-scrollbar {
   display: none;
+}
+.tiptap-editor {
+  /* Custom Dropdown */
 }
 .tiptap-editor .custom-dropdown {
   position: relative;
@@ -195,6 +199,9 @@
 }
 .tiptap-editor .dropdown-item svg {
   flex-shrink: 0;
+}
+.tiptap-editor {
+  /* ==================== EDITOR WRAPPER ==================== */
 }
 .tiptap-editor .tiptap-editor-wrapper {
   position: relative;
@@ -310,6 +317,9 @@
 }
 .tiptap-editor .tiptap-editor-content .ProseMirror ul {
   list-style-type: disc;
+}
+.tiptap-editor {
+  /* ==================== RESPONSIVE ==================== */
 }
 @media (max-width: 1440px) {
   .tiptap-editor .tiptap-toolbar {
@@ -455,9 +465,6 @@
   }
 }
 @media (max-width: 480px) {
-  .tiptap-editor {
-    /* // Mobile dropdown styling - hide label text */
-  }
   .tiptap-editor .tiptap-toolbar {
     padding: 6px;
   }
@@ -468,6 +475,9 @@
   .tiptap-editor .tiptap-toolbar .toolbar-btn svg {
     width: 16px;
     height: 16px;
+  }
+  .tiptap-editor {
+    /* // Mobile dropdown styling - hide label text */
   }
   .tiptap-editor .dropdown-trigger {
     padding: 8px;
@@ -530,9 +540,6 @@
   }
 }
 @media (max-width: 380px) {
-  .tiptap-editor {
-    /* // Already hidden in 480px, just ensure consistent sizing */
-  }
   .tiptap-editor .tiptap-toolbar {
     padding: 5px;
   }
@@ -546,6 +553,9 @@
   }
   .tiptap-editor .tiptap-toolbar .toolbar-divider {
     height: 20px;
+  }
+  .tiptap-editor {
+    /* // Already hidden in 480px, just ensure consistent sizing */
   }
   .tiptap-editor .dropdown-trigger {
     padding: 7px;

@@ -233,7 +233,7 @@ const Gallery = () => {
         onConfirm={async () => {
           closeModal("deleteGalleryConfirm");
           try {
-            const result = await galleryService.softDelete(
+            const result = await galleryService.hardDelete(
               item.id,
               currentUser.id
             );

@@ -8,14 +8,64 @@
  * - Preview gambar featured
  * - Embed content eksternal
  * - Tag dan excerpt
- * 
+ * - Badge reviewStatus dan banner reviewNote (REVISION / REJECTED)
+ * - Toggle isPublished dan isFeatured khusus reviewer (post-approval control)
+ *   dengan optimistic update dan rollback jika endpoint gagal
+ *
  * Dirancang untuk memberikan pengalaman membaca yang optimal
  * sebelum atau setelah publikasi blog.
  */
 
 import React, { useState, useEffect } from "react";
-import { Calendar, Tag, Star, Eye, Globe } from "lucide-react";
+import {
+  Calendar,
+  Tag,
+  Star,
+  Eye,
+  Globe,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Clock,
+  RotateCcw,
+} from "lucide-react";
+import { blogService, REVIEW_STATUS } from "../../../services/blogService";
+import { useAuth } from "../../../contexts/AuthContext";
+import { canReview, isSuperAdmin } from "../../../utils/permissions";
+import AlertModal from "../../Alerts/AlertModal";
+import { useModalContext } from "../../../contexts/ModalContext";
 import "../../../sass/components/Modals/BlogViewModal/BlogViewModal.css";
+
+/**
+ * Mapping reviewStatus ke label, className, dan icon untuk badge.
+ */
+const REVIEW_STATUS_CONFIG = {
+  [REVIEW_STATUS.DRAFT]: {
+    label: "Draft",
+    className: "draft",
+    icon: Clock,
+  },
+  [REVIEW_STATUS.PENDING_REVIEW]: {
+    label: "Pending Review",
+    className: "pending-review",
+    icon: Clock,
+  },
+  [REVIEW_STATUS.APPROVED]: {
+    label: "Approved",
+    className: "approved",
+    icon: CheckCircle,
+  },
+  [REVIEW_STATUS.REJECTED]: {
+    label: "Rejected",
+    className: "rejected",
+    icon: XCircle,
+  },
+  [REVIEW_STATUS.REVISION]: {
+    label: "Revision",
+    className: "revision",
+    icon: RotateCcw,
+  },
+};
 
 /**
  * Props untuk komponen BlogViewModal.
@@ -32,36 +82,55 @@ import "../../../sass/components/Modals/BlogViewModal/BlogViewModal.css";
  * @param {BlogViewModalProps} props - Props komponen
  */
 const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
+  const { user: currentUser } = useAuth();
+  const { openModal, closeModal } = useModalContext();
+
+  const isSuper = isSuperAdmin(currentUser);
+  const canReviewBlogs = isSuper || canReview(currentUser?.permissions, "blog");
+
   /**
    * Bahasa yang sedang aktif untuk ditampilkan.
-   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
    */
   const [currentLanguage, setCurrentLanguage] = useState(initialLanguage);
 
   /**
    * Status apakah blog memiliki terjemahan dalam bahasa Indonesia.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
    */
   const [hasIndonesian, setHasIndonesian] = useState(false);
 
   /**
    * Data blog yang telah diproses untuk ditampilkan.
-   * @type {Object|null}
    */
   const [displayBlog, setDisplayBlog] = useState(null);
 
-  // Jika blog sudah diberikan, proses terjemahannya
+  /**
+   * State toggle isPublished — dikelola lokal untuk optimistic update.
+   */
+  const [isPublished, setIsPublished] = useState(false);
+
+  /**
+   * State toggle isFeatured — dikelola lokal untuk optimistic update.
+   */
+  const [isFeatured, setIsFeatured] = useState(false);
+
+  /**
+   * Loading state per toggle agar tidak saling memblokir.
+   */
+  const [loadingPublished, setLoadingPublished] = useState(false);
+  const [loadingFeatured, setLoadingFeatured] = useState(false);
+
+  // Proses data blog saat mount atau bahasa berubah
   useEffect(() => {
     if (!blog) return;
 
-    // Cek apakah ada terjemahan ID
     const hasId = Array.isArray(blog.translations)
       ? blog.translations.some((t) => t.language === "ID")
       : false;
 
     setHasIndonesian(hasId);
+    setIsPublished(blog.isPublished ?? false);
+    setIsFeatured(blog.isFeatured ?? false);
 
-    // Gunakan terjemahan sesuai bahasa saat ini
     const trans = Array.isArray(blog.translations)
       ? blog.translations.find((t) => t.language === currentLanguage)
       : null;
@@ -82,39 +151,237 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
 
   /**
    * Handler perubahan bahasa tampilan.
-   * @param {'EN'|'ID'} language - Bahasa yang dipilih
    */
   const handleLanguageChange = (language) => {
     if (language === currentLanguage) return;
     setCurrentLanguage(language);
   };
 
-  // Render error state
-  if (!blog) {
-    return (
-      <div className="blog-view-modal-content">
-        <div className="blog-view-empty">
-          <p>Blog not found</p>
-        </div>
-      </div>
-    );
-  }
+  /**
+   * Membangun payload update dari data blog existing.
+   * Hanya mengubah field yang di-toggle, sisanya dikirim kembali apa adanya.
+   * Translations dikirim sebagai array langsung (bukan JSON string) karena
+   * blogService.update menangani serialisasi jika diperlukan.
+   */
+  const buildUpdatePayload = (overrides = {}) => {
+    return {
+      image: blog.image,
+      isFeatured: isFeatured,
+      isPublished: isPublished,
+      translations: blog.translations || [],
+      ...overrides,
+    };
+  };
 
-  // Render loading (seharusnya tidak perlu karena blog sudah ada)
-  if (!displayBlog) {
+  /**
+   * Handler toggle isPublished dengan optimistic update dan rollback.
+   * Hanya tersedia untuk reviewer dan status APPROVED.
+   */
+  const handleTogglePublished = async () => {
+    if (loadingPublished || loadingFeatured) return;
+
+    const newValue = !isPublished;
+    setIsPublished(newValue); // optimistic update
+    setLoadingPublished(true);
+
+    try {
+      const payload = buildUpdatePayload({ isPublished: newValue });
+      const result = await blogService.update(blog.id, payload);
+
+      if (!result.success) {
+        setIsPublished(!newValue); // rollback
+        openModal(
+          "toggleError",
+          <AlertModal
+            type="error"
+            title="Error"
+            message={result.message || "Failed to update publish status."}
+            showActions={true}
+            confirmText="OK"
+            onConfirm={() => closeModal("toggleError")}
+            onCancel={() => closeModal("toggleError")}
+          />,
+          "small",
+        );
+      }
+    } catch (err) {
+      setIsPublished(!newValue); // rollback
+      openModal(
+        "toggleError",
+        <AlertModal
+          type="error"
+          title="Error"
+          message="An error occurred while updating publish status."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("toggleError")}
+          onCancel={() => closeModal("toggleError")}
+        />,
+        "small",
+      );
+    } finally {
+      setLoadingPublished(false);
+    }
+  };
+
+  /**
+   * Handler toggle isFeatured dengan optimistic update dan rollback.
+   * Hanya tersedia untuk reviewer dan status APPROVED.
+   */
+  const handleToggleFeatured = async () => {
+    if (loadingPublished || loadingFeatured) return;
+
+    const newValue = !isFeatured;
+    setIsFeatured(newValue); // optimistic update
+    setLoadingFeatured(true);
+
+    try {
+      const payload = buildUpdatePayload({ isFeatured: newValue });
+      const result = await blogService.update(blog.id, payload);
+
+      if (!result.success) {
+        setIsFeatured(!newValue); // rollback
+        openModal(
+          "toggleError",
+          <AlertModal
+            type="error"
+            title="Error"
+            message={result.message || "Failed to update featured status."}
+            showActions={true}
+            confirmText="OK"
+            onConfirm={() => closeModal("toggleError")}
+            onCancel={() => closeModal("toggleError")}
+          />,
+          "small",
+        );
+      }
+    } catch (err) {
+      setIsFeatured(!newValue); // rollback
+      openModal(
+        "toggleError",
+        <AlertModal
+          type="error"
+          title="Error"
+          message="An error occurred while updating featured status."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("toggleError")}
+          onCancel={() => closeModal("toggleError")}
+        />,
+        "small",
+      );
+    } finally {
+      setLoadingFeatured(false);
+    }
+  };
+
+  /**
+   * Merender badge reviewStatus.
+   */
+  const renderReviewStatusBadge = () => {
+    if (!blog?.reviewStatus) return null;
+
+    const config =
+      REVIEW_STATUS_CONFIG[blog.reviewStatus] ||
+      REVIEW_STATUS_CONFIG[REVIEW_STATUS.DRAFT];
+
+    const IconComponent = config.icon;
+
     return (
-      <div className="blog-view-modal-content">
-        <div className="blog-view-loading">
-          <div className="spinner"></div>
+      <div className="blog-view-review-status">
+        <span className="review-status-label">Review Status:</span>
+        <span className={`review-status-badge ${config.className}`}>
+          <IconComponent size={13} />
+          {config.label}
+        </span>
+      </div>
+    );
+  };
+
+  /**
+   * Merender banner reviewNote jika status REJECTED atau REVISION.
+   */
+  const renderReviewNote = () => {
+    if (
+      !blog?.reviewNote ||
+      (blog.reviewStatus !== REVIEW_STATUS.REJECTED &&
+        blog.reviewStatus !== REVIEW_STATUS.REVISION)
+    ) {
+      return null;
+    }
+
+    const isRejected = blog.reviewStatus === REVIEW_STATUS.REJECTED;
+
+    return (
+      <div
+        className={`blog-view-review-note ${isRejected ? "rejected" : "revision"}`}
+      >
+        <AlertCircle size={16} />
+        <div className="review-note-content">
+          <span className="review-note-title">
+            {isRejected ? "Rejection Reason:" : "Revision Notes:"}
+          </span>
+          <span className="review-note-text">{blog.reviewNote}</span>
         </div>
       </div>
     );
-  }
+  };
+
+  /**
+   * Merender kontrol post-approval untuk reviewer.
+   * Hanya tampil jika canReviewBlogs dan status APPROVED.
+   */
+  const renderReviewerControls = () => {
+    if (!canReviewBlogs || blog?.reviewStatus !== REVIEW_STATUS.APPROVED) {
+      return null;
+    }
+
+    return (
+      <div className="blog-view-reviewer-controls">
+        <h4 className="reviewer-controls-title">Post-Approval Controls</h4>
+        <div className="reviewer-controls-row">
+          {/* Toggle isPublished */}
+          <div className="reviewer-control-item">
+            <div className="reviewer-control-info">
+              <span className="reviewer-control-label">Published</span>
+              <span className="reviewer-control-desc">
+                display this blog on the website
+              </span>
+            </div>
+            <button
+              className={`reviewer-toggle ${isPublished ? "active" : ""} ${loadingPublished ? "loading" : ""}`}
+              onClick={handleTogglePublished}
+              disabled={loadingPublished || loadingFeatured}
+              aria-label={isPublished ? "Unpublish blog" : "Publish blog"}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
+
+          {/* Toggle isFeatured */}
+          <div className="reviewer-control-item">
+            <div className="reviewer-control-info">
+              <span className="reviewer-control-label">Featured</span>
+              <span className="reviewer-control-desc">
+                display this blog as featured content
+              </span>
+            </div>
+            <button
+              className={`reviewer-toggle ${isFeatured ? "active" : ""} ${loadingFeatured ? "loading" : ""}`}
+              onClick={handleToggleFeatured}
+              disabled={loadingPublished || loadingFeatured}
+              aria-label={isFeatured ? "Unfeature blog" : "Feature blog"}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   /**
    * Merender konten utama blog.
-   * Menggunakan dangerouslySetInnerHTML untuk konten HTML dari editor rich text.
-   * @returns {JSX.Element} Konten blog atau pesan fallback
    */
   const renderContent = () => {
     if (!displayBlog.content) {
@@ -133,9 +400,40 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
     );
   };
 
+  // Render error state
+  if (!blog) {
+    return (
+      <div className="blog-view-modal-content">
+        <div className="blog-view-empty">
+          <p>Blog not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render loading
+  if (!displayBlog) {
+    return (
+      <div className="blog-view-modal-content">
+        <div className="blog-view-loading">
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="blog-view-modal-content">
-      {/* Language Switcher - Only show if Indonesian translation exists */}
+      {/* Review Status Badge */}
+      {renderReviewStatusBadge()}
+
+      {/* Review Note Banner — REJECTED atau REVISION */}
+      {renderReviewNote()}
+
+      {/* Post-Approval Controls — khusus reviewer, status APPROVED */}
+      {renderReviewerControls()}
+
+      {/* Language Switcher */}
       {hasIndonesian && (
         <div className="blog-language-switcher">
           <Globe size={16} aria-label="Language switcher" />
@@ -184,7 +482,7 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
             </div>
           )}
 
-          {displayBlog.isFeatured && (
+          {isFeatured && (
             <div className="meta-item featured">
               <Star size={14} fill="currentColor" aria-hidden="true" />
               <span>Featured</span>

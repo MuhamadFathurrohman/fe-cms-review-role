@@ -1,16 +1,22 @@
 @charset "UTF-8";
+/* Override sizing modal khusus untuk alert — mencegah override dari Modal.scss */
+/* Base: 1920px */
+.modal-overlay .modal-content:has(.alert-modal) {
+  max-width: 480px;
+}
+
 .alert-modal .modal-body {
   padding: 0;
 }
 
 .alert-content {
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 2rem 2rem 1.25rem;
   text-align: center;
 }
 
 .alert-icon-wrapper {
-  width: 4rem;
-  height: 4rem;
+  width: 4.5rem;
+  height: 4.5rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -22,7 +28,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+}
+.alert-icon svg {
+  width: 2rem;
+  height: 2rem;
 }
 
 .alert-title {
@@ -33,22 +42,22 @@
 }
 
 .alert-message {
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   line-height: 1.6;
   margin: 0;
 }
 
 .alert-actions {
-  padding: 0 1.5rem 1.5rem;
+  padding: 0 2rem 1.75rem;
   display: flex;
   gap: 0.75rem;
 }
 
 .alert-btn {
   flex: 1;
-  padding: 0.625rem 1rem;
+  padding: 0.6875rem 1rem;
   font-weight: 500;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
@@ -85,7 +94,7 @@
   width: 100%;
 }
 
-/* // ========== SUCCESS ALERT ========== */
+/* ========== SUCCESS ========== */
 .alert-success .alert-icon-wrapper {
   background-color: #d1fae5;
 }
@@ -109,7 +118,7 @@
   background-color: #047857;
 }
 
-/* // ========== ERROR ALERT ========== */
+/* ========== ERROR ========== */
 .alert-error .alert-icon-wrapper {
   background-color: #fee2e2;
 }
@@ -129,27 +138,27 @@
   background-color: #b91c1c;
 }
 
-/* // ========== WARNING ALERT ========== */
-.alert-warning .alert-icon-wrapper {
-  background-color: #fef3c7;
+/* ========== CONFIRM ========== */
+.alert-confirm .alert-icon-wrapper {
+  background-color: #e0e7ff;
 }
-.alert-warning .alert-icon {
-  color: #d97706;
+.alert-confirm .alert-icon {
+  color: #4f46e5;
 }
-.alert-warning .alert-title {
-  color: #78350f;
+.alert-confirm .alert-title {
+  color: #1e1b4b;
 }
-.alert-warning .alert-message {
-  color: #b45309;
+.alert-confirm .alert-message {
+  color: #3730a3;
 }
-.alert-warning .alert-btn-primary {
-  background-color: #d97706;
+.alert-confirm .alert-btn-primary {
+  background-color: #4f46e5;
 }
-.alert-warning .alert-btn-primary:hover:not(:disabled) {
-  background-color: #b45309;
+.alert-confirm .alert-btn-primary:hover:not(:disabled) {
+  background-color: #4338ca;
 }
 
-/* // ========== DELETE ALERT ========== */
+/* ========== DELETE ========== */
 .alert-delete .alert-icon-wrapper {
   background-color: #ffe4e6;
 }
@@ -173,141 +182,145 @@
   background-color: #be123c;
 }
 
-/* // ========== INFO ALERT ========== */
-.alert-info .alert-icon-wrapper {
-  background-color: #dbeafe;
-}
-.alert-info .alert-icon {
-  color: #2563eb;
-}
-.alert-info .alert-title {
-  color: #1e3a8a;
-}
-.alert-info .alert-message {
-  color: #1d4ed8;
-}
-.alert-info .alert-btn-primary {
-  background-color: #2563eb;
-}
-.alert-info .alert-btn-primary:hover:not(:disabled) {
-  background-color: #1d4ed8;
-}
-
-/* // ========== RESPONSIVE ========== */
-/* Tablet & Small Desktop: 641px – 768px */
-@media (min-width: 641px) and (max-width: 768px) {
+/* ========== RESPONSIVE ========== */
+/* 1440px */
+@media (max-width: 1440px) {
+  .modal-overlay .modal-content:has(.alert-modal) {
+    max-width: 440px;
+  }
   .alert-content {
-    padding: 2rem 1.75rem 1.5rem;
-  }
-  .alert-title {
-    font-size: 1.3125rem;
-  }
-  .alert-message {
-    font-size: 0.9375rem;
-  }
-  .alert-actions {
-    padding: 0 1.75rem 1.5rem;
-    gap: 0.875rem;
-  }
-  .alert-btn {
-    padding: 0.6875rem 1.125rem;
-    font-size: 0.9375rem;
-  }
-}
-/* Medium Desktop: 769px – 1024px */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .alert-content {
-    padding: 2.25rem 2rem 1.75rem;
+    padding: 1.75rem 1.75rem 1.125rem;
   }
   .alert-icon-wrapper {
     width: 4.25rem;
     height: 4.25rem;
   }
-  .alert-icon {
-    font-size: 1.625rem;
+  .alert-icon svg {
+    width: 1.875rem;
+    height: 1.875rem;
   }
   .alert-title {
-    font-size: 1.375rem;
+    font-size: 1.1875rem;
   }
   .alert-message {
     font-size: 0.9375rem;
   }
   .alert-actions {
-    padding: 0 2rem 1.75rem;
-    gap: 1rem;
+    padding: 0 1.75rem 1.625rem;
   }
   .alert-btn {
-    padding: 0.75rem 1.25rem;
+    padding: 0.625rem 1rem;
     font-size: 0.9375rem;
   }
 }
-/* Large Desktop: 1025px – 1440px */
-@media (min-width: 1025px) {
+/* 1280px */
+@media (max-width: 1280px) {
+  .modal-overlay .modal-content:has(.alert-modal) {
+    max-width: 420px;
+  }
   .alert-content {
-    padding: 2.5rem 2.25rem 2rem;
+    padding: 1.625rem 1.625rem 1rem;
   }
   .alert-icon-wrapper {
-    width: 4.5rem;
-    height: 4.5rem;
+    width: 4rem;
+    height: 4rem;
   }
-  .alert-icon {
-    font-size: 1.75rem;
-  }
-  .alert-title {
-    font-size: 1.4375rem;
-  }
-  .alert-message {
-    font-size: 1rem;
-  }
-  .alert-actions {
-    padding: 0 2.25rem 2rem;
-    gap: 1.125rem;
-  }
-  .alert-btn {
-    padding: 0.8125rem 1.375rem;
-    font-size: 1rem;
-  }
-}
-/* Ultra Large Desktop (optional refinement) */
-@media (min-width: 1441px) {
-  .alert-content {
-    padding: 3.25rem 3.5rem 2.75rem;
-  }
-  .alert-icon-wrapper {
-    width: 6rem;
-    height: 6rem;
-  }
-  .alert-icon {
-    font-size: 2.5rem;
-  }
-  .alert-title {
-    font-size: 1.875rem;
-  }
-  .alert-message {
-    font-size: 1.1875rem;
-  }
-  .alert-actions {
-    padding: 0 3.5rem 2.75rem;
-    gap: 2rem;
-  }
-  .alert-btn {
-    padding: 1.25rem 2.25rem;
-    font-size: 1.1875rem;
-  }
-}
-/* // ========== MOBILE (tidak diubah) ========== */
-@media (max-width: 640px) {
-  .alert-content {
-    padding: 1.5rem 1rem 1rem;
+  .alert-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
   }
   .alert-title {
     font-size: 1.125rem;
   }
+  .alert-message {
+    font-size: 0.875rem;
+  }
+  .alert-actions {
+    padding: 0 1.625rem 1.5rem;
+  }
+  .alert-btn {
+    padding: 0.5875rem 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+/* 1024px */
+@media (max-width: 1024px) {
+  .modal-overlay .modal-content:has(.alert-modal) {
+    max-width: 400px;
+  }
+  .alert-content {
+    padding: 1.5rem 1.5rem 1rem;
+  }
+  .alert-icon-wrapper {
+    width: 3.75rem;
+    height: 3.75rem;
+  }
+  .alert-icon svg {
+    width: 1.625rem;
+    height: 1.625rem;
+  }
+  .alert-title {
+    font-size: 1.0625rem;
+  }
+  .alert-message {
+    font-size: 0.875rem;
+  }
+  .alert-actions {
+    padding: 0 1.5rem 1.375rem;
+  }
+  .alert-btn {
+    padding: 0.5625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+}
+/* 640px — Tablet kecil */
+@media (max-width: 640px) {
+  .modal-overlay .modal-content:has(.alert-modal) {
+    max-width: 320px;
+  }
+  .alert-content {
+    padding: 1.25rem 1.25rem 0.875rem;
+  }
+  .alert-icon-wrapper {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+  .alert-icon svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .alert-title {
+    font-size: 1rem;
+  }
+  .alert-message {
+    font-size: 0.8125rem;
+  }
   .alert-actions {
     flex-direction: column;
-    padding: 0 1rem 1rem;
+    padding: 0 1.25rem 1.25rem;
+    gap: 0.5rem;
   }
   .alert-btn {
     width: 100%;
+    padding: 0.5rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+}
+/* 380px — Mobile kecil */
+@media (max-width: 380px) {
+  .modal-overlay .modal-content:has(.alert-modal) {
+    max-width: 288px;
+  }
+  .alert-content {
+    padding: 1rem 1rem 0.75rem;
+  }
+  .alert-title {
+    font-size: 0.9375rem;
+  }
+  .alert-message {
+    font-size: 0.8125rem;
+  }
+  .alert-actions {
+    padding: 0 1rem 1rem;
   }
 }/*# sourceMappingURL=AlertModal.css.map */

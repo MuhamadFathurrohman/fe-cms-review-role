@@ -26,6 +26,12 @@
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
 }
+.page-blogs .page-header .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .page-blogs .btn-primary {
   background: linear-gradient(135deg, #f3994b, #e6863f);
   color: white;
@@ -47,6 +53,31 @@
   box-shadow: 0 8px 15px rgba(30, 58, 64, 0.2);
 }
 .page-blogs .btn-primary svg {
+  color: white;
+}
+.page-blogs .btn-secondary {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.page-blogs .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+}
+.page-blogs .btn-secondary svg {
   color: white;
 }
 .page-blogs .blogs-filters {
@@ -139,13 +170,14 @@
   color: white;
   margin-bottom: 4px;
 }
-.page-blogs .status-toggle {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.page-blogs .filter-dropdown {
+  position: relative;
 }
-.page-blogs .status-toggle button {
-  padding: 8px 16px;
+.page-blogs .filter-dropdown .filter-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
   border: 1px solid #d1d5db;
   border-radius: 12px;
   background: white;
@@ -155,21 +187,83 @@
   font-family: "Barlow", sans-serif;
   cursor: pointer;
   transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 80px;
-  justify-content: center;
+  min-width: 160px;
+  justify-content: space-between;
 }
-.page-blogs .status-toggle button:hover {
+.page-blogs .filter-dropdown .filter-dropdown-trigger:hover {
   background: #f8fafc;
   border-color: #9ca3af;
-  transform: translateY(-1px);
 }
-.page-blogs .status-toggle button.active {
+.page-blogs .filter-dropdown .filter-dropdown-trigger.open {
+  border-color: #f3994b;
+  box-shadow: 0 0 0 3px rgba(243, 153, 75, 0.2);
+}
+.page-blogs .filter-dropdown .filter-dropdown-trigger .chevron {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  color: #6b7280;
+}
+.page-blogs .filter-dropdown .filter-dropdown-trigger .chevron.rotated {
+  transform: rotate(180deg);
+}
+.page-blogs .filter-dropdown .filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 180px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  overflow: hidden;
+  animation: dropdownFadeIn 0.15s ease;
+}
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.page-blogs .filter-dropdown .filter-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "Barlow", sans-serif;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.page-blogs .filter-dropdown .filter-dropdown-item:hover {
+  background: #f8fafc;
+  color: #2d4c52;
+}
+.page-blogs .filter-dropdown .filter-dropdown-item.active {
   background: linear-gradient(135deg, #2d4c52, #1e3a40);
   color: white;
-  border-color: #2d4c52;
+  font-weight: 600;
+}
+.page-blogs .filter-dropdown .filter-dropdown-item.my-submissions-item {
+  border-top: 1px solid #e2e8f0;
+  color: #2d4c52;
+  font-weight: 600;
+}
+.page-blogs .filter-dropdown .filter-dropdown-item.my-submissions-item:hover {
+  background: #f0fdf4;
+  color: #047857;
+}
+.page-blogs .filter-dropdown .filter-dropdown-item.my-submissions-item.active {
+  background: linear-gradient(135deg, #047857, #065f46);
+  color: white;
 }
 .page-blogs .error-banner {
   display: flex;
@@ -296,8 +390,7 @@
   bottom: 0;
   width: 100%;
   height: 100%;
-  -webkit-backdrop-filter: blur(2px);
-          backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.3);
   border-radius: 12px 12px 0 0;
   opacity: 0;
@@ -377,20 +470,38 @@
   gap: 4px;
 }
 .page-blogs .blog-status {
-  padding: 3px 10px;
+  padding: 3px 8px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 9px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 .page-blogs .blog-status.published {
   background-color: #d1fae5;
   color: #047857;
 }
 .page-blogs .blog-status.draft {
-  background-color: #e2e8f0;
-  color: #334155;
+  background-color: #ede9fe;
+  color: #6d28d9;
+}
+.page-blogs .blog-status.pending-review {
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+.page-blogs .blog-status.approved {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+.page-blogs .blog-status.rejected {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+.page-blogs .blog-status.revision {
+  background-color: #ffedd5;
+  color: #c2410c;
 }
 .page-blogs .blog-item.skeleton-loading {
   background: white;
@@ -698,10 +809,15 @@
     align-items: flex-start;
     gap: 12px;
   }
-  .page-blogs .btn-primary {
-    width: 50%;
+  .page-blogs .page-header .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .page-blogs .page-header .header-actions .btn-primary,
+  .page-blogs .page-header .header-actions .btn-secondary {
+    width: 100%;
     justify-content: center;
-    margin-top: 10px;
   }
   .page-blogs .search-wrapper {
     min-width: 100% !important;
@@ -709,6 +825,12 @@
   .page-blogs .filter-controls {
     width: 100%;
     justify-content: space-between;
+  }
+  .page-blogs .filter-dropdown .filter-dropdown-trigger {
+    width: 100%;
+  }
+  .page-blogs .filter-dropdown .filter-dropdown-menu {
+    width: 100%;
   }
   .page-blogs .error-banner {
     padding: 10px 12px;
@@ -728,11 +850,6 @@
   .page-blogs .search-input {
     font-size: 13px;
     padding: 10px 12px 10px 42px !important;
-  }
-  .page-blogs .status-toggle button {
-    padding: 8px 12px;
-    font-size: 13px;
-    min-width: 70px;
   }
   .page-blogs .blogs-scrollable {
     max-height: 430px;
@@ -790,9 +907,6 @@
   }
   .page-blogs .page-header .header-content h1 {
     font-size: 23px;
-  }
-  .page-blogs .page-header .btn-primary {
-    width: 60%;
   }
   .page-blogs .error-banner {
     padding: 10px;

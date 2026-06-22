@@ -15,8 +15,6 @@
   border-radius: 0px 20px 20px 0px;
   font-family: "Poppins", sans-serif;
   font-weight: 600;
-  /* Logo Section */
-  /* Navigation */
 }
 .sidebar.collapsed {
   width: 80px;
@@ -118,6 +116,9 @@
 .sidebar.collapsed .sidebar-nav::-webkit-scrollbar {
   display: none;
 }
+.sidebar {
+  /* Logo Section */
+}
 .sidebar .sidebar-logo-section {
   padding: 32px 24px 20px 24px;
   border-bottom: 1px solid #f3f4f6;
@@ -160,6 +161,9 @@
   border-radius: 2px;
   transition: all 0.3s ease;
   margin: 25px auto 0 auto;
+}
+.sidebar {
+  /* Navigation */
 }
 .sidebar .sidebar-nav {
   flex: 1;
@@ -260,7 +264,6 @@
   /* Transisi smooth */
   transition: max-height 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), margin 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   /* State ketika submenu dibuka */
-  /* State ketika submenu akan ditutup */
 }
 .sidebar .sidebar-nav .nav-list .nav-item .submenu-list.open {
   max-height: 400px;
@@ -296,6 +299,9 @@
 }
 .sidebar .sidebar-nav .nav-list .nav-item .submenu-list.open .submenu-item:nth-child(7) {
   animation: submenuItemFadeSlide 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.35s both;
+}
+.sidebar .sidebar-nav .nav-list .nav-item .submenu-list {
+  /* State ketika submenu akan ditutup */
 }
 .sidebar .sidebar-nav .nav-list .nav-item .submenu-list.closing {
   animation: submenuSlideOut 0.35s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards;
@@ -388,7 +394,6 @@
   font-weight: 600;
   font-family: "Poppins", sans-serif;
   position: relative;
-  /* Loading state - center pulse dots */
 }
 .sidebar .sidebar-nav .sidebar-footer .logout-container .logout-button:hover {
   background: #c62121;
@@ -404,6 +409,9 @@
 }
 .sidebar .sidebar-nav .sidebar-footer .logout-container .logout-button .logout-label {
   text-align: center;
+}
+.sidebar .sidebar-nav .sidebar-footer .logout-container .logout-button {
+  /* Loading state - center pulse dots */
 }
 .sidebar .sidebar-nav .sidebar-footer .logout-container .logout-button .pulse-dots--sidebar-logout {
   position: absolute;
@@ -719,7 +727,6 @@
   .sidebar.collapsed {
     width: 280px;
     transform: translateX(-100%);
-    /* Reset submenu positioning for mobile */
   }
   .sidebar.collapsed.open {
     transform: translateX(0);
@@ -757,6 +764,9 @@
   }
   .sidebar.collapsed .sidebar-logo-section .logo-container .brand-text {
     display: block;
+  }
+  .sidebar.collapsed {
+    /* Reset submenu positioning for mobile */
   }
   .sidebar.collapsed .nav-item .submenu-list {
     position: static !important;
@@ -804,7 +814,6 @@
   .sidebar.collapsed {
     width: 280px;
     transform: translateX(-100%);
-    /* Reset submenu positioning for small mobile */
   }
   .sidebar.collapsed.open {
     transform: translateX(0);
@@ -842,6 +851,9 @@
   }
   .sidebar.collapsed .sidebar-logo-section .logo-container .brand-text {
     display: block;
+  }
+  .sidebar.collapsed {
+    /* Reset submenu positioning for small mobile */
   }
   .sidebar.collapsed .nav-item .submenu-list {
     position: static !important;

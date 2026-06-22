@@ -2,9 +2,6 @@
 .user-form {
   padding: 24px;
   font-family: "poppins", sans-serif;
-  /* Layout utama: Avatar + Fields */
-  /* Grid 2 kolom — langsung isi dengan .form-group */
-  /* Avatar Upload */
 }
 .user-form input:-webkit-autofill {
   box-shadow: 0 0 0 1000px white inset !important;
@@ -19,6 +16,9 @@
   margin-bottom: 16px;
   font-size: 0.9rem;
   font-weight: 500;
+}
+.user-form {
+  /* Layout utama: Avatar + Fields */
 }
 .user-form .form-layout {
   display: flex;
@@ -35,6 +35,9 @@
   flex: 1;
   min-width: 0;
 }
+.user-form {
+  /* Grid 2 kolom — langsung isi dengan .form-group */
+}
 .user-form .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -48,7 +51,6 @@
   display: flex;
   flex-direction: column;
   min-height: 60px; /* Konsistensi tinggi */
-  /* Custom Select */
 }
 .user-form .form-grid .form-group label {
   display: block;
@@ -181,6 +183,9 @@
   border-right: 5px solid transparent;
   border-bottom: 5px solid rgba(229, 62, 62, 0.9);
 }
+.user-form .form-grid .form-group {
+  /* Custom Select */
+}
 .user-form .form-grid .form-group .custom-select {
   position: relative;
   width: 100%;
@@ -269,8 +274,8 @@
   opacity: 0.5;
   pointer-events: none;
 }
-.user-form .avatar-upload-group {
-  /* Tooltip untuk error upload avatar */
+.user-form {
+  /* Avatar Upload */
 }
 .user-form .avatar-upload-group label {
   display: block;
@@ -355,6 +360,9 @@
 .user-form .avatar-upload-group .avatar-preview-container .avatar-actions button.btn-secondary-remove:hover {
   background: linear-gradient(135deg, #ef4444, #dc2626); /* Gradient merah yang elegan */
   color: white;
+}
+.user-form .avatar-upload-group {
+  /* Tooltip untuk error upload avatar */
 }
 .user-form .avatar-upload-group .avatar-error-tooltip {
   position: absolute;
@@ -600,34 +608,48 @@
     gap: 15px;
     margin: 0;
     /* Atur order semua item agar urutan benar */
-    /* Name */
-    /* Role */
-    /* Email */
-    /* Password */
-    /* Phone Number */
-    /* Confirm Password */
-    /* Confirm Password */
   }
   .user-form .form-grid .form-group:nth-child(1) {
     order: 1;
   }
+  .user-form .form-grid {
+    /* Name */
+  }
   .user-form .form-grid .form-group:nth-child(2) {
     order: 2;
+  }
+  .user-form .form-grid {
+    /* Role */
   }
   .user-form .form-grid .form-group:nth-child(3) {
     order: 3;
   }
+  .user-form .form-grid {
+    /* Email */
+  }
   .user-form .form-grid .form-group:nth-child(4) {
     order: 4;
+  }
+  .user-form .form-grid {
+    /* Password */
   }
   .user-form .form-grid .form-group:nth-child(5) {
     order: 5;
   }
+  .user-form .form-grid {
+    /* Phone Number */
+  }
   .user-form .form-grid .form-group:nth-child(6) {
     order: 6;
   }
+  .user-form .form-grid {
+    /* Confirm Password */
+  }
   .user-form .form-grid .form-group:nth-child(7) {
     order: 7;
+  }
+  .user-form .form-grid {
+    /* Confirm Password */
   }
   .user-form .form-grid .form-group {
     margin-bottom: 0;

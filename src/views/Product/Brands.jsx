@@ -264,7 +264,7 @@ const Brands = () => {
           closeModal("deleteBrandConfirm");
 
           try {
-            const result = await brandService.softDelete(item.id);
+            const result = await brandService.hardDelete(item.id);
 
             if (result.success) {
               openModal(

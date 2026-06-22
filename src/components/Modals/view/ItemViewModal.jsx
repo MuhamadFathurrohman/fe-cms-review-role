@@ -6,7 +6,10 @@
  * - Galeri gambar interaktif dengan navigasi dan thumbnail
  * - Tampilan metadata (status, tanggal, sort order)
  * - Konten terstruktur (overview, deskripsi, fitur, spesifikasi)
- * 
+ * - Badge reviewStatus dan banner reviewNote (REVISION / REJECTED)
+ * - Toggle isFeatured khusus reviewer (post-approval control)
+ *   dengan optimistic update dan rollback jika endpoint gagal
+ *
  * Dirancang untuk memberikan pengalaman melihat detail produk yang optimal
  * sebelum atau setelah publikasi.
  */
@@ -20,10 +23,48 @@ import {
   CheckCircle,
   XCircle,
   Globe,
+  AlertCircle,
+  Clock,
+  RotateCcw,
 } from "lucide-react";
-import { itemService } from "../../../services/itemService";
+import { itemService, REVIEW_STATUS } from "../../../services/itemService";
+import { useAuth } from "../../../contexts/AuthContext";
+import { useModalContext } from "../../../contexts/ModalContext";
+import { canReview, isSuperAdmin } from "../../../utils/permissions";
+import AlertModal from "../../Alerts/AlertModal";
 import SkeletonItem from "../../Loaders/SkeletonItem";
 import "../../../sass/components/Modals/ItemViewModal/ItemViewModal.css";
+
+/**
+ * Mapping reviewStatus ke label, className, dan icon untuk badge.
+ */
+const REVIEW_STATUS_CONFIG = {
+  [REVIEW_STATUS.DRAFT]: {
+    label: "Draft",
+    className: "draft",
+    icon: Clock,
+  },
+  [REVIEW_STATUS.PENDING_REVIEW]: {
+    label: "Pending Review",
+    className: "pending-review",
+    icon: Clock,
+  },
+  [REVIEW_STATUS.APPROVED]: {
+    label: "Approved",
+    className: "approved",
+    icon: CheckCircle,
+  },
+  [REVIEW_STATUS.REJECTED]: {
+    label: "Rejected",
+    className: "rejected",
+    icon: XCircle,
+  },
+  [REVIEW_STATUS.REVISION]: {
+    label: "Revision",
+    className: "revision",
+    icon: RotateCcw,
+  },
+};
 
 /**
  * Props untuk komponen ItemViewModal.
@@ -39,35 +80,47 @@ import "../../../sass/components/Modals/ItemViewModal/ItemViewModal.css";
  * @param {ItemViewModalProps} props - Props komponen
  */
 const ItemViewModal = ({ itemId }) => {
+  const { user: currentUser } = useAuth();
+  const { openModal, closeModal } = useModalContext();
+
+  const isSuper = isSuperAdmin(currentUser);
+  const canReviewItems =
+    isSuper || canReview(currentUser?.permissions, "product");
+
   /**
    * Data produk yang sedang ditampilkan.
-   * @type {Object|null}
    */
   const [item, setItem] = useState(null);
 
   /**
    * Status loading saat mengambil data produk.
-   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
    */
   const [loading, setLoading] = useState(true);
 
   /**
    * Pesan error jika gagal mengambil data.
-   * @type {string|null}
    */
   const [error, setError] = useState(null);
 
   /**
    * Indeks gambar yang sedang aktif di galeri.
-   * @type {[number, React.Dispatch<React.SetStateAction<number>>]}
    */
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   /**
    * Bahasa yang sedang aktif untuk ditampilkan.
-   * @type {['EN'|'ID', React.Dispatch<React.SetStateAction<'EN'|'ID'>>]}
    */
   const [currentLanguage, setCurrentLanguage] = useState("EN");
+
+  /**
+   * State toggle isFeatured — dikelola lokal untuk optimistic update.
+   */
+  const [isFeatured, setIsFeatured] = useState(false);
+
+  /**
+   * Loading state untuk toggle isFeatured.
+   */
+  const [loadingFeatured, setLoadingFeatured] = useState(false);
 
   // Fetch item data
   useEffect(() => {
@@ -76,11 +129,11 @@ const ItemViewModal = ({ itemId }) => {
         setLoading(true);
         setError(null);
 
-        // Pass language parameter
         const result = await itemService.getById(itemId, currentLanguage);
 
         if (result.success) {
           setItem(result.data);
+          setIsFeatured(result.data.isFeatured ?? false);
         } else {
           setError(result.message || "Failed to load item details.");
         }
@@ -101,27 +154,189 @@ const ItemViewModal = ({ itemId }) => {
   /** @type {boolean} Status apakah produk memiliki multiple gambar */
   const hasMultipleImages = images.length > 1;
 
-  /**
-   * Navigasi ke gambar berikutnya di galeri.
-   */
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
   };
 
-  /**
-   * Navigasi ke gambar sebelumnya di galeri.
-   */
   const prevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  // Handle language change
-  /**
-   * Handler perubahan bahasa tampilan.
-   * @param {'EN'|'ID'} lang - Bahasa yang dipilih
-   */
   const handleLanguageChange = (lang) => {
     setCurrentLanguage(lang);
+  };
+
+  /**
+   * Membangun payload update dari data item existing.
+   * Hanya mengubah field yang di-toggle, sisanya dikirim kembali apa adanya.
+   *
+   * Images di state lokal berisi full URL hasil _getFullImageUrl
+   * (misalnya https://api.example.com/uploads/products/image.jpg).
+   * Backend menyimpan dan membandingkan path relatif (/uploads/products/image.jpg).
+   * Jika full URL dikirim langsung, backend menganggap gambar berubah dan
+   * menghapus file lama, lalu menyimpan full URL yang tidak valid sebagai path baru.
+   *
+   * Solusi: strip VITE_PHOTO_URL dari setiap URL sebelum dikirim ke backend,
+   * agar yang dikirim adalah path relatif yang konsisten dengan database.
+   */
+  const buildUpdatePayload = (overrides = {}) => {
+    const apiBaseUrl = import.meta.env.VITE_PHOTO_URL || "";
+
+    const imagePaths = images.map((url) => {
+      if (apiBaseUrl && url.startsWith(apiBaseUrl)) {
+        return url.slice(apiBaseUrl.length);
+      }
+      return url;
+    });
+
+    return {
+      name: item.name,
+      categoryId: item.categoryId,
+      brandId: item.brandId,
+      sortOrder: item.sortOrder ?? 0,
+      isFeatured: isFeatured,
+      images: imagePaths,
+      translations: item.translations || [],
+      ...overrides,
+    };
+  };
+
+  /**
+   * Handler toggle isFeatured dengan optimistic update dan rollback.
+   * Hanya tersedia untuk reviewer dan status APPROVED.
+   */
+  const handleToggleFeatured = async () => {
+    if (loadingFeatured) return;
+
+    const newValue = !isFeatured;
+    setIsFeatured(newValue); // optimistic update
+    setLoadingFeatured(true);
+
+    try {
+      const payload = buildUpdatePayload({ isFeatured: newValue });
+      const result = await itemService.update(item.id, payload);
+
+      if (!result.success) {
+        setIsFeatured(!newValue); // rollback
+        openModal(
+          "toggleError",
+          <AlertModal
+            type="error"
+            title="Error"
+            message={result.message || "Failed to update featured status."}
+            showActions={true}
+            confirmText="OK"
+            onConfirm={() => closeModal("toggleError")}
+            onCancel={() => closeModal("toggleError")}
+          />,
+          "small",
+        );
+      }
+    } catch (err) {
+      setIsFeatured(!newValue); // rollback
+      openModal(
+        "toggleError",
+        <AlertModal
+          type="error"
+          title="Error"
+          message="An error occurred while updating featured status."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("toggleError")}
+          onCancel={() => closeModal("toggleError")}
+        />,
+        "small",
+      );
+    } finally {
+      setLoadingFeatured(false);
+    }
+  };
+
+  /**
+   * Merender badge reviewStatus.
+   */
+  const renderReviewStatusBadge = () => {
+    if (!item?.reviewStatus) return null;
+
+    const config =
+      REVIEW_STATUS_CONFIG[item.reviewStatus] ||
+      REVIEW_STATUS_CONFIG[REVIEW_STATUS.DRAFT];
+
+    const IconComponent = config.icon;
+
+    return (
+      <div className="item-view-review-status">
+        <span className="review-status-label">Review Status:</span>
+        <span className={`review-status-badge ${config.className}`}>
+          <IconComponent size={13} />
+          {config.label}
+        </span>
+      </div>
+    );
+  };
+
+  /**
+   * Merender banner reviewNote jika status REJECTED atau REVISION.
+   */
+  const renderReviewNote = () => {
+    if (
+      !item?.reviewNote ||
+      (item.reviewStatus !== REVIEW_STATUS.REJECTED &&
+        item.reviewStatus !== REVIEW_STATUS.REVISION)
+    ) {
+      return null;
+    }
+
+    const isRejected = item.reviewStatus === REVIEW_STATUS.REJECTED;
+
+    return (
+      <div
+        className={`item-view-review-note ${isRejected ? "rejected" : "revision"}`}
+      >
+        <AlertCircle size={16} />
+        <div className="review-note-content">
+          <span className="review-note-title">
+            {isRejected ? "Rejection Reason:" : "Revision Notes:"}
+          </span>
+          <span className="review-note-text">{item.reviewNote}</span>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Merender kontrol post-approval untuk reviewer.
+   * Hanya tampil jika canReviewItems dan status APPROVED.
+   */
+  const renderReviewerControls = () => {
+    if (!canReviewItems || item?.reviewStatus !== REVIEW_STATUS.APPROVED) {
+      return null;
+    }
+
+    return (
+      <div className="item-view-reviewer-controls">
+        <h4 className="reviewer-controls-title">Post-Approval Controls</h4>
+        <div className="reviewer-controls-row">
+          {/* Toggle isFeatured */}
+          <div className="reviewer-control-item">
+            <div className="reviewer-control-info">
+              <span className="reviewer-control-label">Featured</span>
+              <span className="reviewer-control-desc">
+                Tampilkan item ini sebagai produk unggulan
+              </span>
+            </div>
+            <button
+              className={`reviewer-toggle ${isFeatured ? "active" : ""} ${loadingFeatured ? "loading" : ""}`}
+              onClick={handleToggleFeatured}
+              disabled={loadingFeatured}
+              aria-label={isFeatured ? "Unfeature item" : "Feature item"}
+            >
+              <span className="toggle-knob" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Loading State
@@ -216,6 +431,13 @@ const ItemViewModal = ({ itemId }) => {
   // Success State
   return (
     <div className="item-view-content">
+      {/* Header meta — review status, review note, reviewer controls */}
+      <div className="item-view-header-meta">
+        {renderReviewStatusBadge()}
+        {renderReviewNote()}
+        {renderReviewerControls()}
+      </div>
+
       {/* Left Side - Image Gallery */}
       <div className="view-left">
         <div className="image-gallery">
@@ -232,10 +454,18 @@ const ItemViewModal = ({ itemId }) => {
 
                 {hasMultipleImages && (
                   <>
-                    <button className="gallery-nav prev" onClick={prevImage} aria-label="Previous image">
+                    <button
+                      className="gallery-nav prev"
+                      onClick={prevImage}
+                      aria-label="Previous image"
+                    >
                       <ChevronLeft size={24} />
                     </button>
-                    <button className="gallery-nav next" onClick={nextImage} aria-label="Next image">
+                    <button
+                      className="gallery-nav next"
+                      onClick={nextImage}
+                      aria-label="Next image"
+                    >
                       <ChevronRight size={24} />
                     </button>
                   </>
@@ -253,20 +483,22 @@ const ItemViewModal = ({ itemId }) => {
                   {images.map((img, index) => (
                     <div
                       key={index}
-                      className={`thumbnail ${
-                        index === currentImageIndex ? "active" : ""
-                      }`}
+                      className={`thumbnail ${index === currentImageIndex ? "active" : ""}`}
                       onClick={() => setCurrentImageIndex(index)}
                       aria-label={`Go to image ${index + 1}`}
                       role="button"
                       tabIndex={0}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                        if (e.key === "Enter" || e.key === " ") {
                           setCurrentImageIndex(index);
                         }
                       }}
                     >
-                      <img src={img} alt={`Thumbnail ${index + 1}`} loading="lazy" />
+                      <img
+                        src={img}
+                        alt={`Thumbnail ${index + 1}`}
+                        loading="lazy"
+                      />
                     </div>
                   ))}
                 </div>
@@ -283,7 +515,7 @@ const ItemViewModal = ({ itemId }) => {
 
       {/* Right Side - Product Details */}
       <div className="view-right">
-        {/* Language Switcher with Icon */}
+        {/* Language Switcher */}
         <div className="view-language-switcher">
           <Globe size={16} aria-hidden="true" />
           <button
@@ -305,26 +537,16 @@ const ItemViewModal = ({ itemId }) => {
         <div className="product-header">
           <h2 className="product-title">{item.name}</h2>
           <div className="product-meta">
-            <span
-              className={`status-badge ${
-                item.isActive ? "active" : "inactive"
-              }`}
-              aria-label={`Status: ${item.isActive ? "Active" : "Inactive"}`}
-            >
-              {item.isActive ? (
-                <>
-                  <CheckCircle size={14} aria-hidden="true" /> Active
-                </>
-              ) : (
-                <>
-                  <XCircle size={14} aria-hidden="true" /> Inactive
-                </>
-              )}
-            </span>
             <span className="date-info">
               <Calendar size={14} aria-hidden="true" />
               {item.createdAtFormatted}
             </span>
+            {item.updatedAtFormatted && (
+              <span className="date-info">
+                <Calendar size={14} aria-hidden="true" />
+                Last updated: {item.updatedAtFormatted}
+              </span>
+            )}
           </div>
         </div>
 
@@ -346,11 +568,10 @@ const ItemViewModal = ({ itemId }) => {
           <div className="detail-section">
             <h3 className="section-title">Description</h3>
             {item.longDescription ? (
-              <div className="long-description">
-                {item.longDescription.split("\n").map((paragraph, index) => (
-                  <p key={index}>{paragraph}</p>
-                ))}
-              </div>
+              <div
+                className="long-description"
+                dangerouslySetInnerHTML={{ __html: item.longDescription }}
+              />
             ) : (
               <p className="no-data-text">
                 No detailed description available for{" "}
@@ -360,33 +581,34 @@ const ItemViewModal = ({ itemId }) => {
           </div>
 
           {/* Features */}
-          {item.features && item.features.length > 0 ? (
-            <div className="detail-section">
-              <h3 className="section-title">Key Features</h3>
+          <div className="detail-section">
+            <h3 className="section-title">Key Features</h3>
+            {item.features && item.features.length > 0 ? (
               <ul className="features-list">
                 {item.features.map((feature, index) => (
                   <li key={index}>
-                    <CheckCircle size={16} className="feature-icon" aria-hidden="true" />
+                    <CheckCircle
+                      size={16}
+                      className="feature-icon"
+                      aria-hidden="true"
+                    />
                     <span>{feature}</span>
                   </li>
                 ))}
               </ul>
-            </div>
-          ) : (
-            <div className="detail-section">
-              <h3 className="section-title">Key Features</h3>
+            ) : (
               <p className="no-data-text">
                 No features available for{" "}
                 {currentLanguage === "EN" ? "English" : "Indonesian"}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Specifications */}
-          {item.specifications &&
-          Object.keys(item.specifications).length > 0 ? (
-            <div className="detail-section">
-              <h3 className="section-title">Specifications</h3>
+          <div className="detail-section">
+            <h3 className="section-title">Specifications</h3>
+            {item.specifications &&
+            Object.keys(item.specifications).length > 0 ? (
               <div className="specifications-grid">
                 {Object.entries(item.specifications).map(([key, value]) => (
                   <div key={key} className="spec-item">
@@ -395,16 +617,13 @@ const ItemViewModal = ({ itemId }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          ) : (
-            <div className="detail-section">
-              <h3 className="section-title">Specifications</h3>
+            ) : (
               <p className="no-data-text">
                 No specifications available for{" "}
                 {currentLanguage === "EN" ? "English" : "Indonesian"}
               </p>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Additional Info */}
           <div className="detail-section additional-info">
@@ -412,12 +631,6 @@ const ItemViewModal = ({ itemId }) => {
               <span className="info-label">Sort Order:</span>
               <span className="info-value">{item.sortOrder}</span>
             </div>
-            {item.updatedAtFormatted && (
-              <div className="info-row">
-                <span className="info-label">Last Updated:</span>
-                <span className="info-value">{item.updatedAtFormatted}</span>
-              </div>
-            )}
           </div>
         </div>
       </div>

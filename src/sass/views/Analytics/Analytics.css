@@ -2,11 +2,6 @@
 .page-analytics {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Stats Grid - Horizontal */
-  /* Filter & Search */
-  /* Error Banner */
-  /* Table */
-  /* --- SKELETON LOADING STYLES FOR STAT CARDS (ditambahkan di sini) --- */
 }
 .page-analytics .page-header {
   display: flex;
@@ -115,6 +110,9 @@
 }
 .page-analytics .page-header .header-actions .btn-export svg {
   color: white;
+}
+.page-analytics {
+  /* Stats Grid - Horizontal */
 }
 .page-analytics .stats-grid {
   display: grid;
@@ -237,6 +235,9 @@
   background: #ede9fe;
   color: #8b5cf6;
 }
+.page-analytics {
+  /* Filter & Search */
+}
 .page-analytics .filter-container {
   display: flex;
   flex-wrap: wrap;
@@ -254,7 +255,6 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  /* // Style untuk icon (sibling dari .date-input) */
 }
 .page-analytics .filter-container .date-filters .date-group label {
   font-size: 13px;
@@ -302,6 +302,9 @@
 .page-analytics .filter-container .date-filters .date-group .date-input .date-input-readonly::placeholder {
   color: #aaa;
 }
+.page-analytics .filter-container .date-filters .date-group {
+  /* // Style untuk icon (sibling dari .date-input) */
+}
 .page-analytics .filter-container .date-filters .date-group .date-input-icon {
   position: absolute;
   right: 8px;
@@ -347,6 +350,9 @@
 .page-analytics .filter-container .date-filters .button-filter .btn-filter:hover {
   background: #1e3a40;
 }
+.page-analytics {
+  /* Error Banner */
+}
 .page-analytics .error-banner {
   background: #fee;
   border: 1px solid #f44336;
@@ -368,6 +374,9 @@
 }
 .page-analytics .error-banner .retry-btn svg {
   color: white;
+}
+.page-analytics {
+  /* Table */
 }
 .page-analytics .table-container {
   background: rgba(255, 255, 255, 0.95);
@@ -525,6 +534,9 @@
   font-size: 16px;
   font-style: italic;
 }
+.page-analytics {
+  /* --- SKELETON LOADING STYLES FOR STAT CARDS (ditambahkan di sini) --- */
+}
 .page-analytics .stat-card .card-icon .skeleton-circle {
   position: absolute;
   top: 50%;
@@ -545,10 +557,6 @@
 }
 /* === RESPONSIVE MEDIA QUERIES === */
 @media (max-width: 1440px) {
-  .page-analytics {
-    /* --- SKELETON LOADING STYLES untuk 1440px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
-  }
   .page-analytics .stats-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
@@ -573,6 +581,9 @@
   .page-analytics .loading-cell p {
     font-size: 15px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 1440px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 18px;
   }
@@ -589,12 +600,13 @@
     width: 55px;
     height: 55px;
   }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
+  }
 }
 @media (max-width: 1280px) {
   .page-analytics {
     overflow-x: none;
-    /* --- SKELETON LOADING STYLES untuk 1280px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
   }
   .page-analytics .stat-card {
     padding: 12px 16px;
@@ -635,6 +647,9 @@
   .page-analytics .loading-cell p {
     font-size: 15px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 1280px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 18px;
   }
@@ -651,12 +666,11 @@
     width: 55px;
     height: 55px;
   }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
+  }
 }
 @media (max-width: 1024px) {
-  .page-analytics {
-    /* --- SKELETON LOADING STYLES untuk 1024px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
-  }
   .page-analytics .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -688,6 +702,9 @@
   .page-analytics .loading-cell p {
     font-size: 14px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 1024px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 16px;
   }
@@ -704,12 +721,11 @@
     width: 50px;
     height: 50px;
   }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
+  }
 }
 @media (max-width: 800px) {
-  .page-analytics {
-    /* --- SKELETON LOADING STYLES untuk 800px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 800px --- */
-  }
   .page-analytics .analytics-table th {
     font-size: 14px;
   }
@@ -729,6 +745,9 @@
   .page-analytics .loading-cell p {
     font-size: 14px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 800px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 16px;
   }
@@ -745,12 +764,11 @@
     width: 50px;
     height: 50px;
   }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 800px --- */
+  }
 }
 @media (max-width: 480px) {
-  .page-analytics {
-    /* --- SKELETON LOADING STYLES untuk 480px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
-  }
   .page-analytics .page-header {
     flex-direction: row;
     justify-content: space-between;
@@ -864,6 +882,9 @@
   .page-analytics .no-data {
     padding: 25px 15px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 480px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 14px;
   }
@@ -881,12 +902,11 @@
     width: 40px;
     height: 40px;
   }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
+  }
 }
 @media (max-width: 380px) {
-  .page-analytics {
-    /* --- SKELETON LOADING STYLES untuk 380px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 380px --- */
-  }
   .page-analytics .page-header .header-content h1 {
     font-size: 23px;
   }
@@ -939,6 +959,9 @@
   .page-analytics .no-data {
     padding: 20px 12px;
   }
+  .page-analytics {
+    /* --- SKELETON LOADING STYLES untuk 380px --- */
+  }
   .page-analytics .stat-card .skeleton-line--header {
     height: 13px;
   }
@@ -954,6 +977,9 @@
   .page-analytics .stat-card .card-icon .skeleton-circle {
     width: 35px;
     height: 35px;
+  }
+  .page-analytics {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 380px --- */
   }
 }
 /* === CARD VALUE WITH INFO ICON === */

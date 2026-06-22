@@ -47,8 +47,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   opacity: 0;
   animation: fadeInButton 0.4s ease-in-out 0.2s forwards;
@@ -155,8 +154,7 @@
   padding: 40px;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
-  -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
 }
 .image-viewer-error p {
   color: #fff;
@@ -194,8 +192,7 @@
   background-color: rgba(0, 0, 0, 0.7);
   padding: 12px 24px;
   border-radius: 24px;
-  -webkit-backdrop-filter: blur(10px);
-          backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease-in-out;
 }

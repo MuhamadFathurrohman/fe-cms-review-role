@@ -121,7 +121,7 @@ const Roles = () => {
   const {
     searchTerm,
     setSearchTerm,
-     data: roles,
+    data: roles,
     loading,
     error,
     currentPage,
@@ -295,7 +295,7 @@ const Roles = () => {
         onConfirm={async () => {
           closeModal("deleteRoleConfirm");
           try {
-            const result = await roleService.softDelete(
+            const result = await roleService.hardDelete(
               role.id,
               isSuperAdmin,
               currentUser.id

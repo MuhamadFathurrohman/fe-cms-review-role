@@ -5,17 +5,6 @@
   animation: elegantWaveFlow 15s ease-in-out infinite;
   position: relative;
   /* Wave Layer dengan animasi yang lebih smooth */
-  /* Simplified Wave Particles */
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  max-height: 100vh;
-  padding: 20px;
-  font-family: "Barlow", sans-serif;
 }
 .unauthorized-page::before {
   content: "";
@@ -30,6 +19,9 @@
   pointer-events: none;
   z-index: 1;
 }
+.unauthorized-page {
+  /* Simplified Wave Particles */
+}
 .unauthorized-page::after {
   content: "";
   position: absolute;
@@ -43,6 +35,18 @@
   opacity: 0.6;
   pointer-events: none;
   z-index: 2;
+}
+.unauthorized-page {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  font-family: "Barlow", sans-serif;
 }
 
 .unauthorized-container {

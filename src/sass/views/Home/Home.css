@@ -3,10 +3,6 @@
 .home-dashboard {
   padding: 0;
   font-family: "Barlow", sans-serif;
-  /* ✅ WRAPPER BARU */
-  /* // === STAT ROW === */
-  /* // === CHARTS ROW === */
-  /* --- SKELETON LOADING STYLES (ditambahkan di sini) --- */
 }
 .home-dashboard .home-dashboard-header {
   display: flex;
@@ -47,10 +43,16 @@
 .home-dashboard .home-retry-button:hover {
   background: #dc2626;
 }
+.home-dashboard {
+  /* ✅ WRAPPER BARU */
+}
 .home-dashboard .home-dashboard-content {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+.home-dashboard {
+  /* // === STAT ROW === */
 }
 .home-dashboard .home-stats-row {
   display: flex;
@@ -58,14 +60,12 @@
   gap: 24px;
   height: 170px;
   /* // Welcome Card (lebar penuh di mobile, 60% di desktop) */
-  /* // Stat Cards (dua card kecil) */
 }
 .home-dashboard .home-stats-row .home-welcome-card {
   flex: 1 1 50%;
   min-width: 400px;
   background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(20px);
-          backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 23px 20px;
@@ -105,12 +105,14 @@
   margin: 8px 0 0 0;
   font-weight: 700;
 }
+.home-dashboard .home-stats-row {
+  /* // Stat Cards (dua card kecil) */
+}
 .home-dashboard .home-stats-row .home-stat-card {
   flex: 1 1 25%;
   max-width: 250px;
   background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(20px);
-          backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 20px;
@@ -188,6 +190,9 @@
   background: linear-gradient(135deg, rgba(243, 153, 75, 0.15), rgba(243, 153, 75, 0.25));
   transform: scale(1.05);
 }
+.home-dashboard {
+  /* // === CHARTS ROW === */
+}
 .home-dashboard .home-charts-row {
   display: flex;
   flex-wrap: wrap;
@@ -198,8 +203,7 @@
   flex: 1 1 48%;
   min-width: 300px;
   background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(20px);
-          backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 20px;
@@ -320,8 +324,7 @@
   flex: 1 1 48%;
   min-width: 300px;
   background: rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(20px);
-          backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 16px;
   padding: 20px;
@@ -437,6 +440,9 @@
   opacity: 0.8;
   line-height: 1.4;
 }
+.home-dashboard {
+  /* --- SKELETON LOADING STYLES (ditambahkan di sini) --- */
+}
 .home-dashboard .home-activity-list .skeleton-activity-container {
   display: flex;
   align-items: center;
@@ -482,10 +488,6 @@
 
 /* Desktop Large - 1440px */
 @media (max-width: 1440px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1440px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 25px;
   }
@@ -580,6 +582,9 @@
     width: 18px;
     height: 18px;
   }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 1440px --- */
+  }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 14px;
     gap: 10px;
@@ -591,13 +596,12 @@
     width: 35px;
     height: 13px;
   }
+  .home-dashboard {
+    /* // --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
+  }
 }
 /* Desktop Medium - 1280px */
 @media (max-width: 1280px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1280px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 20px;
   }
@@ -683,6 +687,9 @@
     width: 16px;
     height: 16px;
   }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 1280px --- */
+  }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 14px;
     gap: 10px;
@@ -694,13 +701,12 @@
     width: 35px;
     height: 13px;
   }
+  .home-dashboard {
+    /* // --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
+  }
 }
 /* Large Tablet - 1024px */
 @media (max-width: 1024px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1024px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 20px;
   }
@@ -741,6 +747,10 @@
     height: 36px;
     left: 120px;
     top: -5px;
+  }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 1024px --- */
+    /* // --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
   }
 }
 @media (max-width: 1024px) and (max-width: 920px) and (min-width: 900px) {
@@ -809,10 +819,6 @@
 }
 /* Medium Tablet - 800px */
 @media (max-width: 850px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 850px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 850px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 14px;
   }
@@ -896,6 +902,9 @@
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-stats-horizontal .home-stat-item-horizontal .home-stat-label {
     font-size: 11px;
   }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 850px --- */
+  }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 16px;
     gap: 10px;
@@ -907,13 +916,12 @@
     width: 32px;
     height: 12px;
   }
+  .home-dashboard {
+    /* // --- AKHIR SKELETON LOADING STYLES untuk 850px --- */
+  }
 }
 /* Mobile Medium - 480px */
 @media (max-width: 480px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 480px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 160px;
   }
@@ -968,6 +976,10 @@
     height: 35px;
     left: 110px;
     top: -3px;
+  }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 480px --- */
+    /* // --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
   }
 }
 @media (max-width: 480px) and (min-width: 390px) and (max-width: 420px) {
@@ -1040,9 +1052,6 @@
 }
 /* Mobile Small - 380px */
 @media (max-width: 380px) {
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 380px --- */
-  }
   .home-dashboard .home-dashboard-content {
     gap: 150px;
   }
@@ -1125,6 +1134,9 @@
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-analytics-stats-horizontal .home-stat-item-horizontal .home-stat-label {
     font-size: 13px;
+  }
+  .home-dashboard {
+    /* // --- SKELETON LOADING STYLES untuk 380px --- */
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 8px 10px;

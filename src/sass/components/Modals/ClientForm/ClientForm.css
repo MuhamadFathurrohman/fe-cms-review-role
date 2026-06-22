@@ -106,9 +106,6 @@
   transition: all 0.3s ease;
   resize: none;
   margin-bottom: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(45, 76, 82, 0.6) transparent;
-  /* Chrome, Edge, Safari */
 }
 .client-form .client-form-group textarea:focus {
   outline: none;
@@ -121,6 +118,11 @@
   /* // trik agar background autofill tidak kuning */
   -webkit-transition: background-color 9999s ease-in-out 0s;
   transition: background-color 9999s ease-in-out 0s;
+}
+.client-form .client-form-group textarea {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(45, 76, 82, 0.6) transparent;
+  /* Chrome, Edge, Safari */
 }
 .client-form .client-form-group textarea::-webkit-scrollbar {
   width: 6px;

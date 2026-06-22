@@ -5,8 +5,8 @@
  * - Validasi izin berbasis daftar resource yang valid
  * - Transformasi data untuk tampilan UI
  * - Proteksi khusus untuk peran sistem dan super admin
- * - Penanganan izin "none/read/manage" yang konsisten
- * 
+ * - Penanganan izin "none/read/manage/review" yang konsisten
+ *
  * Mengimplementasikan prinsip keamanan:
  * - Hanya super admin yang bisa mengelola izin peran
  * - Resource "role" dilindungi dari modifikasi non-super-admin
@@ -34,18 +34,39 @@ const COMMON_RESOURCES = [
 const ALL_VALID_RESOURCES = [...COMMON_RESOURCES];
 
 /** @constant {string[]} Level akses yang valid untuk setiap resource */
-const VALID_ACCESS_LEVELS = ["none", "read", "manage"];
+const VALID_ACCESS_LEVELS = ["none", "read", "manage", "review"];
+
+/**
+ * Resource yang mendukung level akses "review".
+ * Sinkron dengan konstanta REVIEW_SUPPORTED_RESOURCES di RoleForm.jsx.
+ *
+ * @constant {string[]}
+ */
+const REVIEW_SUPPORTED_RESOURCES = ["blog", "product"];
+
+/**
+ * Menghasilkan pesan pilihan akses yang valid berdasarkan resource.
+ * Resource yang mendukung review akan menyertakan opsi "Review" di pesan.
+ *
+ * @param {string} resource - Nama resource yang divalidasi
+ * @returns {string} Pesan pilihan akses yang sesuai
+ */
+const getValidChoicesMessage = (resource) => {
+  return REVIEW_SUPPORTED_RESOURCES.includes(resource)
+    ? "None, Read, Manage, or Review"
+    : "None, Read, or Manage";
+};
 
 /**
  * Layanan peran terpusat.
  * Mengelola semua operasi CRUD dan validasi terkait peran dan izin.
- * 
+ *
  * @namespace roleService
  */
 export const roleService = {
   /**
    * Mendapatkan daftar resource yang tersedia berdasarkan status super admin.
-   * 
+   *
    * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
    * @returns {string[]} Daftar resource yang tersedia
    */
@@ -56,13 +77,9 @@ export const roleService = {
   /**
    * Memproses daftar peran untuk ditampilkan di UI.
    * Menambahkan properti yang diformat dan metadata izin.
-   * 
+   *
    * @param {Array<Object>} roles - Daftar peran dari API
    * @returns {Array<Object>} Daftar peran yang telah diproses dengan properti tambahan
-   * 
-   * @example
-   * const processedRoles = roleService.processList(rawRoles);
-   * // Setiap peran memiliki: createdAtFormatted, permissionCount, dll.
    */
   processList: (roles) => {
     return roles.map((role) => ({
@@ -76,13 +93,9 @@ export const roleService = {
   /**
    * Mendapatkan semua peran tanpa pagination.
    * Digunakan untuk dropdown seleksi peran di form pengguna.
-   * 
+   *
    * @async
-   * @returns {{
-   *   success: boolean,
-   *    Array<Object>,
-   *   message?: string
-   * }} Respons dengan daftar peran yang diproses
+   * @returns {{ success: boolean, data?: Array<Object>, message?: string }}
    */
   getAll: async () => {
     try {
@@ -103,31 +116,23 @@ export const roleService = {
     }
   },
 
-  // parameter bypassCache
   /**
    * Mendapatkan daftar peran dengan pagination, pencarian, dan filter.
-   * Mendukung filter berdasarkan status sistem.
-   * 
+   *
    * @async
-   * @param {number} [page=1] - Halaman yang diminta
-   * @param {number} [limit=10] - Jumlah peran per halaman
-   * @param {string} [search=""] - String pencarian (nama peran)
-   * @param {Object} [filters={}] - Filter tambahan
-   * @param {boolean} [filters.isSystem] - Filter berdasarkan status sistem
-   * @param {boolean} [bypassCache=false] - Apakah melewati cache browser
-   * @returns {{
-   *   success: boolean,
-   *    Array<Object>,
-   *   pagination: Object,
-   *   message?: string
-   * }} Respons dengan daftar peran yang diproses dan metadata pagination
+   * @param {number} [page=1]
+   * @param {number} [limit=10]
+   * @param {string} [search=""]
+   * @param {Object} [filters={}]
+   * @param {boolean} [bypassCache=false]
+   * @returns {{ success: boolean, data?: Array<Object>, pagination?: Object, message?: string }}
    */
   getPaginated: async (
     page = 1,
     limit = 10,
     search = "",
     filters = {},
-    bypassCache = false
+    bypassCache = false,
   ) => {
     try {
       const params = {
@@ -137,19 +142,12 @@ export const roleService = {
         bypassCache,
       };
 
-      if (search) {
-        params.search = search;
-      }
-
-      if (filters.isSystem !== undefined) {
-        params.isSystem = filters.isSystem;
-      }
+      if (search) params.search = search;
+      if (filters.isSystem !== undefined) params.isSystem = filters.isSystem;
 
       const result = await dataService.roles.getAll(params);
 
-      if (!result.success) {
-        return result;
-      }
+      if (!result.success) return result;
 
       const processedRoles = roleService.processList(result.data);
 
@@ -170,22 +168,20 @@ export const roleService = {
   /**
    * Membuat peran baru dengan izin yang ditentukan.
    * Melakukan validasi ketat terhadap nama peran dan format izin.
-   * 
+   * Pesan error validasi bersifat dinamis — menyesuaikan pilihan yang tersedia per resource.
+   *
    * @async
-   * @param {Object} roleData - Data dasar peran
+   * @param {Object} roleData
    * @param {string} roleData.name - Nama peran (wajib)
    * @param {string} [roleData.description] - Deskripsi peran (opsional)
-   * @param {Array<{resource: string, action: string}>} permissions - Daftar izin
-   * @param {boolean} [isSuperAdmin=false] - Apakah pembuat adalah super admin
-   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data peran yang dibuat
+   * @param {Array<{resource: string, action: string}>} permissions
+   * @param {boolean} [isSuperAdmin=false]
+   * @returns {{ success: boolean, data?: Object, message?: string }}
    */
   create: async (roleData, permissions, isSuperAdmin = false) => {
     try {
       if (!roleData.name || roleData.name.trim() === "") {
-        return {
-          success: false,
-          message: "Please enter a role name",
-        };
+        return { success: false, message: "Please enter a role name" };
       }
 
       if (!Array.isArray(permissions)) {
@@ -195,7 +191,6 @@ export const roleService = {
         };
       }
 
-      // Validasi permissions
       for (const perm of permissions) {
         const { resource, action } = perm;
 
@@ -209,7 +204,7 @@ export const roleService = {
         if (!VALID_ACCESS_LEVELS.includes(action)) {
           return {
             success: false,
-            message: `Invalid permission for ${resource}. Please choose: None, Read, or Manage`,
+            message: `Invalid permission for ${resource}. Please choose: ${getValidChoicesMessage(resource)}`,
           };
         }
 
@@ -222,7 +217,7 @@ export const roleService = {
       }
 
       const validPermissions = permissions.filter(
-        (perm) => perm.action !== "none"
+        (perm) => perm.action !== "none",
       );
 
       const rolePayload = {
@@ -233,13 +228,11 @@ export const roleService = {
 
       const createResult = await dataService.roles.create(rolePayload);
 
-      if (!createResult.success) {
-        return createResult;
-      }
+      if (!createResult.success) return createResult;
 
       return {
         success: true,
-        data:createResult.data,
+        data: createResult.data,
         message: "Role created successfully!",
       };
     } catch (error) {
@@ -254,23 +247,21 @@ export const roleService = {
   /**
    * Memperbarui peran yang sudah ada dengan izin baru.
    * Mengikuti validasi yang sama seperti pembuatan peran.
-   * 
+   * Pesan error validasi bersifat dinamis — menyesuaikan pilihan yang tersedia per resource.
+   *
    * @async
-   * @param {string|number} id - ID peran yang akan diperbarui
-   * @param {Object} roleData - Data pembaruan peran
+   * @param {string|number} id
+   * @param {Object} roleData
    * @param {string} roleData.name - Nama peran baru
    * @param {string} [roleData.description] - Deskripsi peran baru
-   * @param {Array<{resource: string, action: string}>} permissions - Izin baru
-   * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
-   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data peran yang diperbarui
+   * @param {Array<{resource: string, action: string}>} permissions
+   * @param {boolean} [isSuperAdmin=false]
+   * @returns {{ success: boolean, data?: Object, message?: string }}
    */
   update: async (id, roleData, permissions, isSuperAdmin = false) => {
     try {
       if (!roleData.name || roleData.name.trim() === "") {
-        return {
-          success: false,
-          message: "Please enter a role name",
-        };
+        return { success: false, message: "Please enter a role name" };
       }
 
       if (!Array.isArray(permissions)) {
@@ -280,7 +271,6 @@ export const roleService = {
         };
       }
 
-      // Validasi permissions
       for (const perm of permissions) {
         const { resource, action } = perm;
 
@@ -294,7 +284,7 @@ export const roleService = {
         if (!VALID_ACCESS_LEVELS.includes(action)) {
           return {
             success: false,
-            message: `Invalid permission for ${resource}. Please choose: None, Read, or Manage`,
+            message: `Invalid permission for ${resource}. Please choose: ${getValidChoicesMessage(resource)}`,
           };
         }
 
@@ -307,7 +297,7 @@ export const roleService = {
       }
 
       const validPermissions = permissions.filter(
-        (perm) => perm.action !== "none"
+        (perm) => perm.action !== "none",
       );
 
       const updatePayload = {
@@ -318,13 +308,11 @@ export const roleService = {
 
       const updateResult = await dataService.roles.update(id, updatePayload);
 
-      if (!updateResult.success) {
-        return updateResult;
-      }
+      if (!updateResult.success) return updateResult;
 
       return {
         success: true,
-        data:updateResult.data,
+        data: updateResult.data,
         message: "Role successfully updated",
       };
     } catch (error) {
@@ -338,13 +326,12 @@ export const roleService = {
 
   /**
    * Melakukan soft delete peran (set deletedAt).
-   * Melindungi peran sistem dari penghapusan oleh non-super-admin.
-   * 
+   *
    * @async
-   * @param {string|number} id - ID peran yang akan dihapus
-   * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
-   * @param {Object} [roleResult] - Hasil fetch data peran sebelumnya
-   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan
+   * @param {string|number} id
+   * @param {boolean} [isSuperAdmin=false]
+   * @param {Object} [roleResult]
+   * @returns {{ success: boolean, message?: string }}
    */
   softDelete: async (id, isSuperAdmin = false, roleResult) => {
     try {
@@ -356,10 +343,7 @@ export const roleService = {
       const result = await dataService.roles.softDelete(id);
 
       if (result.success) {
-        return {
-          success: true,
-          message: "Role successfully deleted",
-        };
+        return { success: true, message: "Role successfully deleted" };
       }
       return result;
     } catch (error) {
@@ -373,14 +357,13 @@ export const roleService = {
 
   /**
    * Melakukan hard delete peran (hapus permanen dari database).
-   * Melindungi peran sistem dari penghapusan oleh non-super-admin.
-   * 
+   *
    * @async
-   * @param {string|number} id - ID peran yang akan dihapus permanen
-   * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
-   * @param {Object} [roleResult] - Hasil fetch data peran sebelumnya
-   * @param {boolean} [isSystem] - Status apakah peran adalah sistem
-   * @returns {{ success: boolean, message?: string }} Status operasi penghapusan permanen
+   * @param {string|number} id
+   * @param {boolean} [isSuperAdmin=false]
+   * @param {Object} [roleResult]
+   * @param {boolean} [isSystem]
+   * @returns {{ success: boolean, message?: string }}
    */
   hardDelete: async (id, isSuperAdmin = false, roleResult, isSystem) => {
     try {
@@ -412,11 +395,11 @@ export const roleService = {
    * Mendapatkan detail peran berdasarkan ID.
    * Mengisi izin lengkap untuk semua resource yang tersedia,
    * bahkan jika tidak disimpan di database (default ke "none").
-   * 
+   *
    * @async
-   * @param {string|number} id - ID peran yang diminta
-   * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
-   * @returns {{ success: boolean, data?: Object, message?: string }} Respons dengan data peran yang diproses
+   * @param {string|number} id
+   * @param {boolean} [isSuperAdmin=false]
+   * @returns {{ success: boolean, data?: Object, message?: string }}
    */
   getById: async (id, isSuperAdmin = false) => {
     try {
@@ -446,7 +429,7 @@ export const roleService = {
 
       return {
         success: true,
-        data:processedRole,
+        data: processedRole,
       };
     } catch (error) {
       console.error("Error in getById role:", error);
@@ -459,10 +442,9 @@ export const roleService = {
 
   /**
    * Mendapatkan daftar resource yang tersedia untuk pengguna saat ini.
-   * Alias untuk `getAllResources()` dengan antarmuka yang konsisten.
-   * 
-   * @param {boolean} [isSuperAdmin=false] - Apakah pengguna adalah super admin
-   * @returns {string[]} Daftar resource yang tersedia
+   *
+   * @param {boolean} [isSuperAdmin=false]
+   * @returns {string[]}
    */
   getResourceList(isSuperAdmin = false) {
     return roleService.getAllResources(isSuperAdmin);

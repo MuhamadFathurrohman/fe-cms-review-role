@@ -225,7 +225,7 @@ const Categories = () => {
         onConfirm={async () => {
           closeModal("deleteCategoryConfirm");
           try {
-            const result = await categoriesService.softDelete(
+            const result = await categoriesService.hardDelete(
               item.id,
               currentUser.id
             );

@@ -33,7 +33,7 @@ import { separateImages } from "../utils/imageUtils";
  *   }
  * }} Respons terformat seragam
  */
-const normalizePaginatedResponse = (response) => {
+export const normalizePaginatedResponse = (response) => {
   if (response.success === false) {
     return {
       success: false,
@@ -365,139 +365,139 @@ export const dataService = {
     },
   },
 
-  // =============================================
-  // BLOGS
-  // =============================================
-  /**
-   * Operasi data untuk entitas Blog.
-   * Mendukung multi-bahasa dan upload gambar.
-   */
-  blogs: {
-    /**
-     * Mengambil daftar blog dengan pagination.
-     * @param {Object} [params={}] - Parameter query
-     * @returns {Promise<Object>} Respons terformat
-     */
-    getAll: async (params = {}) => {
-      const response = await generalApiService.getAll("/blogs", {
-        ...params,
-        deletedAt: null,
-      });
-      return normalizePaginatedResponse(response);
-    },
+  // // =============================================
+  // // BLOGS
+  // // =============================================
+  // /**
+  //  * Operasi data untuk entitas Blog.
+  //  * Mendukung multi-bahasa dan upload gambar.
+  //  */
+  // blogs: {
+  //   /**
+  //    * Mengambil daftar blog dengan pagination.
+  //    * @param {Object} [params={}] - Parameter query
+  //    * @returns {Promise<Object>} Respons terformat
+  //    */
+  //   getAll: async (params = {}) => {
+  //     const response = await generalApiService.getAll("/blogs", {
+  //       ...params,
+  //       deletedAt: null,
+  //     });
+  //     return normalizePaginatedResponse(response);
+  //   },
 
-    /**
-     * Mengambil detail blog berdasarkan ID.
-     * @param {string|number} id - ID blog
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    getById: async (id) => {
-      return await generalApiService.get(`/blogs/${id}`);
-    },
+  //   /**
+  //    * Mengambil detail blog berdasarkan ID.
+  //    * @param {string|number} id - ID blog
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   getById: async (id) => {
+  //     return await generalApiService.get(`/blogs/${id}`);
+  //   },
 
-    /**
-     * Membuat blog baru.
-     * Menggunakan FormData untuk mendukung upload gambar dan translations.
-     *
-     * @param {Object} blogData - Data blog
-     * @param {File|string} blogData.image - Gambar (File saat create, string path saat edit)
-     * @param {Array} blogData.translations - Data terjemahan multi-bahasa
-     * @param {boolean} blogData.isPublished - Status publikasi
-     * @param {boolean} blogData.isFeatured - Status unggulan
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    create: async (blogData) => {
-      const formData = new FormData();
+  //   /**
+  //    * Membuat blog baru.
+  //    * Menggunakan FormData untuk mendukung upload gambar dan translations.
+  //    *
+  //    * @param {Object} blogData - Data blog
+  //    * @param {File|string} blogData.image - Gambar (File saat create, string path saat edit)
+  //    * @param {Array} blogData.translations - Data terjemahan multi-bahasa
+  //    * @param {boolean} blogData.isPublished - Status publikasi
+  //    * @param {boolean} blogData.isFeatured - Status unggulan
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   create: async (blogData) => {
+  //     const formData = new FormData();
 
-      Object.entries(blogData).forEach(([key, value]) => {
-        if (value !== null && value !== undefined) {
-          if (key === "translations") {
-            formData.append(key, JSON.stringify(value));
-          } else if (key === "image") {
-            if (value instanceof File) {
-              formData.append("image", value);
-            } else if (typeof value === "string") {
-              formData.append("image", value);
-            }
-          } else if (key === "isPublished" || key === "isFeatured") {
-            formData.append(key, String(value));
-          } else {
-            formData.append(key, value);
-          }
-        }
-      });
+  //     Object.entries(blogData).forEach(([key, value]) => {
+  //       if (value !== null && value !== undefined) {
+  //         if (key === "translations") {
+  //           formData.append(key, JSON.stringify(value));
+  //         } else if (key === "image") {
+  //           if (value instanceof File) {
+  //             formData.append("image", value);
+  //           } else if (typeof value === "string") {
+  //             formData.append("image", value);
+  //           }
+  //         } else if (key === "isPublished" || key === "isFeatured") {
+  //           formData.append(key, String(value));
+  //         } else {
+  //           formData.append(key, value);
+  //         }
+  //       }
+  //     });
 
-      return await generalApiService.create("/blogs", formData);
-    },
+  //     return await generalApiService.create("/blogs", formData);
+  //   },
 
-    /**
-     * Memperbarui blog.
-     * Jika ada file gambar baru → gunakan FormData.
-     * Jika tidak → kirim sebagai JSON biasa.
-     *
-     * @param {string|number} id - ID blog
-     * @param {Object} blogData - Data pembaruan
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    update: async (id, blogData) => {
-      const hasNewFile = blogData.image instanceof File;
+  //   /**
+  //    * Memperbarui blog.
+  //    * Jika ada file gambar baru → gunakan FormData.
+  //    * Jika tidak → kirim sebagai JSON biasa.
+  //    *
+  //    * @param {string|number} id - ID blog
+  //    * @param {Object} blogData - Data pembaruan
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   update: async (id, blogData) => {
+  //     const hasNewFile = blogData.image instanceof File;
 
-      if (hasNewFile) {
-        const formData = new FormData();
+  //     if (hasNewFile) {
+  //       const formData = new FormData();
 
-        Object.entries(blogData).forEach(([key, value]) => {
-          if (value !== null && value !== undefined) {
-            if (key === "translations") {
-              formData.append(key, JSON.stringify(value));
-            } else if (key === "image") {
-              if (value instanceof File) {
-                formData.append("image", value);
-              }
-            } else if (key === "isPublished" || key === "isFeatured") {
-              formData.append(key, String(value));
-            } else {
-              formData.append(key, value);
-            }
-          }
-        });
+  //       Object.entries(blogData).forEach(([key, value]) => {
+  //         if (value !== null && value !== undefined) {
+  //           if (key === "translations") {
+  //             formData.append(key, JSON.stringify(value));
+  //           } else if (key === "image") {
+  //             if (value instanceof File) {
+  //               formData.append("image", value);
+  //             }
+  //           } else if (key === "isPublished" || key === "isFeatured") {
+  //             formData.append(key, String(value));
+  //           } else {
+  //             formData.append(key, value);
+  //           }
+  //         }
+  //       });
 
-        return await generalApiService.update("/blogs", id, formData);
-      } else {
-        const payload = {
-          image: blogData.image,
-          isPublished: blogData.isPublished,
-          isFeatured: blogData.isFeatured,
-          translations: blogData.translations,
-        };
+  //       return await generalApiService.update("/blogs", id, formData);
+  //     } else {
+  //       const payload = {
+  //         image: blogData.image,
+  //         isPublished: blogData.isPublished,
+  //         isFeatured: blogData.isFeatured,
+  //         translations: blogData.translations,
+  //       };
 
-        Object.keys(payload).forEach((key) => {
-          if (payload[key] === undefined) {
-            delete payload[key];
-          }
-        });
+  //       Object.keys(payload).forEach((key) => {
+  //         if (payload[key] === undefined) {
+  //           delete payload[key];
+  //         }
+  //       });
 
-        return await generalApiService.update("/blogs", id, payload);
-      }
-    },
+  //       return await generalApiService.update("/blogs", id, payload);
+  //     }
+  //   },
 
-    /**
-     * Soft delete blog.
-     * @param {string|number} id - ID blog
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    softDelete: async (id) => {
-      return await generalApiService.delete(`/blogs/${id}`);
-    },
+  //   /**
+  //    * Soft delete blog.
+  //    * @param {string|number} id - ID blog
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   softDelete: async (id) => {
+  //     return await generalApiService.delete(`/blogs/${id}`);
+  //   },
 
-    /**
-     * Hard delete blog.
-     * @param {string|number} id - ID blog
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    hardDelete: async (id) => {
-      return await generalApiService.delete(`/blogs/${id}/hard`);
-    },
-  },
+  //   /**
+  //    * Hard delete blog.
+  //    * @param {string|number} id - ID blog
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   hardDelete: async (id) => {
+  //     return await generalApiService.delete(`/blogs/${id}/hard`);
+  //   },
+  // },
 
   // =============================================
   // NOTIFICATIONS
@@ -540,150 +540,150 @@ export const dataService = {
     },
   },
 
-  // =============================================
-  // PRODUCTS
-  // =============================================
-  /**
-   * Operasi data untuk entitas Product.
-   * Mendukung multi-gambar, multi-bahasa, dan sorting.
-   */
-  products: {
-    /**
-     * Mengambil daftar produk dengan pagination.
-     * @param {Object} [params={}] - Parameter query
-     * @returns {Promise<Object>} Respons terformat
-     */
-    getAll: async (params = {}) => {
-      const response = await generalApiService.getAll("/products", {
-        ...params,
-        deletedAt: null,
-      });
-      return normalizePaginatedResponse(response);
-    },
+  // // =============================================
+  // // PRODUCTS
+  // // =============================================
+  // /**
+  //  * Operasi data untuk entitas Product.
+  //  * Mendukung multi-gambar, multi-bahasa, dan sorting.
+  //  */
+  // products: {
+  //   /**
+  //    * Mengambil daftar produk dengan pagination.
+  //    * @param {Object} [params={}] - Parameter query
+  //    * @returns {Promise<Object>} Respons terformat
+  //    */
+  //   getAll: async (params = {}) => {
+  //     const response = await generalApiService.getAll("/products", {
+  //       ...params,
+  //       deletedAt: null,
+  //     });
+  //     return normalizePaginatedResponse(response);
+  //   },
 
-    /**
-     * Mengambil detail produk berdasarkan ID.
-     * @param {string|number} id - ID produk
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    getById: async (id) => {
-      return await generalApiService.get(`/products/${id}`);
-    },
+  //   /**
+  //    * Mengambil detail produk berdasarkan ID.
+  //    * @param {string|number} id - ID produk
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   getById: async (id) => {
+  //     return await generalApiService.get(`/products/${id}`);
+  //   },
 
-    /**
-     * Membuat produk baru.
-     * Menggunakan FormData untuk upload gambar dan translations.
-     *
-     * @param {Object} productData - Data produk
-     * @param {Array<File|{file: File}>} productData.images - Daftar gambar
-     * @param {Array} productData.translations - Data terjemahan
-     * @param {boolean} productData.isActive - Status aktif
-     * @param {boolean} productData.isFeatured - Status unggulan
-     * @param {number} productData.sortOrder - Urutan tampilan
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    create: async (productData) => {
-      const formData = new FormData();
+  //   /**
+  //    * Membuat produk baru.
+  //    * Menggunakan FormData untuk upload gambar dan translations.
+  //    *
+  //    * @param {Object} productData - Data produk
+  //    * @param {Array<File|{file: File}>} productData.images - Daftar gambar
+  //    * @param {Array} productData.translations - Data terjemahan
+  //    * @param {boolean} productData.isActive - Status aktif
+  //    * @param {boolean} productData.isFeatured - Status unggulan
+  //    * @param {number} productData.sortOrder - Urutan tampilan
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   create: async (productData) => {
+  //     const formData = new FormData();
 
-      let imageFiles = [];
-      if (Array.isArray(productData.images) && productData.images.length > 0) {
-        imageFiles = productData.images
-          .map((img) => {
-            if (img && img.file instanceof File) {
-              return img.file;
-            } else if (img instanceof File) {
-              return img;
-            }
-            return null;
-          })
-          .filter(Boolean);
-      }
+  //     let imageFiles = [];
+  //     if (Array.isArray(productData.images) && productData.images.length > 0) {
+  //       imageFiles = productData.images
+  //         .map((img) => {
+  //           if (img && img.file instanceof File) {
+  //             return img.file;
+  //           } else if (img instanceof File) {
+  //             return img;
+  //           }
+  //           return null;
+  //         })
+  //         .filter(Boolean);
+  //     }
 
-      Object.entries(productData).forEach(([key, value]) => {
-        if (value === null || value === undefined) return;
+  //     Object.entries(productData).forEach(([key, value]) => {
+  //       if (value === null || value === undefined) return;
 
-        if (key === "translations") {
-          formData.append("translations", JSON.stringify(value));
-        } else if (key === "images") {
-          imageFiles.forEach((file) => {
-            formData.append("images", file);
-          });
-        } else if (key === "isActive" || key === "isFeatured") {
-          formData.append(key, value ? "true" : "false");
-        } else if (key === "sortOrder") {
-          formData.append(key, String(value));
-        } else {
-          formData.append(key, value);
-        }
-      });
+  //       if (key === "translations") {
+  //         formData.append("translations", JSON.stringify(value));
+  //       } else if (key === "images") {
+  //         imageFiles.forEach((file) => {
+  //           formData.append("images", file);
+  //         });
+  //       } else if (key === "isActive" || key === "isFeatured") {
+  //         formData.append(key, value ? "true" : "false");
+  //       } else if (key === "sortOrder") {
+  //         formData.append(key, String(value));
+  //       } else {
+  //         formData.append(key, value);
+  //       }
+  //     });
 
-      return await generalApiService.create("/products", formData);
-    },
+  //     return await generalApiService.create("/products", formData);
+  //   },
 
-    /**
-     * Memperbarui produk.
-     * Memisahkan gambar baru (File) dan path gambar lama menggunakan `separateImages`.
-     *
-     * @param {string|number} id - ID produk
-     * @param {Object} productData - Data pembaruan
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    update: async (id, productData) => {
-      const formData = new FormData();
+  //   /**
+  //    * Memperbarui produk.
+  //    * Memisahkan gambar baru (File) dan path gambar lama menggunakan `separateImages`.
+  //    *
+  //    * @param {string|number} id - ID produk
+  //    * @param {Object} productData - Data pembaruan
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   update: async (id, productData) => {
+  //     const formData = new FormData();
 
-      let newFiles = [];
-      let existingPaths = [];
+  //     let newFiles = [];
+  //     let existingPaths = [];
 
-      if (Array.isArray(productData.images) && productData.images.length > 0) {
-        const result = separateImages(productData.images);
-        newFiles = result.newFiles;
-        existingPaths = result.existingPaths;
-      }
+  //     if (Array.isArray(productData.images) && productData.images.length > 0) {
+  //       const result = separateImages(productData.images);
+  //       newFiles = result.newFiles;
+  //       existingPaths = result.existingPaths;
+  //     }
 
-      Object.entries(productData).forEach(([key, value]) => {
-        if (value === null || value === undefined) return;
+  //     Object.entries(productData).forEach(([key, value]) => {
+  //       if (value === null || value === undefined) return;
 
-        if (key === "translations") {
-          formData.append("translations", JSON.stringify(value));
-        } else if (key === "images") {
-          if (existingPaths.length > 0) {
-            formData.append("images", JSON.stringify(existingPaths));
-          }
-          if (newFiles.length > 0) {
-            newFiles.forEach((file) => {
-              formData.append("images", file);
-            });
-          }
-        } else if (key === "isActive" || key === "isFeatured") {
-          formData.append(key, value ? "true" : "false");
-        } else if (key === "sortOrder") {
-          formData.append(key, String(value));
-        } else {
-          formData.append(key, value);
-        }
-      });
+  //       if (key === "translations") {
+  //         formData.append("translations", JSON.stringify(value));
+  //       } else if (key === "images") {
+  //         if (existingPaths.length > 0) {
+  //           formData.append("images", JSON.stringify(existingPaths));
+  //         }
+  //         if (newFiles.length > 0) {
+  //           newFiles.forEach((file) => {
+  //             formData.append("images", file);
+  //           });
+  //         }
+  //       } else if (key === "isActive" || key === "isFeatured") {
+  //         formData.append(key, value ? "true" : "false");
+  //       } else if (key === "sortOrder") {
+  //         formData.append(key, String(value));
+  //       } else {
+  //         formData.append(key, value);
+  //       }
+  //     });
 
-      return await generalApiService.update("/products", id, formData);
-    },
+  //     return await generalApiService.update("/products", id, formData);
+  //   },
 
-    /**
-     * Soft delete produk.
-     * @param {string|number} id - ID produk
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    softDelete: async (id) => {
-      return await generalApiService.delete(`/products/${id}`);
-    },
+  //   /**
+  //    * Soft delete produk.
+  //    * @param {string|number} id - ID produk
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   softDelete: async (id) => {
+  //     return await generalApiService.delete(`/products/${id}`);
+  //   },
 
-    /**
-     * Hard delete produk.
-     * @param {string|number} id - ID produk
-     * @returns {Promise<import("./generalApiService").ApiResponse>}
-     */
-    hardDelete: async (id) => {
-      return await generalApiService.delete(`/products/${id}/hard`);
-    },
-  },
+  //   /**
+  //    * Hard delete produk.
+  //    * @param {string|number} id - ID produk
+  //    * @returns {Promise<import("./generalApiService").ApiResponse>}
+  //    */
+  //   hardDelete: async (id) => {
+  //     return await generalApiService.delete(`/products/${id}/hard`);
+  //   },
+  // },
 
   // =============================================
   // CATEGORIES

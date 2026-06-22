@@ -165,6 +165,12 @@
         color: #475569;
         border: 1px solid #cbd5e1;
     }
+
+    &.access-review {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        color: #b45309;
+        border: 1px solid #fcd34d;
+    }
 }
 
 /* Users Section */

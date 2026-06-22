@@ -2,19 +2,6 @@
 .audit-log-detail-modal {
   padding: 16px;
   /* ============== LOADING & ERROR STATES ============== */
-  /* ============== SECTION STYLING ============== */
-  /* ============== BASIC INFO ROWS ============== */
-  /* ============== BADGE STYLING (KEEP ORIGINAL) ============== */
-  /* ============== CHANGES SUMMARY ============== */
-  /* ============== DETAILED VALUES GRID ============== */
-  /* ============== MEDIA QUERIES ============== */
-  /* 1440px – Large Desktop */
-  /* 1280px – Desktop */
-  /* 1024px – Tablet Landscape */
-  /* 800px – Tablet Portrait */
-  /* 480px – Mobile */
-  /* 480px – Mobile */
-  /* 380px – Small Mobile */
 }
 .audit-log-detail-modal .audit-log-loading-container,
 .audit-log-detail-modal .audit-log-error {
@@ -54,6 +41,9 @@
     transform: rotate(360deg);
   }
 }
+.audit-log-detail-modal {
+  /* ============== SECTION STYLING ============== */
+}
 .audit-log-detail-modal .detail-section {
   margin-bottom: 24px;
   padding-bottom: 20px;
@@ -71,6 +61,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+.audit-log-detail-modal {
+  /* ============== BASIC INFO ROWS ============== */
 }
 .audit-log-detail-modal .log-detail-row {
   display: flex;
@@ -90,6 +83,9 @@
   flex: 1;
   color: #4a7078;
   line-height: 1.5;
+}
+.audit-log-detail-modal {
+  /* ============== BADGE STYLING (KEEP ORIGINAL) ============== */
 }
 .audit-log-detail-modal .badge.action {
   display: inline-block;
@@ -131,6 +127,9 @@
   background: linear-gradient(135deg, #e5e7eb, #d1d5db);
   color: #374151;
   border: 1px solid #9ca3af;
+}
+.audit-log-detail-modal {
+  /* ============== CHANGES SUMMARY ============== */
 }
 .audit-log-detail-modal .changes-container {
   display: flex;
@@ -210,6 +209,9 @@
   font-size: 20px;
   align-self: center;
 }
+.audit-log-detail-modal {
+  /* ============== DETAILED VALUES GRID ============== */
+}
 .audit-log-detail-modal .values-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -260,6 +262,10 @@
   line-height: 1.5;
   font-size: 13px;
 }
+.audit-log-detail-modal {
+  /* ============== MEDIA QUERIES ============== */
+  /* 1440px – Large Desktop */
+}
 @media (max-width: 1440px) {
   .audit-log-detail-modal {
     padding: 16px;
@@ -287,6 +293,9 @@
   .audit-log-detail-modal .values-grid {
     gap: 16px;
   }
+}
+.audit-log-detail-modal {
+  /* 1280px – Desktop */
 }
 @media (max-width: 1280px) {
   .audit-log-detail-modal .audit-log-loading-container,
@@ -316,6 +325,9 @@
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 14px;
   }
+}
+.audit-log-detail-modal {
+  /* 1024px – Tablet Landscape */
 }
 @media (max-width: 1024px) {
   .audit-log-detail-modal .audit-log-loading-container,
@@ -379,6 +391,9 @@
     padding: 5px 10px;
     min-width: 55px;
   }
+}
+.audit-log-detail-modal {
+  /* 800px – Tablet Portrait */
 }
 @media (max-width: 800px) {
   .audit-log-detail-modal {
@@ -483,6 +498,10 @@
     padding: 5px 8px;
   }
 }
+.audit-log-detail-modal {
+  /* 480px – Mobile */
+  /* 480px – Mobile */
+}
 @media (max-width: 480px) {
   .audit-log-detail-modal {
     padding: 20px 15px;
@@ -586,6 +605,9 @@
     font-size: 9.5px;
     padding: 4px 8px;
   }
+}
+.audit-log-detail-modal {
+  /* 380px – Small Mobile */
 }
 @media (max-width: 380px) {
   .audit-log-detail-modal {

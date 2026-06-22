@@ -25,11 +25,14 @@ import Analytics from "./views/Analytics";
 import AuditLog from "./views/AuditLog";
 import Settings from "./views/Settings";
 import Blogs from "./views/Content/Blogs";
+import BlogsApproval from "./views/Content/BlogsApproval";
 import Gallery from "./views/Content/Gallery";
 import Categories from "./views/Product/Categories";
 import Brands from "./views/Product/Brands";
 import Items from "./views/Product/Items";
 import Catalogs from "./views/Catalogs";
+import ItemsApproval from "./views/Product/ItemsApproval";
+import { canReview, canAccess } from "./utils/permissions";
 
 /**
  * Instance router utama aplikasi.
@@ -139,11 +142,30 @@ const router = createBrowserRouter([
           },
           {
             path: "blogs",
-            element: (
-              <RoleProtectedRoute requiredPermission="blog">
-                <Blogs />
-              </RoleProtectedRoute>
-            ),
+            children: [
+              {
+                index: true,
+                element: (
+                  <RoleProtectedRoute
+                    requiredPermission="blog"
+                    permissionChecker={canAccess}
+                  >
+                    <Blogs />
+                  </RoleProtectedRoute>
+                ),
+              },
+              {
+                path: "approval",
+                element: (
+                  <RoleProtectedRoute
+                    requiredPermission="blog"
+                    permissionChecker={canReview}
+                  >
+                    <BlogsApproval />
+                  </RoleProtectedRoute>
+                ),
+              },
+            ],
           },
         ],
       },
@@ -174,11 +196,30 @@ const router = createBrowserRouter([
           },
           {
             path: "items",
-            element: (
-              <RoleProtectedRoute requiredPermission="product">
-                <Items />
-              </RoleProtectedRoute>
-            ),
+            children: [
+              {
+                index: true,
+                element: (
+                  <RoleProtectedRoute
+                    requiredPermission="product"
+                    permissionChecker={canAccess}
+                  >
+                    <Items />
+                  </RoleProtectedRoute>
+                ),
+              },
+              {
+                path: "approval",
+                element: (
+                  <RoleProtectedRoute
+                    requiredPermission="product"
+                    permissionChecker={canReview}
+                  >
+                    <ItemsApproval />
+                  </RoleProtectedRoute>
+                ),
+              },
+            ],
           },
         ],
       },

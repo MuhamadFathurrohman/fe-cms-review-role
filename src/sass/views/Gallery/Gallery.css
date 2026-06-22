@@ -2,14 +2,6 @@
 .page-gallery {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* Error banner */
-  /* Konten utama */
-  /* Image Wrapper */
-  /* Gallery Action Buttons */
-  /* Hanya tampilkan createdAt — tanpa judul/deskripsi */
-  /* --- SKELETON LOADING STYLES FOR GALLERY --- */
-  /* --- AKHIR SKELETON LOADING STYLES FOR GALLERY --- */
-  /* Pagination Modern */
 }
 .page-gallery .page-header {
   display: flex;
@@ -69,6 +61,9 @@
 .page-gallery .btn-primary svg {
   color: white;
 }
+.page-gallery {
+  /* Error banner */
+}
 .page-gallery .error-banner {
   display: flex;
   align-items: center;
@@ -104,6 +99,9 @@
 }
 .page-gallery .error-banner .error-banner-close:active {
   transform: scale(0.95);
+}
+.page-gallery {
+  /* Konten utama */
 }
 .page-gallery .gallery-container {
   height: 630px;
@@ -143,6 +141,9 @@
   transform: translateY(-2px);
   box-shadow: 0 6px 15px -5px rgba(0, 0, 0, 0.1), 0 4px 8px -6px rgba(0, 0, 0, 0.1);
   border-color: #cbd5e1;
+}
+.page-gallery {
+  /* Image Wrapper */
 }
 .page-gallery .gallery-image-wrapper {
   position: relative;
@@ -186,8 +187,7 @@
   bottom: 0;
   width: 100%;
   height: 100%;
-  -webkit-backdrop-filter: blur(2px);
-          backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   background: rgba(0, 0, 0, 0.2);
   border-radius: 12px 12px 0 0;
   opacity: 0;
@@ -198,6 +198,9 @@
 }
 .page-gallery .gallery-item:hover .gallery-overlay {
   opacity: 1;
+}
+.page-gallery {
+  /* Gallery Action Buttons */
 }
 .page-gallery .gallery-actions {
   display: flex;
@@ -232,6 +235,9 @@
   background: #fee2e2;
   color: #dc2626;
 }
+.page-gallery {
+  /* Hanya tampilkan createdAt — tanpa judul/deskripsi */
+}
 .page-gallery .gallery-info {
   padding: 12px;
   text-align: center;
@@ -240,6 +246,9 @@
   font-size: 12px;
   color: #64748b;
   font-weight: 500;
+}
+.page-gallery {
+  /* --- SKELETON LOADING STYLES FOR GALLERY --- */
 }
 .page-gallery .gallery-item.skeleton-loading {
   background: white;
@@ -284,6 +293,9 @@
     background-position: 460px 0;
   }
 }
+.page-gallery {
+  /* --- AKHIR SKELETON LOADING STYLES FOR GALLERY --- */
+}
 .page-gallery .no-data {
   display: flex;
   flex-direction: column;
@@ -298,6 +310,9 @@
   height: 32px;
   margin-bottom: 8px;
   color: white;
+}
+.page-gallery {
+  /* Pagination Modern */
 }
 .page-gallery .pagination-controls {
   display: flex;
@@ -391,9 +406,6 @@
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 1440px) {
-  .page-gallery {
-    /* --- SKELETON LOADING STYLES untuk 1440px --- */
-  }
   .page-gallery .error-banner {
     padding: 14px;
     font-size: 14px;
@@ -435,6 +447,9 @@
     padding: 7px 10px;
     font-size: 12px;
   }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 1440px --- */
+  }
   .page-gallery .gallery-item.skeleton-loading .gallery-image-wrapper {
     height: 150px;
   }
@@ -443,10 +458,6 @@
   }
 }
 @media (max-width: 1280px) {
-  .page-gallery {
-    /* --- SKELETON LOADING STYLES untuk 1280px --- */
-    /* --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
-  }
   .page-gallery .error-banner {
     padding: 14px;
     font-size: 14px;
@@ -487,17 +498,20 @@
     padding: 6px 8px;
     font-size: 11px;
   }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 1280px --- */
+  }
   .page-gallery .gallery-item.skeleton-loading .gallery-image-wrapper {
     height: 140px;
   }
   .page-gallery .gallery-item.skeleton-loading .gallery-info {
     padding: 8px;
   }
+  .page-gallery {
+    /* --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
+  }
 }
 @media (max-width: 1024px) {
-  .page-gallery {
-    /* --- SKELETON LOADING STYLES untuk 1024px --- */
-  }
   .page-gallery .error-banner {
     padding: 12px;
     font-size: 13px;
@@ -543,6 +557,9 @@
   .page-gallery .pagination-controls {
     justify-content: flex-end;
   }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 1024px --- */
+  }
   .page-gallery .gallery-item.skeleton-loading .gallery-image-wrapper {
     height: 130px;
   }
@@ -555,9 +572,6 @@
   }
 }
 @media (max-width: 800px) {
-  .page-gallery {
-    /* --- SKELETON LOADING STYLES untuk 800px --- */
-  }
   .page-gallery .error-banner {
     padding: 12px;
     font-size: 13px;
@@ -603,6 +617,9 @@
     width: 28px;
     height: 28px;
   }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 800px --- */
+  }
   .page-gallery .gallery-item.skeleton-loading .gallery-image-wrapper {
     height: 120px;
   }
@@ -615,10 +632,6 @@
   }
 }
 @media (max-width: 480px) {
-  .page-gallery {
-    /* Pagination */
-    /* --- SKELETON LOADING STYLES untuk 480px --- */
-  }
   .page-gallery .page-header {
     flex-direction: column;
     align-items: flex-start;
@@ -685,6 +698,9 @@
     height: 28px;
     border-radius: 6px;
   }
+  .page-gallery {
+    /* Pagination */
+  }
   .page-gallery .pagination-controls {
     justify-content: center;
     gap: 8px;
@@ -713,6 +729,9 @@
     font-size: 15px;
     padding: 0 6px;
   }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 480px --- */
+  }
   .page-gallery .gallery-item.skeleton-loading {
     border-radius: 10px;
   }
@@ -729,9 +748,6 @@
   }
 }
 @media (max-width: 380px) {
-  .page-gallery {
-    /* --- SKELETON LOADING STYLES untuk 380px --- */
-  }
   .page-gallery .page-header .header-content h1 {
     font-size: 23px;
   }
@@ -807,6 +823,9 @@
     min-width: auto;
     padding: 10px 10px;
     font-size: 15px;
+  }
+  .page-gallery {
+    /* --- SKELETON LOADING STYLES untuk 380px --- */
   }
   .page-gallery .gallery-item.skeleton-loading .gallery-image-wrapper {
     height: 100px;

@@ -2,9 +2,6 @@
 .page-roles {
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
-  /* === Search Bar === */
-  /* === Table === */
-  /* === Pagination === */
 }
 .page-roles .page-header {
   display: flex;
@@ -63,6 +60,9 @@
 }
 .page-roles .btn-primary svg {
   color: white;
+}
+.page-roles {
+  /* === Search Bar === */
 }
 .page-roles .search-wrapper {
   margin-top: 10px;
@@ -125,6 +125,9 @@
   border-top: 2px solid #2d4c52;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+.page-roles {
+  /* === Table === */
 }
 .page-roles .table-container {
   border-radius: 10px;
@@ -256,6 +259,9 @@
   padding: 40px;
   color: #64748b;
   font-size: 16px;
+}
+.page-roles {
+  /* === Pagination === */
 }
 .page-roles .pagination-controls {
   display: flex;
@@ -536,12 +542,14 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    border-radius: 16px;
-    /* Pastikan shadow tetap terlihat saat scroll */
-    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-roles .table-container::-webkit-scrollbar {
     display: none;
+  }
+  .page-roles .table-container {
+    border-radius: 16px;
+    /* Pastikan shadow tetap terlihat saat scroll */
+    box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
   .page-roles .role-table {
     min-width: 700px;

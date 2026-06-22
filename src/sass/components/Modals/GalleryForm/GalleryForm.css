@@ -3,9 +3,6 @@
   font-family: "Barlow", sans-serif;
   color: #2d4c52;
   padding: 20px;
-  /* Image Upload Area */
-  /* ✅ NEW: Image Preview Container */
-  /* Form Actions */
 }
 .gallery-form form {
   display: flex;
@@ -40,6 +37,9 @@
   font-weight: 700;
   color: #2d4c52;
 }
+.gallery-form {
+  /* Image Upload Area */
+}
 .gallery-form .image-upload-area {
   display: flex;
   justify-content: center;
@@ -47,6 +47,9 @@
   flex-direction: column;
   gap: 16px;
   position: relative;
+}
+.gallery-form {
+  /* ✅ NEW: Image Preview Container */
 }
 .gallery-form .image-preview-container {
   position: relative;
@@ -67,15 +70,15 @@
   overflow: hidden;
   border: 1px solid #e2e8f0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  /* ✅ NEW: Image Actions Container */
-  /* ✅ NEW: Change Image Button */
-  /* ✅ UPDATED: Remove Image Button */
 }
 .gallery-form .image-preview img {
   width: 100%;
   height: 100%;
   -o-object-fit: cover;
      object-fit: cover;
+}
+.gallery-form .image-preview {
+  /* ✅ NEW: Image Actions Container */
 }
 .gallery-form .image-preview .image-actions {
   position: absolute;
@@ -84,6 +87,9 @@
   display: flex;
   gap: 8px;
   z-index: 10;
+}
+.gallery-form .image-preview {
+  /* ✅ NEW: Change Image Button */
 }
 .gallery-form .image-preview .change-image-btn {
   width: 32px;
@@ -97,8 +103,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  -webkit-backdrop-filter: blur(4px);
-          backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 .gallery-form .image-preview .change-image-btn svg {
   width: 16px;
@@ -112,6 +117,9 @@
 .gallery-form .image-preview .change-image-btn:active {
   transform: scale(0.95);
 }
+.gallery-form .image-preview {
+  /* ✅ UPDATED: Remove Image Button */
+}
 .gallery-form .image-preview .remove-image-btn {
   width: 32px;
   height: 32px;
@@ -124,8 +132,7 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  -webkit-backdrop-filter: blur(4px);
-          backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 .gallery-form .image-preview .remove-image-btn svg {
   width: 16px;
@@ -197,6 +204,9 @@
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 6px solid rgba(229, 62, 62, 0.95);
+}
+.gallery-form {
+  /* Form Actions */
 }
 .gallery-form .form-actions {
   display: flex;

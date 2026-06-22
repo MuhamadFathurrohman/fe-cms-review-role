@@ -6,7 +6,6 @@
     padding: 32px;
     background: #ffffff;
 
-    /* // Custom scrollbar */
     &::-webkit-scrollbar {
         width: 6px;
     }
@@ -26,7 +25,7 @@
     }
 }
 
-/* // ==================== LOADING STATE ==================== */
+/* ==================== LOADING STATE ==================== */
 .blog-view-loading {
     display: flex;
     justify-content: center;
@@ -49,7 +48,7 @@
     }
 }
 
-/* // ==================== EMPTY STATE ==================== */
+/* ==================== EMPTY STATE ==================== */
 .blog-view-empty {
     display: flex;
     justify-content: center;
@@ -60,7 +59,218 @@
     font-weight: 500;
 }
 
-/* // ==================== LANGUAGE SWITCHER ==================== */
+/* ==================== REVIEW STATUS BADGE ==================== */
+.blog-view-review-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+
+    .review-status-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .review-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+
+        &.draft {
+            background-color: #f1f5f9;
+            color: #475569;
+        }
+
+        &.pending-review {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        &.approved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+
+        &.rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        &.revision {
+            background-color: #ffedd5;
+            color: #9a3412;
+        }
+    }
+}
+
+/* ==================== REVIEW NOTE BANNER ==================== */
+.blog-view-review-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+
+    svg {
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .review-note-content {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .review-note-title {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .review-note-text {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    &.rejected {
+        background-color: #fff1f2;
+        border: 1px solid #fecdd3;
+
+        svg {
+            color: #e11d48;
+        }
+
+        .review-note-title {
+            color: #881337;
+        }
+
+        .review-note-text {
+            color: #be123c;
+        }
+    }
+
+    &.revision {
+        background-color: #fff7ed;
+        border: 1px solid #fed7aa;
+
+        svg {
+            color: #ea580c;
+        }
+
+        .review-note-title {
+            color: #9a3412;
+        }
+
+        .review-note-text {
+            color: #c2410c;
+        }
+    }
+}
+
+/* ==================== REVIEWER CONTROLS ==================== */
+.blog-view-reviewer-controls {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+
+    .reviewer-controls-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0 0 14px 0;
+    }
+
+    .reviewer-controls-row {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .reviewer-control-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .reviewer-control-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .reviewer-control-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1e293b;
+    }
+
+    .reviewer-control-desc {
+        font-size: 12px;
+        color: #64748b;
+    }
+}
+
+/* Toggle button */
+.reviewer-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background-color: #cbd5e1;
+    transition: background-color 0.25s ease;
+    flex-shrink: 0;
+    padding: 0;
+
+    .toggle-knob {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        transition: transform 0.25s ease;
+        display: block;
+    }
+
+    &.active {
+        background-color: #2d4c52;
+
+        .toggle-knob {
+            transform: translateX(20px);
+        }
+    }
+
+    &.loading {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled):not(.loading) {
+        opacity: 0.85;
+    }
+}
+
+/* ==================== LANGUAGE SWITCHER ==================== */
 .blog-language-switcher {
     display: flex;
     align-items: center;
@@ -111,7 +321,7 @@
     }
 }
 
-/* // ==================== FEATURED IMAGE ==================== */
+/* ==================== FEATURED IMAGE ==================== */
 .blog-view-image {
     width: 100%;
     max-height: 500px;
@@ -134,12 +344,12 @@
     }
 }
 
-/* // ==================== CONTENT CONTAINER ==================== */
+/* ==================== CONTENT CONTAINER ==================== */
 .blog-view-content-container {
     padding: 0 8px;
 }
 
-/* // ==================== META INFO ==================== */
+/* ==================== META INFO ==================== */
 .blog-view-meta {
     display: flex;
     flex-wrap: wrap;
@@ -178,7 +388,7 @@
     }
 }
 
-/* // ==================== TITLE ==================== */
+/* ==================== TITLE ==================== */
 .blog-view-title {
     font-size: 28px;
     font-weight: 800;
@@ -188,7 +398,7 @@
     letter-spacing: -0.5px;
 }
 
-/* // ==================== EXCERPT ==================== */
+/* ==================== EXCERPT ==================== */
 .blog-view-excerpt {
     font-size: 20px;
     color: #4a7078;
@@ -199,7 +409,7 @@
     border-left: 4px solid #2d4c52;
 }
 
-/* // ==================== MAIN CONTENT ==================== */
+/* ==================== MAIN CONTENT ==================== */
 .blog-view-main-content {
     margin-bottom: 40px;
 }
@@ -229,15 +439,12 @@
     h1 {
         font-size: 32px;
     }
-
     h2 {
         font-size: 28px;
     }
-
     h3 {
         font-size: 24px;
     }
-
     h4 {
         font-size: 20px;
     }
@@ -329,7 +536,7 @@
     }
 }
 
-/* // ==================== TAGS ==================== */
+/* ==================== TAGS ==================== */
 .blog-view-tags {
     display: flex;
     align-items: flex-start;
@@ -374,7 +581,7 @@
     }
 }
 
-/* // ==================== EMBED CONTENT ==================== */
+/* ==================== EMBED CONTENT ==================== */
 .blog-view-embed {
     margin: 40px 0;
     padding: 24px;
@@ -406,9 +613,9 @@
     }
 }
 
-/* // ==================== RESPONSIVE BREAKPOINTS ==================== */
+/* ==================== RESPONSIVE BREAKPOINTS ==================== */
 
-/* // 1440px - Large Desktop */
+/* 1440px - Large Desktop */
 @media (max-width: 1440px) {
     .blog-view-modal-content {
         padding: 28px;
@@ -425,9 +632,26 @@
     .blog-view-content {
         font-size: 16px;
     }
+
+    .blog-view-reviewer-controls {
+        padding: 14px 18px;
+
+        .reviewer-controls-title {
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .reviewer-control-label {
+            font-size: 13px;
+        }
+
+        .reviewer-control-desc {
+            font-size: 11px;
+        }
+    }
 }
 
-/* // 1280px - Desktop */
+/* 1280px - Desktop */
 @media (max-width: 1280px) {
     .blog-view-modal-content {
         padding: 24px;
@@ -449,9 +673,27 @@
             max-height: 450px;
         }
     }
+
+    .blog-view-review-status {
+        margin-bottom: 10px;
+
+        .review-status-badge {
+            font-size: 11px;
+            padding: 3px 10px;
+        }
+    }
+
+    .blog-view-review-note {
+        padding: 10px 14px;
+
+        .review-note-title,
+        .review-note-text {
+            font-size: 12px;
+        }
+    }
 }
 
-/* // 1024px - Tablet Landscape */
+/* 1024px - Tablet Landscape */
 @media (max-width: 1024px) {
     .blog-view-modal-content {
         padding: 20px;
@@ -473,7 +715,6 @@
         h2 {
             font-size: 24px;
         }
-
         h3 {
             font-size: 20px;
         }
@@ -495,9 +736,32 @@
             font-size: 14px;
         }
     }
+
+    .blog-view-reviewer-controls {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+
+        .reviewer-controls-row {
+            gap: 10px;
+        }
+    }
+
+    .reviewer-toggle {
+        width: 40px;
+        height: 22px;
+
+        .toggle-knob {
+            width: 16px;
+            height: 16px;
+        }
+
+        &.active .toggle-knob {
+            transform: translateX(18px);
+        }
+    }
 }
 
-/* // 800px - Tablet Portrait */
+/* 800px - Tablet Portrait */
 @media (max-width: 800px) {
     .blog-view-modal-content {
         padding: 16px;
@@ -534,11 +798,9 @@
         h1 {
             font-size: 26px;
         }
-
         h2 {
             font-size: 22px;
         }
-
         h3 {
             font-size: 18px;
         }
@@ -592,9 +854,23 @@
         padding: 20px;
         margin: 32px 0;
     }
+
+    .blog-view-review-status {
+        margin-bottom: 10px;
+    }
+
+    .blog-view-review-note {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .blog-view-reviewer-controls {
+        padding: 12px 14px;
+        border-radius: 10px;
+    }
 }
 
-/* // 480px - Mobile Landscape */
+/* 480px - Mobile Landscape */
 @media (max-width: 480px) {
     .blog-view-modal-content {
         padding: 12px;
@@ -643,15 +919,12 @@
         h1 {
             font-size: 22px;
         }
-
         h2 {
             font-size: 20px;
         }
-
         h3 {
             font-size: 17px;
         }
-
         h4 {
             font-size: 16px;
         }
@@ -758,9 +1031,73 @@
             border-radius: 8px;
         }
     }
+
+    .blog-view-review-status {
+        gap: 8px;
+        margin-bottom: 8px;
+
+        .review-status-label {
+            font-size: 12px;
+        }
+
+        .review-status-badge {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+    }
+
+    .blog-view-review-note {
+        padding: 8px 10px;
+        gap: 6px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+
+        svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .review-note-title,
+        .review-note-text {
+            font-size: 11px;
+        }
+    }
+
+    .blog-view-reviewer-controls {
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 14px;
+
+        .reviewer-controls-title {
+            font-size: 11px;
+            margin-bottom: 10px;
+        }
+
+        .reviewer-control-label {
+            font-size: 12px;
+        }
+
+        .reviewer-control-desc {
+            font-size: 10px;
+        }
+    }
+
+    .reviewer-toggle {
+        width: 36px;
+        height: 20px;
+
+        .toggle-knob {
+            width: 14px;
+            height: 14px;
+        }
+
+        &.active .toggle-knob {
+            transform: translateX(16px);
+        }
+    }
 }
 
-/* // 380px - Small Mobile */
+/* 380px - Small Mobile */
 @media (max-width: 380px) {
     .blog-view-modal-content {
         max-height: 70vh;
@@ -792,15 +1129,12 @@
         h1 {
             font-size: 20px;
         }
-
         h2 {
             font-size: 18px;
         }
-
         h3 {
             font-size: 16px;
         }
-
         h4 {
             font-size: 15px;
         }
@@ -857,6 +1191,42 @@
 
         .embed-container {
             padding-bottom: 75%;
+        }
+    }
+
+    .blog-view-review-status {
+        .review-status-label {
+            font-size: 11px;
+        }
+
+        .review-status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+        }
+    }
+
+    .blog-view-review-note {
+        padding: 8px;
+
+        .review-note-title,
+        .review-note-text {
+            font-size: 11px;
+        }
+    }
+
+    .blog-view-reviewer-controls {
+        padding: 8px 10px;
+
+        .reviewer-controls-title {
+            font-size: 10px;
+        }
+
+        .reviewer-control-label {
+            font-size: 11px;
+        }
+
+        .reviewer-control-desc {
+            font-size: 10px;
         }
     }
 }
