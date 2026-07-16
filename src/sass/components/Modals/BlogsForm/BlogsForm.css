@@ -91,9 +91,9 @@
   letter-spacing: 0.3px;
 }
 .blogs-form .review-status-banner .review-status-badge.draft {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background-color: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
 }
 .blogs-form .review-status-banner .review-status-badge.pending-review {
   background: #fef9c3;
@@ -180,6 +180,26 @@
 .blogs-form .form-disabled-notice svg {
   flex-shrink: 0;
   color: #64748b;
+}
+.blogs-form {
+  /* ==================== REVISION CHANGE HINT ==================== */
+}
+.blogs-form .revision-change-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+.blogs-form .revision-change-hint svg {
+  flex-shrink: 0;
+  color: #f97316;
 }
 .blogs-form {
   /* ==================== FORM DISABLED STATE ==================== */

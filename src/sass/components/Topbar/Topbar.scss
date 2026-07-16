@@ -213,7 +213,10 @@
                     overflow-y: auto;
 
                     .notification-item {
-                        padding: 16px 20px;
+                        display: flex;
+                        align-items: flex-start;
+                        gap: 10px;
+                        padding: 16px 36px 16px 20px; /* ruang kanan untuk priority-dot */
                         cursor: pointer;
                         transition: background-color 0.2s ease;
                         position: relative;
@@ -256,8 +259,45 @@
                             }
                         }
 
+                        /* Ikon notifikasi (lucide-react) - warna default (brand teal) */
+                        .notification-icon {
+                            flex-shrink: 0;
+                            width: 32px;
+                            height: 32px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            border-radius: 8px;
+                            background: rgba(243, 153, 75, 0.08);
+                            color: #4a7078;
+
+                            /* Varian warna semantik berbasis type notifikasi */
+                            &--success {
+                                background: rgba(16, 185, 129, 0.1);
+                                color: #10b981;
+                            }
+                            &--warning {
+                                background: rgba(245, 158, 11, 0.1);
+                                color: #f59e0b;
+                            }
+                            &--info {
+                                background: rgba(59, 130, 246, 0.1);
+                                color: #3b82f6;
+                            }
+                            &--danger {
+                                background: rgba(239, 68, 68, 0.1);
+                                color: #ef4444;
+                            }
+                            &--primary {
+                                background: rgba(99, 102, 241, 0.1);
+                                color: #6366f1;
+                            }
+                        }
+
                         .notification-content {
-                            /* Tidak ada margin-left karena dot di sebelah kanan */
+                            flex: 1;
+                            min-width: 0;
+
                             h4 {
                                 margin: 0 0 4px 0;
                                 font-size: 14px;
@@ -271,6 +311,27 @@
                                 font-size: 13px;
                                 color: #4a7078;
                                 line-height: 1.4;
+                            }
+
+                            /* Catatan/Alasan review — label pill + isi */
+                            .notification-note {
+                                margin: 0 0 6px 0;
+                                font-size: 12px;
+                                color: #4a7078;
+                                line-height: 1.5;
+
+                                .notification-note__label {
+                                    display: inline-block;
+                                    background: #f1f5f9;
+                                    color: #475569;
+                                    font-size: 10px;
+                                    font-weight: 600;
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.3px;
+                                    padding: 1px 6px;
+                                    border-radius: 4px;
+                                    margin-right: 6px;
+                                }
                             }
 
                             .notification-time {
@@ -665,11 +726,16 @@
 
                     .notification-list {
                         .notification-item {
-                            padding: 12px 16px;
+                            padding: 12px 32px 12px 16px;
 
                             .priority-dot {
                                 width: 6px;
                                 height: 6px;
+                            }
+
+                            .notification-icon {
+                                width: 28px;
+                                height: 28px;
                             }
 
                             .notification-content {
@@ -938,11 +1004,17 @@
 
                     .notification-list {
                         .notification-item {
-                            padding: 8px 10px;
+                            padding: 8px 26px 8px 10px;
+                            gap: 8px;
 
                             .priority-dot {
                                 width: 6px;
                                 height: 6px;
+                            }
+
+                            .notification-icon {
+                                width: 26px;
+                                height: 26px;
                             }
 
                             .notification-content {

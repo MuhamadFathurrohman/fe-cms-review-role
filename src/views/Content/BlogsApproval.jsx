@@ -16,7 +16,6 @@ import {
   ArrowLeft,
   ClipboardCheck,
 } from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
 import { blogService, REVIEW_STATUS } from "../../services/blogService";
 import { useModalContext } from "../../contexts/ModalContext";
 import Modal from "../../components/Modals/Modal";
@@ -26,7 +25,6 @@ import { useAutoRefetch } from "../../hooks/useAutoRefetch";
 import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { generatePageNumbers } from "../../utils/pagination";
 import SkeletonItem from "../../components/Loaders/SkeletonItem";
-import { canReview, isSuperAdmin } from "../../utils/permissions";
 import "../../sass/views/BlogsApproval/BlogsApproval.css";
 
 const REVIEW_STATUS_CONFIG = {
@@ -50,7 +48,6 @@ const FILTER_OPTIONS = [
 ];
 
 const BlogsApproval = () => {
-  const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
   const navigate = useNavigate();
 
@@ -61,9 +58,6 @@ const BlogsApproval = () => {
 
   const filterDropdownRef = useRef(null);
   const itemsPerPage = 10;
-
-  const isSuper = isSuperAdmin(currentUser);
-  const canReviewBlogs = isSuper || canReview(currentUser?.permissions, "blog");
 
   const {
     searchTerm,
@@ -193,7 +187,7 @@ const BlogsApproval = () => {
       openModal(
         `approvalView-${item.id}`,
         <Modal
-          title={result.data.title || "Blog Review"}
+          title="Blog Review"
           showHeader={true}
           showCloseButton={true}
           size="large"
@@ -209,7 +203,7 @@ const BlogsApproval = () => {
           />
         </Modal>,
       );
-    } catch (error) {
+    } catch {
       openModal(
         "approvalFetchError",
         <AlertModal
@@ -224,12 +218,6 @@ const BlogsApproval = () => {
   };
 
   const renderStatusBadge = (item) => {
-    if (
-      item.reviewStatus === REVIEW_STATUS.APPROVED &&
-      item.isPublished === true
-    ) {
-      return <span className="blog-status published">Published</span>;
-    }
     const config =
       REVIEW_STATUS_CONFIG[item.reviewStatus] ||
       REVIEW_STATUS_CONFIG[REVIEW_STATUS.DRAFT];

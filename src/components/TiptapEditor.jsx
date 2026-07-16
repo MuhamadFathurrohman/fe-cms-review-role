@@ -83,6 +83,12 @@ const TiptapEditor = ({ value, onChange, placeholder, className = "" }) => {
   const dropdownRefs = useRef({});
 
   /**
+   * Flag untuk membedakan update dari user vs update programatik (setContent dari prop).
+   * ProseMirror dispatch bersifat sinkron, jadi ref ini selalu akurat saat onUpdate dipanggil.
+   */
+  const isProgrammaticUpdateRef = useRef(false);
+
+  /**
    * Instance editor Tiptap.
    * @type {import("@tiptap/core").Editor}
    */
@@ -102,6 +108,9 @@ const TiptapEditor = ({ value, onChange, placeholder, className = "" }) => {
     ],
     content: value || "",
     onUpdate: ({ editor }) => {
+      // Skip jika update dipicu dari sync prop (bukan user input)
+      if (isProgrammaticUpdateRef.current) return;
+
       const html = editor.getHTML();
       onChange(html);
 
@@ -140,7 +149,12 @@ const TiptapEditor = ({ value, onChange, placeholder, className = "" }) => {
   // Sync external value changes
   useEffect(() => {
     if (editor && value !== editor.getHTML()) {
+      // Flag ref mencegah onUpdate meneruskan perubahan ini ke onChange parent.
+      // ProseMirror dispatch sinkron: flag sudah false lagi sebelum baris berikutnya.
+      isProgrammaticUpdateRef.current = true;
       editor.commands.setContent(value || "");
+      isProgrammaticUpdateRef.current = false;
+
       const text = editor.getText().trim();
       setIsEmpty(text.length === 0);
     }

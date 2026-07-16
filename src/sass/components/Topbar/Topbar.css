@@ -192,7 +192,10 @@
   overflow-y: auto;
 }
 .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item {
-  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 36px 16px 20px; /* ruang kanan untuk priority-dot */
   cursor: pointer;
   transition: background-color 0.2s ease;
   position: relative;
@@ -232,8 +235,44 @@
 .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .priority-dot[data-priority=low] {
   background: #10b981;
 }
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item {
+  /* Ikon notifikasi (lucide-react) - warna default (brand teal) */
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(243, 153, 75, 0.08);
+  color: #4a7078;
+  /* Varian warna semantik berbasis type notifikasi */
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon--success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon--warning {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon--info {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon--danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon--primary {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
 .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content {
-  /* Tidak ada margin-left karena dot di sebelah kanan */
+  flex: 1;
+  min-width: 0;
 }
 .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content h4 {
   margin: 0 0 4px 0;
@@ -247,6 +286,27 @@
   font-size: 13px;
   color: #4a7078;
   line-height: 1.4;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content {
+  /* Catatan/Alasan review — label pill + isi */
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content .notification-note {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #4a7078;
+  line-height: 1.5;
+}
+.topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content .notification-note .notification-note__label {
+  display: inline-block;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
 }
 .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content .notification-time {
   font-size: 11px;
@@ -551,11 +611,15 @@
     width: 280px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item {
-    padding: 12px 16px;
+    padding: 12px 32px 12px 16px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .priority-dot {
     width: 6px;
     height: 6px;
+  }
+  .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon {
+    width: 28px;
+    height: 28px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content h4 {
     font-size: 12px;
@@ -737,11 +801,16 @@
     right: -10px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item {
-    padding: 8px 10px;
+    padding: 8px 26px 8px 10px;
+    gap: 8px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .priority-dot {
     width: 6px;
     height: 6px;
+  }
+  .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-icon {
+    width: 26px;
+    height: 26px;
   }
   .topbar .topbar-right .notification-container .notification-dropdown .notification-list .notification-item .notification-content h4 {
     font-size: 10px;

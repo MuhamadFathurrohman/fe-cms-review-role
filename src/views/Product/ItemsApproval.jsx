@@ -191,7 +191,7 @@ const ItemsApproval = () => {
       openModal(
         `approvalView-${item.id}`,
         <Modal
-          title={result.data.name || "Item Review"}
+          title="Item Review"
           showHeader={true}
           showCloseButton={true}
           size="large"

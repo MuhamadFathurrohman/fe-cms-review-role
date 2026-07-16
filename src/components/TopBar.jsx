@@ -20,6 +20,7 @@ import { useModalContext } from "../contexts/ModalContext";
 import { useOverlay, OVERLAY_TYPES } from "../contexts/OverlayContext";
 import { formatRoleName, getRoleBadgeClass } from "../utils/roleHelper";
 import { notificationService } from "../services/notificationService";
+import { transformNotifications } from "../utils/notificationUtils";
 import { baseService } from "../services/baseService";
 import { usersService } from "../services/usersService";
 import { useAutoRefetch } from "../hooks/useAutoRefetch";
@@ -180,7 +181,7 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     if (!currentUser?.id) return;
     const result = await notificationService.getNotifications(1, 5);
     if (result.success) {
-      setNotifications(result.data || []);
+      setNotifications(transformNotifications(result.data));
     } else {
       setNotifications([]);
     }
@@ -271,12 +272,13 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
     setShowNotifications(true);
     const allResult = await notificationService.getNotifications(1, 100);
     if (allResult.success && Array.isArray(allResult.data)) {
-      const unreadNotifications = allResult.data.filter((n) => !n.isRead);
+      const transformed = transformNotifications(allResult.data);
+      const unreadNotifications = transformed.filter((n) => !n.isRead);
       if (unreadNotifications.length > 0) {
         await Promise.all(
           unreadNotifications.map((n) => notificationService.markAsRead(n.id))
         );
-        setNotifications(allResult.data.map((n) => ({ ...n, isRead: true })));
+        setNotifications(transformed.map((n) => ({ ...n, isRead: true })));
         setUnreadCount(0);
       }
     }
@@ -513,26 +515,44 @@ const TopBar = ({ user, onLogout, onUserUpdate }) => {
               </div>
               <div className="notification-list">
                 {Array.isArray(notifications) && notifications.length > 0 ? (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className={`notification-item ${
-                        !notification.isRead ? "unread" : ""
-                      }`}
-                    >
+                  notifications.map((notification) => {
+                    const Icon = notification.icon;
+                    return (
                       <div
-                        className="priority-dot"
-                        data-priority={notification.priority || "medium"}
-                      ></div>
-                      <div className="notification-content">
-                        <h4>{notification.title}</h4>
-                        <p>{notification.message}</p>
-                        <span className="notification-time">
-                          {baseService.timeAgo(notification.timestamp)}
-                        </span>
+                        key={notification.id}
+                        className={`notification-item ${
+                          !notification.isRead ? "unread" : ""
+                        }`}
+                      >
+                        <div
+                          className="priority-dot"
+                          data-priority={notification.priority || "medium"}
+                        ></div>
+                        {Icon && (
+                          <div
+                            className={`notification-icon notification-icon--${notification.iconColorClass}`}
+                          >
+                            <Icon size={18} />
+                          </div>
+                        )}
+                        <div className="notification-content">
+                          <h4>{notification.title}</h4>
+                          <p>{notification.message}</p>
+                          {notification.note && (
+                            <p className="notification-note">
+                              <span className="notification-note__label">
+                                {notification.note.label}
+                              </span>
+                              {notification.note.content}
+                            </p>
+                          )}
+                          <span className="notification-time">
+                            {baseService.timeAgo(notification.timestamp)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div className="notification-item">
                     <p>No new notifications</p>

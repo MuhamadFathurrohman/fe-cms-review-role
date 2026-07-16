@@ -26,6 +26,7 @@ import {
   Calendar,
   Eye,
   Tag,
+  User,
 } from "lucide-react";
 import { blogService, REVIEW_STATUS } from "../../../services/blogService";
 import { useModalContext } from "../../../contexts/ModalContext";
@@ -317,10 +318,6 @@ const BlogsApprovalView = ({ blog, onClose, onSuccess }) => {
    * Merender badge reviewStatus.
    */
   const renderStatusBadge = () => {
-    if (reviewStatus === REVIEW_STATUS.APPROVED && blog.isPublished === true) {
-      return <span className="review-status-badge published">Published</span>;
-    }
-
     const config =
       REVIEW_STATUS_CONFIG[reviewStatus] ||
       REVIEW_STATUS_CONFIG[REVIEW_STATUS.DRAFT];
@@ -370,6 +367,14 @@ const BlogsApprovalView = ({ blog, onClose, onSuccess }) => {
             <span className="meta-label">Status:</span>
             {renderStatusBadge()}
           </div>
+
+          {blog.authorName && (
+            <div className="meta-row">
+              <User size={14} />
+              <span className="meta-label">Author:</span>
+              <span className="meta-value">{blog.authorName}</span>
+            </div>
+          )}
 
           {blog.submittedAt && (
             <div className="meta-row">

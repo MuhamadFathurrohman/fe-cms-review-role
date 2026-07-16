@@ -23,6 +23,7 @@ import {
   CheckCircle,
   XCircle,
   Globe,
+  User,
   AlertCircle,
   Clock,
   RotateCcw,
@@ -171,23 +172,20 @@ const ItemViewModal = ({ itemId }) => {
    * Hanya mengubah field yang di-toggle, sisanya dikirim kembali apa adanya.
    *
    * Images di state lokal berisi full URL hasil _getFullImageUrl
-   * (misalnya https://api.example.com/uploads/products/image.jpg).
-   * Backend menyimpan dan membandingkan path relatif (/uploads/products/image.jpg).
-   * Jika full URL dikirim langsung, backend menganggap gambar berubah dan
-   * menghapus file lama, lalu menyimpan full URL yang tidak valid sebagai path baru.
+   * (misalnya http://localhost:3000/uploads/products/image.jpg).
+   * itemService.update memproses gambar lewat separateImages, yang sudah
+   * mengubah full URL existing menjadi path relatif (new URL().pathname).
    *
-   * Solusi: strip VITE_PHOTO_URL dari setiap URL sebelum dikirim ke backend,
-   * agar yang dikirim adalah path relatif yang konsisten dengan database.
+   * Karena itu kirim gambar dalam format objek existing yang dikenali
+   * separateImages: { isExisting: true, preview: fullUrl }. Tanpa ini,
+   * plain string tidak cocok dengan kondisi apa pun di separateImages
+   * sehingga existingPaths kosong dan backend menghapus semua gambar.
    */
   const buildUpdatePayload = (overrides = {}) => {
-    const apiBaseUrl = import.meta.env.VITE_PHOTO_URL || "";
-
-    const imagePaths = images.map((url) => {
-      if (apiBaseUrl && url.startsWith(apiBaseUrl)) {
-        return url.slice(apiBaseUrl.length);
-      }
-      return url;
-    });
+    const existingImages = images.map((url) => ({
+      isExisting: true,
+      preview: url,
+    }));
 
     return {
       name: item.name,
@@ -195,7 +193,7 @@ const ItemViewModal = ({ itemId }) => {
       brandId: item.brandId,
       sortOrder: item.sortOrder ?? 0,
       isFeatured: isFeatured,
-      images: imagePaths,
+      images: existingImages,
       translations: item.translations || [],
       ...overrides,
     };
@@ -537,6 +535,12 @@ const ItemViewModal = ({ itemId }) => {
         <div className="product-header">
           <h2 className="product-title">{item.name}</h2>
           <div className="product-meta">
+            {item.creatorName && (
+              <span className="date-info">
+                <User size={14} aria-hidden="true" />
+                {item.creatorName}
+              </span>
+            )}
             <span className="date-info">
               <Calendar size={14} aria-hidden="true" />
               {item.createdAtFormatted}

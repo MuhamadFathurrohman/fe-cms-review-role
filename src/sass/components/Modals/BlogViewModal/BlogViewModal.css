@@ -86,6 +86,10 @@
   background-color: #d1fae5;
   color: #065f46;
 }
+.blog-view-review-status .review-status-badge.published {
+  background-color: #d1fae5;
+  color: #065f46;
+}
 .blog-view-review-status .review-status-badge.rejected {
   background-color: #fee2e2;
   color: #991b1b;

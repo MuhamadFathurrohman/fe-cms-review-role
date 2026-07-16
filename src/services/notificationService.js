@@ -1,16 +1,16 @@
 /**
  * @file notificationService.js
  * @description Layanan terpusat untuk mengelola operasi notifikasi pengguna.
- * Bertindak sebagai lapisan abstraksi di atas `dataService.notifications`
- * untuk menyediakan API yang konsisten dan mudah digunakan.
- * 
+ * Berkomunikasi langsung dengan `generalApiService` pada endpoint `/notifications`.
+ *
  * Menyediakan tiga fungsi utama:
  * - `getNotifications()`: Mengambil daftar notifikasi dengan pagination
  * - `markAsRead()`: Menandai notifikasi sebagai sudah dibaca
  * - `getUnreadCount()`: Mendapatkan jumlah notifikasi belum dibaca
  */
 
-import { dataService } from "./dataService";
+import generalApiService from "./generalApiService";
+import { normalizePaginatedResponse } from "./dataService";
 
 /**
  * Layanan notifikasi terpusat.
@@ -21,9 +21,9 @@ import { dataService } from "./dataService";
 export const notificationService = {
   /**
    * Mengambil daftar notifikasi pengguna dengan dukungan pagination.
-   * Secara otomatis menambahkan properti `priority` dengan nilai default "medium"
-   * jika tidak disediakan oleh backend.
-   * 
+   * Mengembalikan data mentah dari backend (transformasi tampilan seperti
+   * pemetaan ikon dan default `priority` dilakukan di `notificationUtils`).
+   *
    * @async
    * @param {number} [page=1] - Halaman yang diminta
    * @param {number} [limit=20] - Jumlah notifikasi per halaman
@@ -54,21 +54,17 @@ export const notificationService = {
    */
   async getNotifications(page = 1, limit = 20) {
     try {
-      const result = await dataService.notifications.getAll({
+      const response = await generalApiService.getAll("/notifications", {
         page,
         limit,
       });
 
-      if (result.success) {
-        // Tambahkan priority jika belum ada
-        const notificationsWithPriority = result.data.map((notif) => ({
-          ...notif,
-          priority: notif.priority || "medium",
-        }));
+      const result = normalizePaginatedResponse(response);
 
+      if (result.success) {
         return {
           success: true,
-          data: notificationsWithPriority,
+          data: result.data,
           pagination: result.pagination,
         };
       }
@@ -94,7 +90,9 @@ export const notificationService = {
    */
   async markAsRead(notificationId) {
     try {
-      const result = await dataService.notifications.markAsRead(notificationId);
+      const result = await generalApiService.patch(
+        `/notifications/${notificationId}/read`,
+      );
       return { success: result.success };
     } catch (error) {
       console.error("Failed to mark as read:", error);
@@ -119,10 +117,12 @@ export const notificationService = {
    */
   async getUnreadCount() {
     try {
-      const result = await dataService.notifications.getUnreadCount();
+      const response = await generalApiService.get(
+        "/notifications/unread-count",
+      );
       return {
-        success: true,
-        count: result.count || 0,
+        success: response.success,
+        count: response.data?.count || 0,
       };
     } catch (error) {
       console.error("Failed to fetch unread count:", error);

@@ -14,7 +14,7 @@
 
 import React from "react";
 import Modal from "../Modals/Modal";
-import { CheckCircle, XCircle, AlertTriangle, Trash2 } from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, Trash2, AlertCircle } from "lucide-react";
 import "../../sass/components/Alerts/AlertModal/AlertModal.css";
 
 /**
@@ -25,7 +25,7 @@ import "../../sass/components/Alerts/AlertModal/AlertModal.css";
  * @property {function(): void} onClose - Handler saat modal ditutup
  * @property {function(): void} [onConfirm] - Handler saat tombol konfirmasi diklik
  * @property {function(): void} [onCancel] - Handler saat tombol cancel diklik
- * @property {'success'|'error'|'confirm'|'delete'} [type='success'] - Tipe alert yang menentukan ikon dan warna
+ * @property {'success'|'error'|'confirm'|'delete'|'warning'} [type='success'] - Tipe alert yang menentukan ikon dan warna
  * @property {boolean} [showActions=false] - Jika true, tampilkan dua tombol (confirmation mode); jika false, satu tombol (simple mode)
  * @property {string} [confirmText] - Teks kustom untuk tombol konfirmasi
  * @property {string} [cancelText='Cancel'] - Teks kustom untuk tombol cancel
@@ -102,6 +102,8 @@ const AlertModal = ({
         return <AlertTriangle {...iconProps} />;
       case "delete":
         return <Trash2 {...iconProps} />;
+      case "warning":
+        return <AlertCircle {...iconProps} />;
       default:
         return <CheckCircle {...iconProps} />;
     }
@@ -113,6 +115,7 @@ const AlertModal = ({
     error: "Error",
     confirm: "Are you sure?",
     delete: "Delete?",
+    warning: "Warning",
   };
 
   /** @type {{[key: string]: string}} Default teks tombol konfirmasi berdasarkan tipe alert */
@@ -121,6 +124,7 @@ const AlertModal = ({
     error: "OK",
     confirm: "Confirm",
     delete: "Delete",
+    warning: "OK",
   };
 
   /**

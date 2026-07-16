@@ -33,10 +33,11 @@ import { blogService, REVIEW_STATUS } from "../../../services/blogService";
 import { uploadService } from "../../../services/uploadService";
 import { useAuth } from "../../../contexts/AuthContext";
 import { useModalContext } from "../../../contexts/ModalContext";
+import { canReview, isSuperAdmin } from "../../../utils/permissions";
 import AlertModal from "../../Alerts/AlertModal";
 import PulseDots from "../../Loaders/PulseDots";
 import TiptapEditor from "../../TiptapEditor";
-import "../../../sass/components/Modals/BlogsForm/BlogsForm.scss";
+import "../../../sass/components/Modals/BlogsForm/BlogsForm.css";
 
 /**
  * Mapping reviewStatus ke label dan className untuk badge.
@@ -79,6 +80,14 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
 
   /** @type {boolean} Status apakah ini mode edit */
   const isEditing = !!item;
+
+  /**
+   * Apakah user adalah reviewer (mis. head marketing).
+   * Reviewer membuat blog yang langsung di-publish oleh backend,
+   * tanpa melalui alur submit review.
+   */
+  const isSuper = isSuperAdmin(currentUser);
+  const canReviewBlogs = isSuper || canReview(currentUser?.permissions, "blog");
 
   /**
    * Status review dari item yang sedang diedit.
@@ -161,6 +170,20 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
   /** @type {[Object, React.Dispatch<React.SetStateAction<Object>>]} */
   const [validationErrors, setValidationErrors] = useState({});
 
+  /**
+   * Menandai apakah user sudah mengubah data form sejak terakhir di-load.
+   * Dipakai untuk mewajibkan perubahan sebelum submit ulang blog status REVISION.
+   * @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]}
+   */
+  const [isDirty, setIsDirty] = useState(false);
+
+  /**
+   * Ref untuk memblokir setIsDirty(true) selama fase initial load data.
+   * Dipakai sebagai lapisan kedua di luar fix TiptapEditor, untuk menangkap
+   * potensi onChange lain yang mungkin terpanggil sebelum data selesai di-load.
+   */
+  const preventDirtyRef = useRef(false);
+
   // Load data on edit
   useEffect(() => {
     if (isEditing && item) {
@@ -198,10 +221,19 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
         tags: Array.isArray(item.tagsId) ? item.tagsId : [],
       };
 
+      preventDirtyRef.current = true;
       setTranslations({ EN: enData, ID: idData });
       setValidationErrors({});
       setError("");
       setImageError("");
+      setIsDirty(false);
+
+      // Buka blokir setelah semua React effects (termasuk TiptapEditor) selesai.
+      // setTimeout(0) adalah macrotask — dijamin jalan setelah useEffect siklus render ini.
+      const timer = setTimeout(() => {
+        preventDirtyRef.current = false;
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [item, isEditing]);
 
@@ -264,6 +296,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
    * Handler perubahan field terjemahan.
    */
   const handleTranslationChange = (field, value) => {
+    if (!preventDirtyRef.current) setIsDirty(true);
     setTranslations((prev) => ({
       ...prev,
       [currentLanguage]: {
@@ -285,6 +318,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
    * Handler perubahan field master data.
    */
   const handleMasterChange = (field, value) => {
+    setIsDirty(true);
     setMasterData((prev) => ({ ...prev, [field]: value }));
     if (error) setError("");
   };
@@ -304,6 +338,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     }
 
     setImageError("");
+    setIsDirty(true);
     setImage({
       id: `new-${Date.now()}`,
       file: file,
@@ -326,6 +361,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
     if (image && image.preview.startsWith("blob:")) {
       URL.revokeObjectURL(image.preview);
     }
+    setIsDirty(true);
     setImage(null);
     setImageError("");
     if (fileInputRef.current) {
@@ -351,6 +387,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
       tagInput.trim() &&
       !translations[currentLanguage].tags.includes(tagInput.trim())
     ) {
+      setIsDirty(true);
       setTranslations((prev) => ({
         ...prev,
         [currentLanguage]: {
@@ -366,6 +403,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
    * Handler penghapusan tag tertentu.
    */
   const handleRemoveTag = (tagToRemove) => {
+    setIsDirty(true);
     setTranslations((prev) => ({
       ...prev,
       [currentLanguage]: {
@@ -480,13 +518,27 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
       if (result.success) {
         if (modalId) closeModal(modalId);
 
+        // Reviewer yang membuat blog baru → backend langsung publish,
+        // bukan disimpan sebagai draft. Pesan disesuaikan agar tidak misleading.
+        const isReviewerCreate = !isEditing && canReviewBlogs;
+        const successTitle = isEditing
+          ? "Updated!"
+          : isReviewerCreate
+            ? "Published!"
+            : "Saved!";
+        const successMessage = isEditing
+          ? "Blog has been successfully updated."
+          : isReviewerCreate
+            ? "Blog has been successfully published."
+            : "Blog has been successfully saved as draft.";
+
         setTimeout(() => {
           openModal(
             "blogSaveSuccess",
             <AlertModal
               type="success"
-              title={isEditing ? "Updated!" : "Saved!"}
-              message={`Blog has been successfully ${isEditing ? "updated" : "saved as draft"}.`}
+              title={successTitle}
+              message={successMessage}
               showActions={true}
               confirmText="OK"
               onConfirm={() => {
@@ -588,6 +640,32 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
           />,
           "small",
         );
+        return;
+      }
+
+      // Reviewer (mis. head marketing): backend otomatis publish blog saat
+      // create, tidak ada langkah submit review. Langsung tampilkan sukses.
+      if (canReviewBlogs) {
+        closeModal("addBlog");
+
+        setTimeout(() => {
+          openModal(
+            "blogPublishSuccess",
+            <AlertModal
+              type="success"
+              title="Published!"
+              message="Blog has been successfully published."
+              showActions={true}
+              confirmText="OK"
+              onConfirm={() => {
+                closeModal("blogPublishSuccess");
+                onSuccess();
+              }}
+              onCancel={() => closeModal("blogPublishSuccess")}
+            />,
+            "small",
+          );
+        }, 300);
         return;
       }
 
@@ -776,6 +854,25 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
    * yang mungkin belum di-Save oleh staff.
    */
   const handleSubmitRevision = () => {
+    // Wajib ada perubahan sebelum revisi diajukan ulang.
+    // Backstop dari tombol yang sudah di-disable saat !isDirty.
+    if (!isDirty) {
+      openModal(
+        "noChangeAlert",
+        <AlertModal
+          type="warning"
+          title="No Changes Detected"
+          message="Please make at least one change before resubmitting the revision."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("noChangeAlert")}
+          onCancel={() => closeModal("noChangeAlert")}
+        />,
+        "small",
+      );
+      return;
+    }
+
     openModal(
       "submitRevisionConfirm",
       <AlertModal
@@ -1306,6 +1403,17 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
           </div>
         </div>
 
+        {/* Indikator wajib revisi — muncul saat status REVISION & belum ada perubahan */}
+        {isEditing &&
+          !isFormDisabled &&
+          reviewStatus === REVIEW_STATUS.REVISION &&
+          !isDirty && (
+            <div className="revision-change-hint">
+              <AlertCircle size={15} />
+              <span>Make at least one change before resubmitting.</span>
+            </div>
+          )}
+
         {/* Form Actions */}
         <div className="form-actions">
           <button
@@ -1318,29 +1426,35 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
             Cancel
           </button>
 
-          {/* Mode: Create — Save (draft) dan Submit (create → submitReview) */}
+          {/* Mode: Create
+              - Staff: Save (draft) dan Submit (create → submitReview)
+              - Reviewer: cukup Publish (backend auto-publish saat create) */}
           {!isEditing && (
             <>
-              <button
-                type="submit"
-                className="btn-outline"
-                disabled={loadingSave || loadingSubmit}
-                aria-label="Save blog as draft"
-              >
-                {loadingSave ? (
-                  <span className="btn-loading">
-                    <PulseDots size="sm" color="currentColor" count={6} />
-                  </span>
-                ) : (
-                  "Save"
-                )}
-              </button>
+              {!canReviewBlogs && (
+                <button
+                  type="submit"
+                  className="btn-outline"
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Save blog as draft"
+                >
+                  {loadingSave ? (
+                    <span className="btn-loading">
+                      <PulseDots size="sm" color="currentColor" count={6} />
+                    </span>
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-primary"
                 onClick={handleSubmitNew}
                 disabled={loadingSave || loadingSubmit}
-                aria-label="Submit blog for review"
+                aria-label={
+                  canReviewBlogs ? "Publish blog" : "Submit blog for review"
+                }
               >
                 {loadingSubmit ? (
                   <span className="btn-loading">
@@ -1348,7 +1462,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   </span>
                 ) : (
                   <>
-                    <Send size={15} /> Submit
+                    <Send size={15} /> {canReviewBlogs ? "Publish" : "Submit"}
                   </>
                 )}
               </button>
@@ -1417,7 +1531,7 @@ const BlogsForm = ({ item = null, onClose, onSuccess }) => {
                   type="button"
                   className="btn-primary"
                   onClick={handleSubmitRevision}
-                  disabled={loadingSave || loadingSubmit}
+                  disabled={loadingSave || loadingSubmit || !isDirty}
                   aria-label="Submit blog revision for review"
                 >
                   {loadingSubmit ? (

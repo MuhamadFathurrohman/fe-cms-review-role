@@ -23,6 +23,7 @@ import {
   Star,
   Eye,
   Globe,
+  User,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -81,7 +82,7 @@ const REVIEW_STATUS_CONFIG = {
  * @component
  * @param {BlogViewModalProps} props - Props komponen
  */
-const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
+const BlogViewModal = ({ blog, initialLanguage = "EN", onPublishChange }) => {
   const { user: currentUser } = useAuth();
   const { openModal, closeModal } = useModalContext();
 
@@ -203,6 +204,8 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
           />,
           "small",
         );
+      } else {
+        onPublishChange?.();
       }
     } catch (err) {
       setIsPublished(!newValue); // rollback
@@ -277,9 +280,22 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
 
   /**
    * Merender badge reviewStatus.
+   * APPROVED ditampilkan sebagai "Published" atau "Draft" sesuai isPublished (mengikuti pola Blogs.jsx).
    */
   const renderReviewStatusBadge = () => {
     if (!blog?.reviewStatus) return null;
+
+    if (blog.reviewStatus === REVIEW_STATUS.APPROVED) {
+      return (
+        <div className="blog-view-review-status">
+          <span className="review-status-label">Review Status:</span>
+          <span className={`review-status-badge ${isPublished ? "published" : "draft"}`}>
+            {isPublished ? <CheckCircle size={13} /> : <Clock size={13} />}
+            {isPublished ? "Published" : "Draft"}
+          </span>
+        </div>
+      );
+    }
 
     const config =
       REVIEW_STATUS_CONFIG[blog.reviewStatus] ||
@@ -470,6 +486,13 @@ const BlogViewModal = ({ blog, initialLanguage = "EN" }) => {
       <div className="blog-view-content-container">
         {/* Meta Info */}
         <div className="blog-view-meta">
+          {displayBlog.authorName && (
+            <div className="meta-item">
+              <User size={16} aria-hidden="true" />
+              <span>{displayBlog.authorName}</span>
+            </div>
+          )}
+
           <div className="meta-item">
             <Calendar size={16} aria-hidden="true" />
             <span>{displayBlog.createdAtFormatted || "N/A"}</span>

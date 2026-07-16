@@ -98,11 +98,11 @@
         margin-bottom: 10px;
         flex-wrap: wrap;
         justify-content: space-between;
+        align-items: flex-end;
 
         .search-wrapper {
             position: relative;
             min-width: 500px;
-            margin-top: 23px;
 
             .search-icon {
                 position: absolute;

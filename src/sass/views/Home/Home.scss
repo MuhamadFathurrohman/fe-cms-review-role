@@ -45,7 +45,6 @@
         background: #dc2626;
     }
 
-    /* ✅ WRAPPER BARU */
     .home-dashboard-content {
         display: flex;
         flex-direction: column;
@@ -59,7 +58,6 @@
         gap: 24px;
         height: 170px;
 
-        /* // Welcome Card (lebar penuh di mobile, 60% di desktop) */
         .home-welcome-card {
             flex: 1 1 50%;
             min-width: 400px;
@@ -78,6 +76,13 @@
                 box-shadow:
                     0 20px 40px rgba(45, 76, 82, 0.15),
                     inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            }
+
+            /* Modifier: saat tidak ada stat cards — span full width */
+            &.home-welcome-card--full {
+                flex: 1 1 100%;
+                min-width: 0;
+                width: 100%;
             }
 
             .home-welcome-text-wrapper {
@@ -115,7 +120,6 @@
             }
         }
 
-        /* // Stat Cards (dua card kecil) */
         .home-stat-card {
             flex: 1 1 25%;
             max-width: 250px;
@@ -320,7 +324,6 @@
                         min-height: 180px;
                         display: block;
                         margin-left: -35px;
-                        /* padding-right: 10px; */
                     }
 
                     .home-analytics-stats-horizontal {
@@ -422,13 +425,11 @@
                     scroll-behavior: smooth;
                     content-visibility: auto;
                     contain-intrinsic-size: 250px;
-
-                    /* Hide scrollbar but keep scroll functionality */
-                    scrollbar-width: none; /* Firefox */
-                    -ms-overflow-style: none; /* Internet Explorer 10+ */
+                    scrollbar-width: none;
+                    -ms-overflow-style: none;
 
                     &::-webkit-scrollbar {
-                        display: none; /* WebKit */
+                        display: none;
                     }
                 }
 
@@ -477,7 +478,6 @@
                         .home-activity-text {
                             font-size: 14px;
                             color: #2d4c52;
-
                             font-weight: 500;
                             margin: 0 0 4px 0;
 
@@ -519,7 +519,184 @@
         }
     }
 
-    /* --- SKELETON LOADING STYLES (ditambahkan di sini) --- */
+    /* // === CONTENT OVERVIEW ROW === */
+    .home-content-overview-row {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .home-content-overview-section-header {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+    }
+
+    .home-content-overview-section-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.95);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        margin: 0;
+        letter-spacing: 0.5px;
+    }
+
+    .home-content-overview-section-desc {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.6);
+        font-weight: 500;
+    }
+
+    .home-content-overview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 24px;
+    }
+
+    /* // === CONTENT OVERVIEW CARD === */
+    .home-content-overview-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow:
+            0 15px 30px rgba(45, 76, 82, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        cursor: pointer;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 20px 40px rgba(45, 76, 82, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        &:focus-visible {
+            outline: 2px solid #2d4c52;
+            outline-offset: 2px;
+        }
+    }
+
+    .home-content-overview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1.5px solid #f1f5f9;
+    }
+
+    .home-content-overview-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #2d4c52;
+
+        svg {
+            color: #2d4c52;
+            flex-shrink: 0;
+        }
+
+        .accent-items & svg {
+            color: #e6863f;
+        }
+    }
+
+    .home-content-overview-total {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1px;
+    }
+
+    .home-content-total-number {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1;
+    }
+
+    .home-content-total-label {
+        font-size: 10px;
+        color: #94a3b8;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* // === STATUS GRID === */
+    .home-content-status-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 10px;
+    }
+
+    .home-content-status-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 12px 6px;
+        border-radius: 10px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        transition: all 0.2s ease;
+        text-align: center;
+
+        &.status-draft {
+            border-color: #ddd6fe;
+            .home-content-status-icon { color: #6d28d9; }
+        }
+        &.status-pending {
+            border-color: #fde68a;
+            .home-content-status-icon { color: #d97706; }
+        }
+        &.status-approved {
+            border-color: #a7f3d0;
+            .home-content-status-icon { color: #059669; }
+        }
+        &.status-rejected {
+            border-color: #fca5a5;
+            .home-content-status-icon { color: #dc2626; }
+        }
+        &.status-revision {
+            border-color: #fed7aa;
+            .home-content-status-icon { color: #ea580c; }
+        }
+    }
+
+    .home-content-status-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        color: #94a3b8; /* default netral jika status tidak dikenali */
+    }
+
+    .home-content-status-count {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1;
+        color: #374151; /* netral — angka tidak membawa warna semantik */
+    }
+
+    .home-content-status-label {
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #94a3b8;
+        line-height: 1.2;
+    }
+
+    /* // === SKELETON ACTIVITY === */
     .home-activity-list {
         .skeleton-activity-container {
             display: flex;
@@ -571,6 +748,8 @@
     }
 }
 
+/* ==================== RESPONSIVE ==================== */
+
 /* Desktop Large - 1440px */
 @media (max-width: 1440px) {
     .home-dashboard {
@@ -590,14 +769,13 @@
 
                 .home-welcome-text-wrapper {
                     padding: 8px;
+
                     h2 {
                         font-size: 20px;
                     }
-
                     .home-welcome-subtitle {
                         font-size: 16px;
                     }
-
                     .home-company-name {
                         font-size: 14px;
                     }
@@ -623,14 +801,12 @@
                             font-size: 25px;
                             margin-bottom: 30px;
                         }
-
                         .home-stat-icon {
                             width: 38px;
                             height: 38px;
                             left: 125px;
                             top: -3px;
                         }
-
                         .home-stat-subtitle {
                             font-size: 14px;
                         }
@@ -652,7 +828,6 @@
                     h3 {
                         font-size: 16px;
                     }
-
                     svg {
                         width: 18px;
                         height: 18px;
@@ -670,7 +845,6 @@
 
                         .home-chart-wrapper.line-chart {
                             margin-left: -35px;
-                            /* padding-right: 8px; */
                         }
                     }
 
@@ -681,7 +855,6 @@
                             .home-stat-value-large {
                                 font-size: 22px;
                             }
-
                             .home-stat-label {
                                 font-size: 11px;
                             }
@@ -696,7 +869,6 @@
                         .home-stat-title {
                             font-size: 16px;
                         }
-
                         svg {
                             width: 18px;
                             height: 18px;
@@ -706,7 +878,39 @@
             }
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 1440px --- */
+        .home-content-overview-grid {
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .home-content-overview-card {
+            padding: 18px;
+        }
+
+        .home-content-overview-title {
+            font-size: 14px;
+        }
+        .home-content-total-number {
+            font-size: 22px;
+        }
+
+        .home-content-status-grid {
+            gap: 8px;
+        }
+
+        .home-content-status-item {
+            padding: 10px 5px;
+        }
+
+        .home-content-status-icon {
+            width: 28px;
+            height: 28px;
+        }
+
+        .home-content-status-count {
+            font-size: 16px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 10px 14px;
@@ -715,14 +919,12 @@
                 .skeleton-activity-line {
                     height: 13px;
                 }
-
                 .skeleton-activity-time {
                     width: 35px;
                     height: 13px;
                 }
             }
         }
-        /* // --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
     }
 }
 
@@ -746,11 +948,9 @@
                     h2 {
                         font-size: 18px;
                     }
-
                     .home-welcome-subtitle {
                         font-size: 16px;
                     }
-
                     .home-company-name {
                         font-size: 14px;
                     }
@@ -773,14 +973,12 @@
                         .home-stat-number {
                             font-size: 25px;
                         }
-
                         .home-stat-icon {
                             width: 36px;
                             height: 36px;
                             left: 100px;
                             top: -5px;
                         }
-
                         .home-stat-subtitle {
                             font-size: 13px;
                         }
@@ -802,7 +1000,6 @@
                     h3 {
                         font-size: 14px;
                     }
-
                     svg {
                         width: 16px;
                         height: 16px;
@@ -819,7 +1016,6 @@
 
                         .home-chart-wrapper.line-chart {
                             margin-left: -35px;
-                            /* padding-right: 4px; */
                         }
                     }
 
@@ -830,7 +1026,6 @@
                             .home-stat-value-large {
                                 font-size: 20px;
                             }
-
                             .home-stat-label {
                                 font-size: 11px;
                             }
@@ -845,7 +1040,6 @@
                         .home-stat-title {
                             font-size: 14px;
                         }
-
                         svg {
                             width: 16px;
                             height: 16px;
@@ -855,7 +1049,21 @@
             }
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 1280px --- */
+        .home-content-overview-grid {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .home-content-status-grid {
+            gap: 6px;
+        }
+        .home-content-status-item {
+            padding: 9px 4px;
+        }
+        .home-content-status-count {
+            font-size: 15px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 10px 14px;
@@ -864,14 +1072,12 @@
                 .skeleton-activity-line {
                     height: 13px;
                 }
-
                 .skeleton-activity-time {
                     width: 35px;
                     height: 13px;
                 }
             }
         }
-        /* // --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
     }
 }
 
@@ -885,6 +1091,7 @@
         .home-stats-row {
             flex-direction: column;
             gap: 16px;
+
             .home-welcome-card {
                 flex: 1 1 100%;
                 max-width: 550px;
@@ -895,11 +1102,9 @@
                     h2 {
                         font-size: 16px;
                     }
-
                     .home-welcome-subtitle {
                         font-size: 14px;
                     }
-
                     .home-company-name {
                         font-size: 13px;
                     }
@@ -922,18 +1127,12 @@
                         .home-stat-number {
                             font-size: 25px;
                         }
-
                         .home-stat-icon {
                             width: 36px;
                             height: 36px;
                             left: 120px;
                             top: -5px;
-
-                            @media (max-width: 920px) and (min-width: 900px) {
-                                left: 80px;
-                            }
                         }
-
                         .home-stat-subtitle {
                             font-size: 12px;
                         }
@@ -959,6 +1158,7 @@
                     top: 28px;
                     right: 25px;
                     padding: 6px 10px;
+
                     .legend-item {
                         font-size: 10px;
                     }
@@ -985,7 +1185,6 @@
                             .home-stat-value-large {
                                 font-size: 22px;
                             }
-
                             .home-stat-label {
                                 font-size: 12px;
                             }
@@ -1003,7 +1202,18 @@
             }
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 1024px --- */
+        .home-content-overview-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .home-content-overview-card {
+            padding: 16px;
+        }
+
+        .home-content-status-grid {
+            gap: 8px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 10px 16px;
@@ -1012,18 +1222,16 @@
                 .skeleton-activity-line {
                     height: 13px;
                 }
-
                 .skeleton-activity-time {
                     width: 35px;
                     height: 13px;
                 }
             }
         }
-        /* // --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
     }
 }
 
-/* Medium Tablet - 800px */
+/* Medium Tablet - 850px */
 @media (max-width: 850px) {
     .home-dashboard {
         .home-dashboard-content {
@@ -1054,11 +1262,9 @@
                     h2 {
                         font-size: 16px;
                     }
-
                     .home-welcome-subtitle {
                         font-size: 13px;
                     }
-
                     .home-company-name {
                         font-size: 12px;
                     }
@@ -1085,7 +1291,6 @@
                             height: 34px;
                             left: 80px;
                         }
-
                         .home-stat-subtitle {
                             font-size: 12px;
                         }
@@ -1129,7 +1334,6 @@
                             .home-stat-value-large {
                                 font-size: 20px;
                             }
-
                             .home-stat-label {
                                 font-size: 11px;
                             }
@@ -1139,7 +1343,45 @@
             }
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 850px --- */
+        .home-content-overview-section-title {
+            font-size: 14px;
+        }
+        .home-content-overview-section-desc {
+            font-size: 11px;
+        }
+
+        .home-content-overview-card {
+            padding: 14px;
+        }
+
+        .home-content-overview-title {
+            font-size: 13px;
+        }
+        .home-content-total-number {
+            font-size: 20px;
+        }
+
+        .home-content-status-grid {
+            gap: 6px;
+        }
+
+        .home-content-status-item {
+            padding: 8px 4px;
+            border-radius: 8px;
+        }
+
+        .home-content-status-icon {
+            width: 26px;
+            height: 26px;
+        }
+
+        .home-content-status-count {
+            font-size: 14px;
+        }
+        .home-content-status-label {
+            font-size: 8px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 10px 16px;
@@ -1148,14 +1390,12 @@
                 .skeleton-activity-line {
                     height: 12px;
                 }
-
                 .skeleton-activity-time {
                     width: 32px;
                     height: 12px;
                 }
             }
         }
-        /* // --- AKHIR SKELETON LOADING STYLES untuk 850px --- */
     }
 }
 
@@ -1175,7 +1415,6 @@
 
         .home-stats-row {
             display: grid;
-            grid-template-columns: 1fr;
             grid-template-columns: auto auto;
             gap: 15px;
             max-height: 140px;
@@ -1199,7 +1438,6 @@
                     .home-welcome-subtitle {
                         font-size: 13px;
                     }
-
                     .home-company-name {
                         font-size: 12px;
                     }
@@ -1216,8 +1454,10 @@
                     .home-stat-title {
                         font-size: 13px;
                     }
+
                     .home-stat-number-wrapper {
                         top: 35%;
+
                         .home-stat-number {
                             font-size: 25px;
                             margin-bottom: 20px;
@@ -1227,12 +1467,7 @@
                             height: 35px;
                             left: 110px;
                             top: -3px;
-
-                            @media (min-width: 390px) and (max-width: 420px) {
-                                left: 90px;
-                            }
                         }
-
                         .home-stat-subtitle {
                             font-size: 12px;
                         }
@@ -1260,6 +1495,7 @@
                     right: 90px;
                     padding: 6px 8px;
                     flex-direction: row;
+
                     .legend-item {
                         font-size: 10px;
                     }
@@ -1275,7 +1511,6 @@
 
                         .home-chart-wrapper.line-chart {
                             margin-left: -37px;
-                            /* padding-right: 4px; */
                         }
 
                         .home-analytics-stats-horizontal {
@@ -1285,7 +1520,6 @@
                                 .home-stat-value-large {
                                     font-size: 20px;
                                 }
-
                                 .home-stat-label {
                                     font-size: 13px;
                                 }
@@ -1302,7 +1536,42 @@
             min-height: 120px;
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 480px --- */
+        .home-content-overview-grid {
+            grid-template-columns: 1fr;
+            gap: 14px;
+        }
+
+        .home-content-overview-card {
+            padding: 12px;
+        }
+
+        .home-content-status-grid {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+
+        .home-content-status-item {
+            padding: 8px 3px;
+            border-radius: 8px;
+        }
+
+        .home-content-status-icon {
+            width: 24px;
+            height: 24px;
+
+            svg {
+                width: 12px;
+                height: 12px;
+            }
+        }
+
+        .home-content-status-count {
+            font-size: 13px;
+        }
+        .home-content-status-label {
+            font-size: 8px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 10px 12px;
@@ -1311,14 +1580,12 @@
                 .skeleton-activity-line {
                     height: 12px;
                 }
-
                 .skeleton-activity-time {
                     width: 30px;
                     height: 12px;
                 }
             }
         }
-        /* // --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
     }
 }
 
@@ -1348,11 +1615,9 @@
                     h2 {
                         font-size: 14px;
                     }
-
                     .home-welcome-subtitle {
                         font-size: 13px;
                     }
-
                     .home-company-name {
                         font-size: 12px;
                     }
@@ -1368,6 +1633,7 @@
                     .home-stat-title {
                         font-size: 13px;
                     }
+
                     .home-stat-number-wrapper {
                         .home-stat-number {
                             font-size: 22px;
@@ -1377,7 +1643,6 @@
                             height: 30px;
                             left: 90px;
                         }
-
                         .home-stat-subtitle {
                             font-size: 12px;
                         }
@@ -1403,6 +1668,7 @@
                     top: 40px;
                     right: 70px;
                     padding: 4px 6px;
+
                     .legend-item {
                         font-size: 9px;
                     }
@@ -1428,7 +1694,6 @@
                                 .home-stat-value-large {
                                     font-size: 20px;
                                 }
-
                                 .home-stat-label {
                                     font-size: 13px;
                                 }
@@ -1439,7 +1704,25 @@
             }
         }
 
-        /* // --- SKELETON LOADING STYLES untuk 380px --- */
+        .home-content-overview-card {
+            padding: 10px;
+        }
+
+        .home-content-status-grid {
+            gap: 3px;
+        }
+
+        .home-content-status-item {
+            padding: 6px 2px;
+        }
+
+        .home-content-status-count {
+            font-size: 12px;
+        }
+        .home-content-status-label {
+            font-size: 7px;
+        }
+
         .home-activity-list {
             .skeleton-activity-container {
                 padding: 8px 10px;
@@ -1448,7 +1731,6 @@
                 .skeleton-activity-line {
                     height: 11px;
                 }
-
                 .skeleton-activity-time {
                     width: 28px;
                     height: 11px;
@@ -1458,7 +1740,7 @@
     }
 }
 
-/* Animation Classes */
+/* ==================== ANIMATIONS ==================== */
 .fade-in {
     animation: fadeIn 0.6s ease-out;
 }
@@ -1471,5 +1753,14 @@
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -460px 0;
+    }
+    100% {
+        background-position: 460px 0;
     }
 }

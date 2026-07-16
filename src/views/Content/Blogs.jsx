@@ -79,15 +79,16 @@ const REVIEW_STATUS_CONFIG = {
 
 /**
  * Opsi filter dropdown untuk semua user.
+ * "Approved" tidak ditampilkan — status internal, bukan label UI.
  */
 const BASE_FILTER_OPTIONS = [
   { value: "all", label: "All" },
   { value: "published", label: "Published" },
   { value: REVIEW_STATUS.DRAFT, label: "Draft" },
   { value: REVIEW_STATUS.PENDING_REVIEW, label: "Pending Review" },
-  { value: REVIEW_STATUS.APPROVED, label: "Approved" },
   { value: REVIEW_STATUS.REJECTED, label: "Rejected" },
   { value: REVIEW_STATUS.REVISION, label: "Revision" },
+  { value: "my-submissions", label: "My Submissions" },
 ];
 
 /**
@@ -105,9 +106,6 @@ const Blogs = () => {
 
   /** @type {boolean} State untuk buka/tutup dropdown filter */
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  /** @type {boolean} Apakah user sudah pernah membuat blog */
-  const [hasOwnBlogs, setHasOwnBlogs] = useState(false);
 
   const filterDropdownRef = useRef(null);
 
@@ -143,11 +141,17 @@ const Blogs = () => {
       const filters = {};
 
       if (statusFilter === "published") {
-        filters.isPublished = true;
+        filters.published = true;
       } else if (statusFilter === "my-submissions") {
         filters.submittedBy = currentUser?.id;
+        filters.authorId = currentUser?.id;
       } else if (statusFilter !== "all") {
         filters.reviewStatus = statusFilter;
+      }
+
+      // Staff selalu hanya melihat blog miliknya sendiri
+      if (isStaff && statusFilter !== "all") {
+        filters.submittedBy = currentUser?.id;
       }
 
       const result = await blogService.getPaginated(
@@ -158,14 +162,6 @@ const Blogs = () => {
         "EN",
         bypassCache,
       );
-
-      // Cek apakah user pernah membuat blog dari response
-      if (result.success && canManageBlogs) {
-        const owned = result.data?.some(
-          (blog) => blog.authorId === currentUser?.id,
-        );
-        if (owned) setHasOwnBlogs(true);
-      }
 
       return result;
     },
@@ -183,11 +179,16 @@ const Blogs = () => {
       const filters = {};
 
       if (statusFilter === "published") {
-        filters.isPublished = true;
+        filters.published = true;
       } else if (statusFilter === "my-submissions") {
         filters.submittedBy = currentUser?.id;
+        filters.authorId = currentUser?.id;
       } else if (statusFilter !== "all") {
         filters.reviewStatus = statusFilter;
+      }
+
+      if (isStaff) {
+        filters.submittedBy = currentUser?.id;
       }
 
       const result = await blogService.getPaginated(
@@ -241,26 +242,12 @@ const Blogs = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  /**
-   * Opsi filter dropdown — tambah My Submissions jika user manage blog
-   * dan sudah pernah membuat blog.
-   */
-  const filterOptions = useMemo(() => {
-    if (canManageBlogs && hasOwnBlogs) {
-      return [
-        ...BASE_FILTER_OPTIONS,
-        { value: "my-submissions", label: "My Submissions" },
-      ];
-    }
-    return BASE_FILTER_OPTIONS;
-  }, [canManageBlogs, hasOwnBlogs]);
-
   /** Label filter yang sedang aktif */
   const activeFilterLabel = useMemo(() => {
     return (
-      filterOptions.find((opt) => opt.value === statusFilter)?.label || "All"
+      BASE_FILTER_OPTIONS.find((opt) => opt.value === statusFilter)?.label || "All"
     );
-  }, [filterOptions, statusFilter]);
+  }, [BASE_FILTER_OPTIONS, statusFilter]);
 
   /** Daftar nomor halaman */
   const pageNumbers = useMemo(() => {
@@ -366,6 +353,7 @@ const Blogs = () => {
 
   /**
    * Membuka modal preview blog.
+   * onPublishChange: refresh list saat toggle isPublished di modal berhasil.
    */
   const handleViewBlog = async (item) => {
     try {
@@ -380,7 +368,10 @@ const Blogs = () => {
             size="large"
             onClose={() => closeModal("view-blog")}
           >
-            <BlogViewModal blog={result.data} />
+            <BlogViewModal
+              blog={result.data}
+              onPublishChange={() => refresh(true)}
+            />
           </Modal>,
         );
       } else {
@@ -490,19 +481,20 @@ const Blogs = () => {
 
   /**
    * Merender badge status blog.
-   * Opsi B:
    * - APPROVED + isPublished = true  → "Published"
-   * - APPROVED + isPublished = false → "Approved"
+   * - APPROVED + isPublished = false → "Draft" (sudah approved, belum dipublikasikan)
    * - Status lain                    → reviewStatus label
+   * "Approved" tidak pernah tampil sebagai badge — hanya kondisi internal.
    *
    * @param {Object} item - Data blog
    */
   const renderStatusBadge = (item) => {
-    if (
-      item.reviewStatus === REVIEW_STATUS.APPROVED &&
-      item.isPublished === true
-    ) {
-      return <span className="blog-status published">Published</span>;
+    if (item.reviewStatus === REVIEW_STATUS.APPROVED) {
+      return item.isPublished ? (
+        <span className="blog-status published">Published</span>
+      ) : (
+        <span className="blog-status draft">Draft</span>
+      );
     }
 
     const config =
@@ -666,7 +658,7 @@ const Blogs = () => {
 
               {isFilterOpen && (
                 <div className="filter-dropdown-menu">
-                  {filterOptions.map((option) => (
+                  {BASE_FILTER_OPTIONS.map((option) => (
                     <button
                       key={option.value}
                       className={`filter-dropdown-item ${

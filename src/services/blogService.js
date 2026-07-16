@@ -16,8 +16,10 @@
  * - POST /:id/reject   — reject blog, wajib reviewNote (review)
  *
  * Catatan:
- * - isPublished TIDAK dikirim ke backend saat create/update
- *   Backend mengontrol isPublished otomatis via alur review (approve → isPublished = true)
+ * - isPublished TIDAK dikirim ke backend saat create — selalu DRAFT mengikuti alur review
+ *   (kecuali pembuatnya reviewer, di-set otomatis oleh backend).
+ * - isPublished DIKIRIM saat update — dipakai reviewer untuk publish/unpublish
+ *   blog yang sudah APPROVED lewat toggle di BlogViewModal.
  */
 
 import generalApiService from "./generalApiService";
@@ -74,6 +76,9 @@ export const blogService = {
     return {
       reviewStatus: blog.reviewStatus || REVIEW_STATUS.DRAFT,
       reviewNote: blog.reviewNote || null,
+      // Nama pembuat blog (author). Tersedia untuk staff (submit) maupun
+      // reviewer (direct publish) karena backend selalu meng-include relasi author.
+      authorName: blog.author?.name || null,
       submittedBy: blog.submittedBy || null,
       submittedAt: blog.submittedAt
         ? baseService.formatDateTime(blog.submittedAt)
@@ -365,7 +370,8 @@ export const blogService = {
 
   /**
    * Memperbarui entri blog yang sudah ada.
-   * Catatan: isPublished TIDAK dikirim — dikontrol backend via alur review.
+   * Catatan: isPublished dikirim ke backend — dipakai reviewer untuk
+   * publish/unpublish blog APPROVED via toggle di BlogViewModal.
    *
    * @async
    * @param {string|number} id
@@ -397,24 +403,22 @@ export const blogService = {
               formData.append(key, JSON.stringify(value));
             } else if (key === "image") {
               if (value instanceof File) formData.append("image", value);
-            } else if (key === "isFeatured") {
-              // isPublished dikecualikan — dikontrol backend via alur review
+            } else if (key === "isFeatured" || key === "isPublished") {
+              // isPublished dikirim sebagai string agar dibaca parseBoolean di backend
               formData.append(key, String(value));
-            } else if (key === "isPublished") {
-              formData.append(key, value);
             }
           }
         });
 
         return await generalApiService.update("/blogs", id, formData);
       } else {
-        // isPublished dikecualikan — dikontrol backend via alur review
-        const { isPublished: _, ...rest } = blogData;
+        // isPublished kini dikirim — backend memakainya untuk toggle
+        // publish/unpublish pasca-approval oleh reviewer.
         const payload = {
-          image: rest.image,
-          isFeatured: rest.isFeatured,
-          isPublished: rest.isPublished,
-          translations: rest.translations,
+          image: blogData.image,
+          isFeatured: blogData.isFeatured,
+          isPublished: blogData.isPublished,
+          translations: blogData.translations,
         };
 
         Object.keys(payload).forEach((key) => {
@@ -435,24 +439,6 @@ export const blogService = {
     }
   },
 
-  // /**
-  //  * Soft delete blog.
-  //  *
-  //  * @async
-  //  * @param {string|number} id
-  //  * @returns {Promise<{ success: boolean, message?: string }>}
-  //  */
-  // softDelete: async (id) => {
-  //   try {
-  //     return await generalApiService.delete(`/blogs/${id}`);
-  //   } catch (error) {
-  //     console.error("Error in blogService.softDelete:", error);
-  //     return {
-  //       success: false,
-  //       message: "Oops! We couldn't delete the blog. Please try again",
-  //     };
-  //   }
-  // },
 
   /**
    * Hard delete blog (hapus permanen).

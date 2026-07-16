@@ -29,6 +29,7 @@ import {
   ChevronRight,
   Package,
   Clock,
+  User,
 } from "lucide-react";
 import { itemService } from "../../../services/itemService";
 import { useModalContext } from "../../../contexts/ModalContext";
@@ -390,6 +391,13 @@ const ItemsApprovalView = ({ item, onClose, onSuccess }) => {
             <span className="meta-label">Status:</span>
             {renderStatusBadge()}
           </div>
+          {item.creatorName && (
+            <div className="meta-row">
+              <User size={14} />
+              <span className="meta-label">Creator:</span>
+              <span className="meta-value">{item.creatorName}</span>
+            </div>
+          )}
           {item.createdAtFormatted && (
             <div className="meta-row">
               <Calendar size={14} />

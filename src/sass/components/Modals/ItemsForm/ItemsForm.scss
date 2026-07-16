@@ -106,6 +106,38 @@
         }
     }
 
+    // ==================== REVISION CHANGE HINT ====================
+
+    .revision-change-hint {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: #fff7ed;
+        border: 1px solid #fdba74;
+        border-radius: 8px;
+        color: #9a3412;
+        font-size: 13px;
+        font-weight: 500;
+        animation: slideDown 0.3s ease;
+
+        svg {
+            flex-shrink: 0;
+            color: #f97316;
+        }
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     // ==================== FORM DISABLED NOTICE ====================
 
     .form-disabled-notice {

@@ -182,6 +182,26 @@
   background-color: #be123c;
 }
 
+/* ========== WARNING ========== */
+.alert-warning .alert-icon-wrapper {
+  background-color: #fff7ed;
+}
+.alert-warning .alert-icon {
+  color: #d97706;
+}
+.alert-warning .alert-title {
+  color: #78350f;
+}
+.alert-warning .alert-message {
+  color: #92400e;
+}
+.alert-warning .alert-btn-primary {
+  background-color: #d97706;
+}
+.alert-warning .alert-btn-primary:hover:not(:disabled) {
+  background-color: #b45309;
+}
+
 /* ========== RESPONSIVE ========== */
 /* 1440px */
 @media (max-width: 1440px) {

@@ -219,6 +219,33 @@
     }
 }
 
+/* ========== WARNING ========== */
+.alert-warning {
+    .alert-icon-wrapper {
+        background-color: #fff7ed;
+    }
+
+    .alert-icon {
+        color: #d97706;
+    }
+
+    .alert-title {
+        color: #78350f;
+    }
+
+    .alert-message {
+        color: #92400e;
+    }
+
+    .alert-btn-primary {
+        background-color: #d97706;
+
+        &:hover:not(:disabled) {
+            background-color: #b45309;
+        }
+    }
+}
+
 /* ========== RESPONSIVE ========== */
 
 /* 1440px */

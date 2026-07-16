@@ -42,6 +42,7 @@ import {
   Send,
 } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
+import { canReview, isSuperAdmin } from "../../../utils/permissions";
 import { itemService, REVIEW_STATUS } from "../../../services/itemService";
 import { categoriesService } from "../../../services/categoriesService";
 import { brandService } from "../../../services/brandService";
@@ -203,6 +204,15 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   const isEditing = !!item;
 
   /**
+   * Apakah user adalah reviewer (mis. head marketing).
+   * Reviewer create item langsung auto-approved oleh backend tanpa submitReview.
+   * @type {boolean}
+   */
+  const isSuper = isSuperAdmin(currentUser);
+  const canReviewItems =
+    isSuper || canReview(currentUser?.permissions, "product");
+
+  /**
    * Review status item saat ini (hanya relevan saat mode edit).
    * @type {string}
    */
@@ -268,6 +278,22 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
 
   const [error, setError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
+
+  /**
+   * Menandai apakah user sudah mengubah data form.
+   * Dipakai untuk memblokir submit revisi tanpa perubahan.
+   * @type {[boolean, Function]}
+   */
+  const [isDirty, setIsDirty] = useState(false);
+
+  /**
+   * Ref untuk memblokir setIsDirty(true) selama fase initial load data.
+   * Lapisan kedua di luar fix TiptapEditor (isProgrammaticUpdateRef), menangkap
+   * onChange yang mungkin terpanggil saat data edit baru di-load ke form.
+   * @type {React.MutableRefObject<boolean>}
+   */
+  const preventDirtyRef = useRef(false);
+
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
@@ -368,10 +394,19 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
         metaKeywords: item.metaKeywordsId ?? idTrans.metaKeywords ?? "",
       };
 
+      preventDirtyRef.current = true;
       setTranslations({ EN: enData, ID: idData });
       setValidationErrors({});
       setError("");
       setImageError("");
+      setIsDirty(false);
+
+      // Buka blokir setelah semua React effects (termasuk TiptapEditor) selesai.
+      // setTimeout(0) adalah macrotask — dijamin jalan setelah useEffect siklus render ini.
+      const timer = setTimeout(() => {
+        preventDirtyRef.current = false;
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [item, isEditing, categories, brands]);
 
@@ -474,6 +509,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   };
 
   const handleTranslationChange = (field, value) => {
+    if (!preventDirtyRef.current) setIsDirty(true);
     setTranslations((prev) => ({
       ...prev,
       [currentLanguage]: { ...prev[currentLanguage], [field]: value },
@@ -486,6 +522,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   };
 
   const handleMasterChange = (field, value) => {
+    setIsDirty(true);
     setMasterData((prev) => ({ ...prev, [field]: value }));
     setValidationErrors((prev) => {
       const { [field]: _, ...rest } = prev;
@@ -507,6 +544,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
     }
 
     setImageError("");
+    setIsDirty(true);
     const newImages = files.map((file, index) => ({
       id: `new-${Date.now()}-${index}`,
       file,
@@ -523,6 +561,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   };
 
   const handleImageRemove = (imageId) => {
+    setIsDirty(true);
     setImages((prev) => {
       const imageToRemove = prev.find((img) => img.id === imageId);
       if (imageToRemove?.preview?.startsWith("blob:")) {
@@ -538,6 +577,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       featureInput.trim() &&
       !translations[currentLanguage].features.includes(featureInput.trim())
     ) {
+      setIsDirty(true);
       setTranslations((prev) => ({
         ...prev,
         [currentLanguage]: {
@@ -550,6 +590,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   };
 
   const handleRemoveFeature = (featureToRemove) => {
+    setIsDirty(true);
     setTranslations((prev) => ({
       ...prev,
       [currentLanguage]: {
@@ -571,6 +612,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
       return;
     }
     if (specKey.trim() && specValue.trim()) {
+      setIsDirty(true);
       setTranslations((prev) => ({
         ...prev,
         [currentLanguage]: {
@@ -588,6 +630,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
   };
 
   const handleRemoveSpecification = (keyToRemove) => {
+    setIsDirty(true);
     const newSpecs = { ...translations[currentLanguage].specifications };
     delete newSpecs[keyToRemove];
     setTranslations((prev) => ({
@@ -641,14 +684,25 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
 
       if (result.success) {
         const modalId = isEditing ? `editItem-${item.id}` : "addItem";
+        const isReviewerCreate = !isEditing && canReviewItems;
+        const successTitle = isEditing
+          ? "Updated!"
+          : isReviewerCreate
+            ? "Published!"
+            : "Saved!";
+        const successMessage = isEditing
+          ? "Item has been successfully updated."
+          : isReviewerCreate
+            ? "Item has been successfully published."
+            : "Item has been successfully saved as draft.";
         closeModal(modalId);
         setTimeout(() => {
           openModal(
             "itemSaveSuccess",
             <AlertModal
               type="success"
-              title={isEditing ? "Updated!" : "Saved!"}
-              message={`Item has been successfully ${isEditing ? "updated" : "saved as draft"}.`}
+              title={successTitle}
+              message={successMessage}
               showActions={true}
               confirmText="OK"
               onConfirm={() => {
@@ -749,6 +803,31 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           "small",
         );
         setLoadingSubmit(false);
+        return;
+      }
+
+      // Reviewer (mis. head marketing): backend otomatis approve item saat
+      // create, tidak ada langkah submit review. Langsung tampilkan sukses.
+      if (canReviewItems) {
+        closeModal("addItem");
+        setTimeout(() => {
+          openModal(
+            "itemApproveSuccess",
+            <AlertModal
+              type="success"
+              title="Published!"
+              message="Item has been successfully published."
+              showActions={true}
+              confirmText="OK"
+              onConfirm={() => {
+                closeModal("itemApproveSuccess");
+                onSuccess();
+              }}
+              onCancel={() => closeModal("itemApproveSuccess")}
+            />,
+            "small",
+          );
+        }, 300);
         return;
       }
 
@@ -933,6 +1012,25 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
    * yang mungkin belum di-Save oleh staff.
    */
   const handleSubmitRevision = () => {
+    // Wajib ada perubahan sebelum revisi diajukan ulang.
+    // Backstop dari tombol yang sudah di-disable saat !isDirty.
+    if (!isDirty) {
+      openModal(
+        "noChangeAlert",
+        <AlertModal
+          type="warning"
+          title="No Changes Detected"
+          message="Please make at least one change before resubmitting the revision."
+          showActions={true}
+          confirmText="OK"
+          onConfirm={() => closeModal("noChangeAlert")}
+          onCancel={() => closeModal("noChangeAlert")}
+        />,
+        "small",
+      );
+      return;
+    }
+
     openModal(
       "submitRevisionConfirm",
       <AlertModal
@@ -1563,6 +1661,17 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
           </div>
         </div>
 
+        {/* Hint revisi — wajib ubah minimal satu field sebelum submit ulang */}
+        {isEditing &&
+          !isFormDisabled &&
+          reviewStatus === REVIEW_STATUS.REVISION &&
+          !isDirty && (
+            <div className="revision-change-hint">
+              <AlertCircle size={15} />
+              <span>Make at least one change before resubmitting.</span>
+            </div>
+          )}
+
         {/* Action Buttons */}
         <div className="form-actions">
           {/* Mode: Form disabled (PENDING_REVIEW / APPROVED) — hanya Cancel */}
@@ -1577,7 +1686,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
             </button>
           )}
 
-          {/* Mode: Create — Save (draft) dan Submit (create → submitReview) */}
+          {/* Mode: Create — staff: Save (draft) + Submit; reviewer: Publish saja */}
           {!isEditing && !isFormDisabled && (
             <>
               <button
@@ -1589,31 +1698,36 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                className="btn-outline"
-                onClick={handleSave}
-                disabled={loadingSave || loadingSubmit}
-                aria-label="Save as draft"
-              >
-                {loadingSave ? (
-                  <PulseDots size="sm" color="currentColor" count={6} />
-                ) : (
-                  "Save"
-                )}
-              </button>
+              {/* Save (draft) hanya untuk staff — reviewer langsung publish */}
+              {!canReviewItems && (
+                <button
+                  type="button"
+                  className="btn-outline"
+                  onClick={handleSave}
+                  disabled={loadingSave || loadingSubmit}
+                  aria-label="Save as draft"
+                >
+                  {loadingSave ? (
+                    <PulseDots size="sm" color="currentColor" count={6} />
+                  ) : (
+                    "Save"
+                  )}
+                </button>
+              )}
               <button
                 type="button"
                 className="btn-primary"
                 onClick={handleSubmitNew}
                 disabled={loadingSave || loadingSubmit}
-                aria-label="Submit for review"
+                aria-label={
+                  canReviewItems ? "Publish item" : "Submit for review"
+                }
               >
                 {loadingSubmit ? (
                   <PulseDots size="sm" color="#ffffff" count={6} />
                 ) : (
                   <>
-                    <Send size={15} /> Submit
+                    <Send size={15} /> {canReviewItems ? "Publish" : "Submit"}
                   </>
                 )}
               </button>
@@ -1696,7 +1810,7 @@ const ItemsForm = ({ item = null, onClose, onSuccess }) => {
                   type="button"
                   className="btn-primary"
                   onClick={handleSubmitRevision}
-                  disabled={loadingSave || loadingSubmit}
+                  disabled={loadingSave || loadingSubmit || !isDirty}
                   aria-label="Submit item revision for review"
                 >
                   {loadingSubmit ? (

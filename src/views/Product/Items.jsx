@@ -51,7 +51,6 @@ import { generatePageNumbers } from "../../utils/pagination";
 import SkeletonItem from "../../components/Loaders/SkeletonItem";
 import AlertModal from "../../components/Alerts/AlertModal";
 import {
-  canManage,
   canExport,
   canReview,
   canAccess,
@@ -75,16 +74,18 @@ const REVIEW_STATUS_CONFIG = {
 };
 
 /**
- * Opsi filter review status untuk dropdown.
+ * Opsi filter review status dasar untuk dropdown (semua user).
+ * "My Submissions" ditambahkan secara dinamis jika user pernah submit item.
  * @type {Array<{label: string, value: string}>}
  */
-const REVIEW_STATUS_OPTIONS = [
-  { label: "All Status", value: "" },
-  { label: "Draft", value: "DRAFT" },
-  { label: "Pending Review", value: "PENDING_REVIEW" },
-  { label: "Approved", value: "APPROVED" },
-  { label: "Rejected", value: "REJECTED" },
-  { label: "Revision", value: "REVISION" },
+const BASE_FILTER_OPTIONS = [
+  { label: "All", value: "all" },
+  { label: "Draft", value: REVIEW_STATUS.DRAFT },
+  { label: "Pending Review", value: REVIEW_STATUS.PENDING_REVIEW },
+  { label: "Approved", value: REVIEW_STATUS.APPROVED },
+  { label: "Rejected", value: REVIEW_STATUS.REJECTED },
+  { label: "Revision", value: REVIEW_STATUS.REVISION },
+  { label: "My Submissions", value: "my-submissions" },
 ];
 
 /**
@@ -105,13 +106,61 @@ const Items = () => {
   const navigate = useNavigate();
 
   /** @type {[string, Function]} State filter review status yang aktif */
-  const [reviewStatusFilter, setReviewStatusFilter] = useState("");
+  const [reviewStatusFilter, setReviewStatusFilter] = useState("all");
 
   /** @type {[boolean, Function]} State untuk toggle dropdown filter */
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  /** @type {[boolean, Function]} Apakah user sudah pernah submit item */
+  const [hasOwnItems, setHasOwnItems] = useState(false);
+
   /** @type {React.RefObject} Ref untuk deteksi klik di luar dropdown */
   const filterDropdownRef = useRef(null);
+
+  // ==================== PERMISSION LOGIC ====================
+
+  const isSuper = isSuperAdmin(currentUser);
+
+  const canManageItems =
+    isSuper || canAccess(currentUser?.permissions, "product");
+
+  const canReviewItems =
+    isSuper || canReview(currentUser?.permissions, "product");
+
+  const canExportItems =
+    isSuper ||
+    canExport(currentUser?.permissions, "product") ||
+    canReview(currentUser?.permissions, "product");
+
+  /**
+   * Staff adalah user yang bisa manage tapi bukan reviewer.
+   * Digunakan untuk membatasi aksi Edit dan View, serta selalu memfilter
+   * data hanya milik staff itu sendiri.
+   */
+  const isStaff = canManageItems && !canReviewItems;
+
+  /**
+   * Membangun objek filter untuk request berdasarkan state filter aktif.
+   * - "all"            → tanpa filter status
+   * - "my-submissions" → hanya item milik user login
+   * - status lain      → filter reviewStatus
+   * Staff selalu dibatasi hanya melihat item miliknya sendiri.
+   */
+  const buildFilters = () => {
+    const filters = {};
+
+    if (reviewStatusFilter === "my-submissions") {
+      filters.submittedBy = currentUser?.id;
+    } else if (reviewStatusFilter !== "all") {
+      filters.reviewStatus = reviewStatusFilter;
+    }
+
+    if (isStaff && reviewStatusFilter !== "all") {
+      filters.submittedBy = currentUser?.id;
+    }
+
+    return filters;
+  };
 
   /**
    * Hook pencarian dengan debouncing dan pagination untuk data produk.
@@ -128,19 +177,20 @@ const Items = () => {
     refresh,
   } = useDebouncedSearch(
     async (page, limit, search, bypassCache = false) => {
-      return await itemService.getPaginated(
+      const result = await itemService.getPaginated(
         page,
         limit,
         search,
-        {
-          reviewStatus: reviewStatusFilter || undefined,
-        },
+        buildFilters(),
         bypassCache,
       );
+
+      return result;
     },
     1,
     10,
     800,
+    [reviewStatusFilter],
   );
 
   /**
@@ -168,7 +218,7 @@ const Items = () => {
         1,
         10,
         searchTerm,
-        { reviewStatus: reviewStatusFilter || undefined },
+        buildFilters(),
         bypassCache,
       );
 
@@ -200,45 +250,21 @@ const Items = () => {
 
   useAutoRefetch(handleAutoRefetch);
 
-  // ==================== PERMISSION LOGIC ====================
-
-  const isSuper = isSuperAdmin(currentUser);
-
-  const canManageItems =
-    isSuper || canAccess(currentUser?.permissions, "product");
-
-  const canReviewItems =
-    isSuper || canReview(currentUser?.permissions, "product");
-
-  const canExportItems =
-    isSuper ||
-    canExport(currentUser?.permissions, "product") ||
-    canReview(currentUser?.permissions, "product");
-
-  /**
-   * Staff adalah user yang bisa manage tapi bukan reviewer.
-   * Digunakan untuk membatasi aksi Edit dan View.
-   */
-  const isStaff = canManageItems && !canReviewItems;
-
   /** @type {(number|string)[]} Daftar nomor halaman untuk ditampilkan */
   const pageNumbers = useMemo(() => {
     return generatePageNumbers(currentPage, totalPages);
   }, [currentPage, totalPages]);
 
-  // ==================== FILTER HELPERS ====================
 
   const activeFilterLabel = useMemo(() => {
-    const found = REVIEW_STATUS_OPTIONS.find(
-      (opt) => opt.value === reviewStatusFilter,
-    );
+    const found = BASE_FILTER_OPTIONS.find((opt) => opt.value === reviewStatusFilter);
     return found ? found.label : "All Status";
-  }, [reviewStatusFilter]);
+  }, [BASE_FILTER_OPTIONS, reviewStatusFilter]);
 
   const handleFilterSelect = (value) => {
     setReviewStatusFilter(value);
     setIsFilterOpen(false);
-    goToPage(1);
+    setTimeout(() => goToPage(1), 0);
   };
 
   // ==================== ACCESS CONTROL HELPERS ====================
@@ -364,7 +390,7 @@ const Items = () => {
           />
         </Modal>,
       );
-    } catch (err) {
+    } catch {
       openModal(
         "fetchError",
         <AlertModal
@@ -440,7 +466,7 @@ const Items = () => {
                 "small",
               );
             }
-          } catch (err) {
+          } catch {
             openModal(
               "deleteError",
               <AlertModal
@@ -479,7 +505,7 @@ const Items = () => {
   };
 
   const renderNoDataMessage = () => {
-    if (searchTerm.trim() || reviewStatusFilter) {
+    if (searchTerm.trim() || reviewStatusFilter !== "all") {
       return (
         <>
           <Package size={48} />
@@ -491,7 +517,7 @@ const Items = () => {
                 matching "<strong>{searchTerm}</strong>"
               </>
             )}
-            {reviewStatusFilter && (
+            {reviewStatusFilter !== "all" && (
               <>
                 {" "}
                 with status <strong>{activeFilterLabel}</strong>
@@ -601,8 +627,9 @@ const Items = () => {
 
         {/* Review Status Filter Dropdown */}
         <div className="filter-dropdown-wrapper" ref={filterDropdownRef}>
+          <label className="filter-label">Status</label>
           <button
-            className={`filter-dropdown-btn ${reviewStatusFilter ? "active" : ""}`}
+            className={`filter-dropdown-btn ${isFilterOpen ? "open" : ""}`}
             onClick={() => setIsFilterOpen((prev) => !prev)}
             aria-label="Filter by review status"
           >
@@ -615,11 +642,13 @@ const Items = () => {
 
           {isFilterOpen && (
             <div className="filter-dropdown-menu">
-              {REVIEW_STATUS_OPTIONS.map((opt) => (
+              {BASE_FILTER_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   className={`filter-dropdown-item ${
-                    reviewStatusFilter === opt.value ? "selected" : ""
+                    reviewStatusFilter === opt.value ? "active" : ""
+                  } ${
+                    opt.value === "my-submissions" ? "my-submissions-item" : ""
                   }`}
                   onClick={() => handleFilterSelect(opt.value)}
                 >

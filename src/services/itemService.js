@@ -421,6 +421,11 @@ export const itemService = {
           reviewStatus: data.reviewStatus ?? "DRAFT",
           reviewNote: data.reviewNote ?? null,
 
+          // Nama pembuat item. Product tidak punya relasi author seperti Blog,
+          // jadi diderivasi: submitter (Staff Marketing submit) atau
+          // reviewer (Head Marketing buat langsung + auto-approve).
+          creatorName: raw.submitter?.name || raw.reviewer?.name || null,
+
           shortDescription: fallback.shortDescription || "",
           longDescription: fallback.longDescription || "",
           specifications: fallback.specifications || {},
@@ -553,6 +558,7 @@ export const itemService = {
       if (filters.categoryId) params.categoryId = filters.categoryId;
       if (filters.isActive !== undefined) params.isActive = filters.isActive;
       if (filters.reviewStatus) params.reviewStatus = filters.reviewStatus;
+      if (filters.submittedBy) params.submittedBy = filters.submittedBy;
 
       const response = await generalApiService.getAll("/products", params);
       const result = normalizePaginatedResponse(response);

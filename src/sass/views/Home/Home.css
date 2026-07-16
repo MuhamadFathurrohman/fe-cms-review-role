@@ -43,9 +43,6 @@
 .home-dashboard .home-retry-button:hover {
   background: #dc2626;
 }
-.home-dashboard {
-  /* ✅ WRAPPER BARU */
-}
 .home-dashboard .home-dashboard-content {
   display: flex;
   flex-direction: column;
@@ -59,7 +56,6 @@
   flex-wrap: wrap;
   gap: 24px;
   height: 170px;
-  /* // Welcome Card (lebar penuh di mobile, 60% di desktop) */
 }
 .home-dashboard .home-stats-row .home-welcome-card {
   flex: 1 1 50%;
@@ -75,6 +71,14 @@
 .home-dashboard .home-stats-row .home-welcome-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 20px 40px rgba(45, 76, 82, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.home-dashboard .home-stats-row .home-welcome-card {
+  /* Modifier: saat tidak ada stat cards — span full width */
+}
+.home-dashboard .home-stats-row .home-welcome-card.home-welcome-card--full {
+  flex: 1 1 100%;
+  min-width: 0;
+  width: 100%;
 }
 .home-dashboard .home-stats-row .home-welcome-card .home-welcome-text-wrapper {
   padding: 10px;
@@ -104,9 +108,6 @@
   color: #2d4c52;
   margin: 8px 0 0 0;
   font-weight: 700;
-}
-.home-dashboard .home-stats-row {
-  /* // Stat Cards (dua card kecil) */
 }
 .home-dashboard .home-stats-row .home-stat-card {
   flex: 1 1 25%;
@@ -279,7 +280,6 @@
   min-height: 180px;
   display: block;
   margin-left: -35px;
-  /* padding-right: 10px; */
 }
 .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-analytics-stats-horizontal {
   display: flex;
@@ -363,12 +363,11 @@
   scroll-behavior: smooth;
   content-visibility: auto;
   contain-intrinsic-size: 250px;
-  /* Hide scrollbar but keep scroll functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 .home-dashboard .home-charts-row .home-activity-card .home-stat-content .home-activity-list-container::-webkit-scrollbar {
-  display: none; /* WebKit */
+  display: none;
 }
 .home-dashboard .home-charts-row .home-activity-card .home-stat-content .home-activity-list {
   display: flex;
@@ -441,7 +440,175 @@
   line-height: 1.4;
 }
 .home-dashboard {
-  /* --- SKELETON LOADING STYLES (ditambahkan di sini) --- */
+  /* // === CONTENT OVERVIEW ROW === */
+}
+.home-dashboard .home-content-overview-row {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.home-dashboard .home-content-overview-section-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.home-dashboard .home-content-overview-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+.home-dashboard .home-content-overview-section-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+.home-dashboard .home-content-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+}
+.home-dashboard {
+  /* // === CONTENT OVERVIEW CARD === */
+}
+.home-dashboard .home-content-overview-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 15px 30px rgba(45, 76, 82, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.home-dashboard .home-content-overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(45, 76, 82, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.home-dashboard .home-content-overview-card:focus-visible {
+  outline: 2px solid #2d4c52;
+  outline-offset: 2px;
+}
+.home-dashboard .home-content-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #f1f5f9;
+}
+.home-dashboard .home-content-overview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2d4c52;
+}
+.home-dashboard .home-content-overview-title svg {
+  color: #2d4c52;
+  flex-shrink: 0;
+}
+.accent-items .home-dashboard .home-content-overview-title svg {
+  color: #e6863f;
+}
+.home-dashboard .home-content-overview-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+.home-dashboard .home-content-total-number {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+.home-dashboard .home-content-total-label {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.home-dashboard {
+  /* // === STATUS GRID === */
+}
+.home-dashboard .home-content-status-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.home-dashboard .home-content-status-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 6px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+.home-dashboard .home-content-status-item.status-draft {
+  border-color: #ddd6fe;
+}
+.home-dashboard .home-content-status-item.status-draft .home-content-status-icon {
+  color: #6d28d9;
+}
+.home-dashboard .home-content-status-item.status-pending {
+  border-color: #fde68a;
+}
+.home-dashboard .home-content-status-item.status-pending .home-content-status-icon {
+  color: #d97706;
+}
+.home-dashboard .home-content-status-item.status-approved {
+  border-color: #a7f3d0;
+}
+.home-dashboard .home-content-status-item.status-approved .home-content-status-icon {
+  color: #059669;
+}
+.home-dashboard .home-content-status-item.status-rejected {
+  border-color: #fca5a5;
+}
+.home-dashboard .home-content-status-item.status-rejected .home-content-status-icon {
+  color: #dc2626;
+}
+.home-dashboard .home-content-status-item.status-revision {
+  border-color: #fed7aa;
+}
+.home-dashboard .home-content-status-item.status-revision .home-content-status-icon {
+  color: #ea580c;
+}
+.home-dashboard .home-content-status-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #94a3b8; /* default netral jika status tidak dikenali */
+}
+.home-dashboard .home-content-status-count {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+  color: #374151; /* netral — angka tidak membawa warna semantik */
+}
+.home-dashboard .home-content-status-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+.home-dashboard {
+  /* // === SKELETON ACTIVITY === */
 }
 .home-dashboard .home-activity-list .skeleton-activity-container {
   display: flex;
@@ -486,6 +653,7 @@
   border-radius: 4px;
 }
 
+/* ==================== RESPONSIVE ==================== */
 /* Desktop Large - 1440px */
 @media (max-width: 1440px) {
   .home-dashboard .home-dashboard-content {
@@ -564,7 +732,6 @@
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-chart-wrapper.line-chart {
     margin-left: -35px;
-    /* padding-right: 8px; */
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-stats-horizontal {
     gap: 45px;
@@ -582,8 +749,31 @@
     width: 18px;
     height: 18px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1440px --- */
+  .home-dashboard .home-content-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .home-dashboard .home-content-overview-card {
+    padding: 18px;
+  }
+  .home-dashboard .home-content-overview-title {
+    font-size: 14px;
+  }
+  .home-dashboard .home-content-total-number {
+    font-size: 22px;
+  }
+  .home-dashboard .home-content-status-grid {
+    gap: 8px;
+  }
+  .home-dashboard .home-content-status-item {
+    padding: 10px 5px;
+  }
+  .home-dashboard .home-content-status-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .home-dashboard .home-content-status-count {
+    font-size: 16px;
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 14px;
@@ -595,9 +785,6 @@
   .home-dashboard .home-activity-list .skeleton-activity-container .skeleton-activity-time {
     width: 35px;
     height: 13px;
-  }
-  .home-dashboard {
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1440px --- */
   }
 }
 /* Desktop Medium - 1280px */
@@ -669,7 +856,6 @@
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-chart-wrapper.line-chart {
     margin-left: -35px;
-    /* padding-right: 4px; */
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-stats-horizontal {
     gap: 45px;
@@ -687,8 +873,18 @@
     width: 16px;
     height: 16px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1280px --- */
+  .home-dashboard .home-content-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .home-dashboard .home-content-status-grid {
+    gap: 6px;
+  }
+  .home-dashboard .home-content-status-item {
+    padding: 9px 4px;
+  }
+  .home-dashboard .home-content-status-count {
+    font-size: 15px;
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 14px;
@@ -700,9 +896,6 @@
   .home-dashboard .home-activity-list .skeleton-activity-container .skeleton-activity-time {
     width: 35px;
     height: 13px;
-  }
-  .home-dashboard {
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1280px --- */
   }
 }
 /* Large Tablet - 1024px */
@@ -748,17 +941,6 @@
     left: 120px;
     top: -5px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 1024px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 1024px --- */
-  }
-}
-@media (max-width: 1024px) and (max-width: 920px) and (min-width: 900px) {
-  .home-dashboard .home-stats-row .home-stat-card .home-card-content-wrapper .home-stat-number-wrapper .home-stat-icon {
-    left: 80px;
-  }
-}
-@media (max-width: 1024px) {
   .home-dashboard .home-stats-row .home-stat-card .home-card-content-wrapper .home-stat-number-wrapper .home-stat-subtitle {
     font-size: 12px;
   }
@@ -805,6 +987,15 @@
   .home-dashboard .home-charts-row .home-activity-card .home-stat-content .home-activity-list-container {
     contain-intrinsic-size: 350px;
   }
+  .home-dashboard .home-content-overview-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-dashboard .home-content-overview-card {
+    padding: 16px;
+  }
+  .home-dashboard .home-content-status-grid {
+    gap: 8px;
+  }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 16px;
     gap: 10px;
@@ -817,7 +1008,7 @@
     height: 13px;
   }
 }
-/* Medium Tablet - 800px */
+/* Medium Tablet - 850px */
 @media (max-width: 850px) {
   .home-dashboard .home-dashboard-content {
     gap: 14px;
@@ -902,8 +1093,37 @@
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-stats-horizontal .home-stat-item-horizontal .home-stat-label {
     font-size: 11px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 850px --- */
+  .home-dashboard .home-content-overview-section-title {
+    font-size: 14px;
+  }
+  .home-dashboard .home-content-overview-section-desc {
+    font-size: 11px;
+  }
+  .home-dashboard .home-content-overview-card {
+    padding: 14px;
+  }
+  .home-dashboard .home-content-overview-title {
+    font-size: 13px;
+  }
+  .home-dashboard .home-content-total-number {
+    font-size: 20px;
+  }
+  .home-dashboard .home-content-status-grid {
+    gap: 6px;
+  }
+  .home-dashboard .home-content-status-item {
+    padding: 8px 4px;
+    border-radius: 8px;
+  }
+  .home-dashboard .home-content-status-icon {
+    width: 26px;
+    height: 26px;
+  }
+  .home-dashboard .home-content-status-count {
+    font-size: 14px;
+  }
+  .home-dashboard .home-content-status-label {
+    font-size: 8px;
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 16px;
@@ -915,9 +1135,6 @@
   .home-dashboard .home-activity-list .skeleton-activity-container .skeleton-activity-time {
     width: 32px;
     height: 12px;
-  }
-  .home-dashboard {
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 850px --- */
   }
 }
 /* Mobile Medium - 480px */
@@ -931,7 +1148,6 @@
   }
   .home-dashboard .home-stats-row {
     display: grid;
-    grid-template-columns: 1fr;
     grid-template-columns: auto auto;
     gap: 15px;
     max-height: 140px;
@@ -977,17 +1193,6 @@
     left: 110px;
     top: -3px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 480px --- */
-    /* // --- AKHIR SKELETON LOADING STYLES untuk 480px --- */
-  }
-}
-@media (max-width: 480px) and (min-width: 390px) and (max-width: 420px) {
-  .home-dashboard .home-stats-row .home-stat-card .home-card-content-wrapper .home-stat-number-wrapper .home-stat-icon {
-    left: 90px;
-  }
-}
-@media (max-width: 480px) {
   .home-dashboard .home-stats-row .home-stat-card .home-card-content-wrapper .home-stat-number-wrapper .home-stat-subtitle {
     font-size: 12px;
   }
@@ -1022,7 +1227,6 @@
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-chart-wrapper.line-chart {
     margin-left: -37px;
-    /* padding-right: 4px; */
   }
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-analytics-stats-horizontal {
     gap: 30px;
@@ -1037,6 +1241,35 @@
   .home-dashboard .home-activity-empty {
     font-size: 15px;
     min-height: 120px;
+  }
+  .home-dashboard .home-content-overview-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .home-dashboard .home-content-overview-card {
+    padding: 12px;
+  }
+  .home-dashboard .home-content-status-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .home-dashboard .home-content-status-item {
+    padding: 8px 3px;
+    border-radius: 8px;
+  }
+  .home-dashboard .home-content-status-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .home-dashboard .home-content-status-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  .home-dashboard .home-content-status-count {
+    font-size: 13px;
+  }
+  .home-dashboard .home-content-status-label {
+    font-size: 8px;
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 10px 12px;
@@ -1135,8 +1368,20 @@
   .home-dashboard .home-charts-row .home-chart-card .home-chart-content .home-analytics-chart-container .home-analytics-stats-horizontal .home-stat-item-horizontal .home-stat-label {
     font-size: 13px;
   }
-  .home-dashboard {
-    /* // --- SKELETON LOADING STYLES untuk 380px --- */
+  .home-dashboard .home-content-overview-card {
+    padding: 10px;
+  }
+  .home-dashboard .home-content-status-grid {
+    gap: 3px;
+  }
+  .home-dashboard .home-content-status-item {
+    padding: 6px 2px;
+  }
+  .home-dashboard .home-content-status-count {
+    font-size: 12px;
+  }
+  .home-dashboard .home-content-status-label {
+    font-size: 7px;
   }
   .home-dashboard .home-activity-list .skeleton-activity-container {
     padding: 8px 10px;
@@ -1150,7 +1395,7 @@
     height: 11px;
   }
 }
-/* Animation Classes */
+/* ==================== ANIMATIONS ==================== */
 .fade-in {
   animation: fadeIn 0.6s ease-out;
 }
@@ -1163,5 +1408,13 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -460px 0;
+  }
+  100% {
+    background-position: 460px 0;
   }
 }/*# sourceMappingURL=Home.css.map */
