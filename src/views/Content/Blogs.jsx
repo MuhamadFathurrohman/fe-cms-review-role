@@ -55,7 +55,6 @@ import { useDebouncedSearch } from "../../hooks/useDebouncedSearch";
 import { generatePageNumbers } from "../../utils/pagination";
 import SkeletonItem from "../../components/Loaders/SkeletonItem";
 import {
-  canManage,
   canReview,
   isSuperAdmin,
   canAccess,
@@ -90,6 +89,13 @@ const BASE_FILTER_OPTIONS = [
   { value: REVIEW_STATUS.REVISION, label: "Revision" },
   { value: "my-submissions", label: "My Submissions" },
 ];
+
+/**
+ * Status yang mengizinkan tombol Edit ditampilkan.
+ * @type {string[]}
+ */
+const EDITABLE_STATUSES = [REVIEW_STATUS.DRAFT, REVIEW_STATUS.REVISION];
+
 
 /**
  * Komponen halaman manajemen blog utama.
@@ -405,7 +411,7 @@ const Blogs = () => {
    * Hanya bisa diakses oleh reviewer (canReviewBlogs).
    */
   const handleDeleteBlog = (item) => {
-    if (!canReviewBlogs) return;
+    if (!canShowDeleteButton) return;
     openModal(
       "deleteBlogConfirm",
       <AlertModal
@@ -523,11 +529,13 @@ const Blogs = () => {
    */
   const canShowEditButton = (item) => {
     if (!canManageBlogs || canReviewBlogs) return false;
-    return (
-      item.reviewStatus === REVIEW_STATUS.DRAFT ||
-      item.reviewStatus === REVIEW_STATUS.REVISION
-    );
+    return EDITABLE_STATUSES.includes(item.reviewStatus);
   };
+
+  const canShowDeleteButton = (item) => {
+    if (canManageBlogs && item.reviewStatus == "DRAFT") return true;
+    return canReviewBlogs;
+  }
 
   /**
    * Merender pesan ketika tidak ada data blog.
@@ -801,7 +809,7 @@ const Blogs = () => {
                         )}
 
                         {/* Delete — hanya reviewer */}
-                        {canReviewBlogs && (
+                        {canShowDeleteButton(item) && (
                           <button
                             className="blog-action-btn delete-btn"
                             title="Delete blog"

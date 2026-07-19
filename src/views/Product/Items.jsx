@@ -289,6 +289,11 @@ const Items = () => {
     return EDITABLE_STATUSES.includes(item.reviewStatus);
   };
 
+  const canShowDeleteButton = (item) => {
+    if (canManageItems && item.reviewStatus == "DRAFT") return true;
+    return canReviewItems;
+  }
+
   // ==================== EVENT HANDLERS ====================
 
   const handleSearch = (e) => {
@@ -412,7 +417,7 @@ const Items = () => {
    * Hanya bisa diakses oleh reviewer (canReviewItems).
    */
   const handleDeleteItem = (item) => {
-    if (!canReviewItems) return;
+    if (!canShowDeleteButton) return;
     openModal(
       "deleteItemConfirm",
       <AlertModal
@@ -729,7 +734,7 @@ const Items = () => {
                       )}
 
                       {/* Delete — hanya reviewer */}
-                      {canReviewItems && (
+                      {canShowDeleteButton(item) && (
                         <button
                           className="item-action-btn delete-btn"
                           title="Delete item"
